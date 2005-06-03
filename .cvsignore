@@ -1,10 +1,7 @@
-cachedir
-dist
-bin
-build
 .classpath
 .project
 .ipr
 .iws
 .iml
-ant.properties
+build
+dist

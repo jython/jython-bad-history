@@ -10,7 +10,8 @@ and to provide subshell execution functionality.
 """
 from java.lang import System, Runtime
 from java.io import IOException
-from org.python.core import PyFile
+from java.io import InputStreamReader
+from java.io import BufferedReader
 from UserDict import UserDict
 import jarray
 import string
@@ -97,7 +98,13 @@ class _ShellEnv:
         if self.getEnv:
             try:
                 p = self.execute( self.getEnv )
-                lines = PyFile( p.getInputStream() ).readlines()
+                r = BufferedReader( InputStreamReader( p.getInputStream() ) )
+                lines = []
+                while True:
+                  line = r.readLine()
+                  if not line:
+                    break
+                  lines.append(line)
                 if '=' not in lines[0]:
                     __warn(
                         "Failed to get environment, getEnv command (%s) " \
@@ -110,10 +117,10 @@ class _ShellEnv:
                     try:
                         i = line.index( '=' )
                         key = self._keyTransform(line[:i])
-                        value = line[i+1:-1] # remove = and end-of-line
+                        value = line[i+1:] # remove = and end-of-line
                     except ValueError:
                         # found no '=', treat line as part of previous value
-                        value = '%s\n%s' % ( value, line[:-1] )
+                        value = '%s\n%s' % ( value, line )
                     env[ key ] = value
             except OSError, ex:
                 __warn( "Failed to get environment, environ will be empty:",
