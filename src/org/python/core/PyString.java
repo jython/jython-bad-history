@@ -2,10 +2,12 @@
 package org.python.core;
 
 import org.python.core.util.StringUtil;
+
 import org.python.expose.ExposedMethod;
 import org.python.expose.ExposedNew;
 import org.python.expose.ExposedType;
 import org.python.expose.MethodType;
+
 /**
  * A builtin python string.
  */
@@ -38,7 +40,7 @@ public class PyString extends PyBaseString
     public PyString(char c) {
         this(TYPE,String.valueOf(c));
     }
-    
+
     /**
      * Creates a PyString from an already interned String. Just means it won't
      * be reinterned if used in a place that requires interned Strings.
