@@ -230,6 +230,7 @@ svnant.jar.dir=${basedir}/../externals/svnant-jars
         <property name="python.lib" value="${basedir}/CPythonLib" />
         <property name="bugtests.dir" value="${basedir}/bugtests" />
         <property name="templates.lazy" value="true" />
+
         <property name="output.dir" value="${work.dir}/build" />
         <property name="compile.dir" value="${output.dir}/classes" />
         <property name="exposed.dir" value="${output.dir}/exposed" />
