@@ -30,13 +30,13 @@ public class PythonTreeTester {
 	public PythonTree parse(String[] args) throws Exception {
 		PythonTree result = null;
 		CharStream input = new ANTLRFileStream(args[0]);
-		PythonLexer lexer = new PythonGrammar.PyLexer(input);
+		PythonLexer lexer = new ModuleParser.PyLexer(input);
 		CommonTokenStream tokens = new CommonTokenStream(lexer);
 		tokens.discardOffChannelTokens(true);
 		PythonTokenSource indentedSource = new PythonTokenSource(tokens);
 		tokens = new CommonTokenStream(indentedSource);
 		PythonParser parser = new PythonParser(tokens);
-		parser.setTreeAdaptor(PythonGrammar.pyadaptor);
+		parser.setTreeAdaptor(new PythonTreeAdaptor());
 		try {
             Tree r = null;
             switch (_block) {

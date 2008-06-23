@@ -12,11 +12,12 @@ import org.python.modules.zipimport.zipimport;
  */
 public class exceptions implements ClassDictInit {
 
-    public static String __doc__ =
-            "Exceptions found here are defined both in the exceptions module and the "
-            + "built-in namespace.  It is recommended that user-defined exceptions "
-            + "inherit from Exception.  See the documentation for the exception "
-            + "inheritance hierarchy.";
+    public static String __doc__ = "Python's standard exception class hierarchy.\n"
+            + "\n"
+            + "Exceptions found here are defined both in the exceptions module and the\n"
+            + "built-in namespace.  It is recommended that user-defined exceptions\n"
+            + "inherit from Exception.  See the documentation for the exception\n"
+            + "inheritance hierarchy.\n";
 
     /** <i>Internal use only. Do not call this method explicit.</i> */
     public static void classDictInit(PyObject dict) {
@@ -161,7 +162,7 @@ public class exceptions implements ClassDictInit {
         // XXX: remove when CPythonLib 2.5 hits
         buildClass(dict, "OverflowWarning", "Warning",
                    "Base class for warnings about numeric overflow.");
-
+        
         buildClass(dict, "FutureWarning", "Warning",
                    "Base class for warnings about constructs that will change semantically\n"
                    + "in the future.");
