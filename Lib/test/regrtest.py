@@ -982,7 +982,6 @@ _skips = {
         test_largefile
         test_linuxaudiodev
         test_locale
-        test_logging
         test_longexp
         test_macfs
         test_macostools
