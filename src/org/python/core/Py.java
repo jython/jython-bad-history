@@ -20,7 +20,7 @@ import org.python.core.adapter.ClassicPyObjectAdapter;
 import org.python.core.adapter.ExtensiblePyObjectAdapter;
 import org.python.core.util.StringUtil;
 import org.python.modules.errno;
-import org.python.parser.ast.modType;
+import org.python.antlr.ast.modType;
 
 public final class Py
 {
@@ -384,10 +384,10 @@ public final class Py
     public static void FutureWarning(String message) {
         warning(FutureWarning, message);
     }
-
+    
     public static PyObject ImportWarning;
     public static void ImportWarning(String message) {
-        warning(ImportWarning, message);
+    	warning(ImportWarning, message);
     }
 
     public static PyObject UnicodeWarning;
@@ -1619,24 +1619,23 @@ public final class Py
 
             return BytecodeLoader.makeCode(name, ostream.toByteArray(), filename);
         } catch (Throwable t) {
-            throw parser.fixParseError(null, t, filename);
+            throw ParserFacade.fixParseError(null, t, filename);
         }
     }
 
     public static PyObject compile_flags(InputStream istream, String filename,
                                  String type,CompilerFlags cflags)
     {
+        modType node = ParserFacade.parse(istream, type, filename, cflags);
         if (cflags != null && cflags.only_ast) {
-            org.python.antlr.ast.modType node = antlr.parse(istream, type, filename, cflags);
             return Py.java2py(node);
         }
 
-        modType node = parser.parse(istream, type, filename, cflags);
         boolean printResults = false;
-        if (type.equals("single"))
+        if (type.equals("single")) {
             printResults = true;
-        return Py.compile_flags(node, getName(), filename, true, printResults,
-                                cflags);
+        }
+        return Py.compile_flags(node, getName(), filename, true, printResults, cflags);
     }
 
     public static PyObject compile_flags(String data,
@@ -1652,7 +1651,7 @@ public final class Py
     public static PyObject compile_command_flags(String string,
                     String filename, String kind, CompilerFlags cflags,boolean stdprompt)
     {
-        modType node = parser.partialParse(string + "\n", kind, filename,
+        modType node = ParserFacade.partialParse(string + "\n", kind, filename,
                 cflags, stdprompt);
     
         if (node == null)
