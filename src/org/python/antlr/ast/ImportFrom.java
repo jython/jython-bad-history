@@ -5,6 +5,11 @@ import org.antlr.runtime.Token;
 import org.python.antlr.AST;
 import org.python.antlr.PythonTree;
 import org.python.antlr.adapter.AstAdapters;
+import org.python.antlr.base.excepthandler;
+import org.python.antlr.base.expr;
+import org.python.antlr.base.mod;
+import org.python.antlr.base.slice;
+import org.python.antlr.base.stmt;
 import org.python.core.ArgParser;
 import org.python.core.AstList;
 import org.python.core.Py;
@@ -21,7 +26,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 @ExposedType(name = "_ast.ImportFrom", base = AST.class)
-public class ImportFrom extends stmtType {
+public class ImportFrom extends stmt {
 public static final PyType TYPE = PyType.fromClass(ImportFrom.class);
     private String module;
     public String getInternalModule() {
@@ -37,8 +42,8 @@ public static final PyType TYPE = PyType.fromClass(ImportFrom.class);
         this.module = AstAdapters.py2identifier(module);
     }
 
-    private java.util.List<aliasType> names;
-    public java.util.List<aliasType> getInternalNames() {
+    private java.util.List<alias> names;
+    public java.util.List<alias> getInternalNames() {
         return names;
     }
     @ExposedGet(name = "names")
@@ -96,12 +101,12 @@ public static final PyType TYPE = PyType.fromClass(ImportFrom.class);
         setLevel(level);
     }
 
-    public ImportFrom(Token token, String module, java.util.List<aliasType> names, Integer level) {
+    public ImportFrom(Token token, String module, java.util.List<alias> names, Integer level) {
         super(token);
         this.module = module;
         this.names = names;
         if (names == null) {
-            this.names = new ArrayList<aliasType>();
+            this.names = new ArrayList<alias>();
         }
         for(PythonTree t : this.names) {
             addChild(t);
@@ -109,13 +114,13 @@ public static final PyType TYPE = PyType.fromClass(ImportFrom.class);
         this.level = level;
     }
 
-    public ImportFrom(Integer ttype, Token token, String module, java.util.List<aliasType> names,
+    public ImportFrom(Integer ttype, Token token, String module, java.util.List<alias> names,
     Integer level) {
         super(ttype, token);
         this.module = module;
         this.names = names;
         if (names == null) {
-            this.names = new ArrayList<aliasType>();
+            this.names = new ArrayList<alias>();
         }
         for(PythonTree t : this.names) {
             addChild(t);
@@ -123,13 +128,12 @@ public static final PyType TYPE = PyType.fromClass(ImportFrom.class);
         this.level = level;
     }
 
-    public ImportFrom(PythonTree tree, String module, java.util.List<aliasType> names, Integer
-    level) {
+    public ImportFrom(PythonTree tree, String module, java.util.List<alias> names, Integer level) {
         super(tree);
         this.module = module;
         this.names = names;
         if (names == null) {
-            this.names = new ArrayList<aliasType>();
+            this.names = new ArrayList<alias>();
         }
         for(PythonTree t : this.names) {
             addChild(t);

@@ -4,7 +4,7 @@ import org.python.core.Py;
 import org.python.core.PyObject;
 import org.python.core.PyJavaInstance;
 
-import org.python.antlr.ast.aliasType;
+import org.python.antlr.ast.alias;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,7 +15,7 @@ public class AliasAdapter implements AstAdapter {
         if (o == null) {
             return o;
         }
-        if (o instanceof aliasType) {
+        if (o instanceof alias) {
             return o;
         }
         //FIXME: investigate the right exception
@@ -27,9 +27,9 @@ public class AliasAdapter implements AstAdapter {
     }
 
     public List iter2ast(PyObject iter) {
-        List<aliasType> aliases = new ArrayList<aliasType>();
+        List<alias> aliases = new ArrayList<alias>();
         for(Object o : (Iterable)iter) {
-            aliases.add((aliasType)py2ast((PyObject)(PyObject)o));
+            aliases.add((alias)py2ast((PyObject)(PyObject)o));
         }
         return aliases;
     }

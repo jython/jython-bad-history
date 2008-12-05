@@ -5,6 +5,11 @@ import org.antlr.runtime.Token;
 import org.python.antlr.AST;
 import org.python.antlr.PythonTree;
 import org.python.antlr.adapter.AstAdapters;
+import org.python.antlr.base.excepthandler;
+import org.python.antlr.base.expr;
+import org.python.antlr.base.mod;
+import org.python.antlr.base.slice;
+import org.python.antlr.base.stmt;
 import org.python.core.ArgParser;
 import org.python.core.AstList;
 import org.python.core.Py;
@@ -21,10 +26,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 @ExposedType(name = "_ast.Exec", base = AST.class)
-public class Exec extends stmtType {
+public class Exec extends stmt {
 public static final PyType TYPE = PyType.fromClass(Exec.class);
-    private exprType body;
-    public exprType getInternalBody() {
+    private expr body;
+    public expr getInternalBody() {
         return body;
     }
     @ExposedGet(name = "body")
@@ -36,8 +41,8 @@ public static final PyType TYPE = PyType.fromClass(Exec.class);
         this.body = AstAdapters.py2expr(body);
     }
 
-    private exprType globals;
-    public exprType getInternalGlobals() {
+    private expr globals;
+    public expr getInternalGlobals() {
         return globals;
     }
     @ExposedGet(name = "globals")
@@ -49,8 +54,8 @@ public static final PyType TYPE = PyType.fromClass(Exec.class);
         this.globals = AstAdapters.py2expr(globals);
     }
 
-    private exprType locals;
-    public exprType getInternalLocals() {
+    private expr locals;
+    public expr getInternalLocals() {
         return locals;
     }
     @ExposedGet(name = "locals")
@@ -95,7 +100,7 @@ public static final PyType TYPE = PyType.fromClass(Exec.class);
         setLocals(locals);
     }
 
-    public Exec(Token token, exprType body, exprType globals, exprType locals) {
+    public Exec(Token token, expr body, expr globals, expr locals) {
         super(token);
         this.body = body;
         addChild(body);
@@ -105,7 +110,7 @@ public static final PyType TYPE = PyType.fromClass(Exec.class);
         addChild(locals);
     }
 
-    public Exec(Integer ttype, Token token, exprType body, exprType globals, exprType locals) {
+    public Exec(Integer ttype, Token token, expr body, expr globals, expr locals) {
         super(ttype, token);
         this.body = body;
         addChild(body);
@@ -115,7 +120,7 @@ public static final PyType TYPE = PyType.fromClass(Exec.class);
         addChild(locals);
     }
 
-    public Exec(PythonTree tree, exprType body, exprType globals, exprType locals) {
+    public Exec(PythonTree tree, expr body, expr globals, expr locals) {
         super(tree);
         this.body = body;
         addChild(body);

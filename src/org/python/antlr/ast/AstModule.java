@@ -1,5 +1,11 @@
 package org.python.antlr.ast;
 
+import org.python.antlr.base.excepthandler;
+import org.python.antlr.base.expr;
+import org.python.antlr.base.mod;
+import org.python.antlr.base.slice;
+import org.python.antlr.base.stmt;
+import org.python.antlr.op.*;
 import org.python.core.AstList;
 import org.python.core.ClassDictInit;
 import org.python.core.imp;
@@ -82,15 +88,15 @@ public class AstModule implements ClassDictInit {
         dict.__setitem__("While", While.TYPE);
         dict.__setitem__("With", With.TYPE);
         dict.__setitem__("Yield", Yield.TYPE);
-        dict.__setitem__("alias", aliasType.TYPE);
-        dict.__setitem__("arguments", argumentsType.TYPE);
-        dict.__setitem__("comprehension", comprehensionType.TYPE);
-        dict.__setitem__("excepthandler", excepthandlerType.TYPE);
-        dict.__setitem__("expr", exprType.TYPE);
-        dict.__setitem__("keyword", keywordType.TYPE);
-        dict.__setitem__("mod", modType.TYPE);
-        dict.__setitem__("slice", sliceType.TYPE);
-        dict.__setitem__("stmt", stmtType.TYPE);
+        dict.__setitem__("alias", alias.TYPE);
+        dict.__setitem__("arguments", arguments.TYPE);
+        dict.__setitem__("comprehension", comprehension.TYPE);
+        dict.__setitem__("excepthandler", excepthandler.TYPE);
+        dict.__setitem__("expr", expr.TYPE);
+        dict.__setitem__("keyword", keyword.TYPE);
+        dict.__setitem__("mod", mod.TYPE);
+        dict.__setitem__("slice", slice.TYPE);
+        dict.__setitem__("stmt", stmt.TYPE);
         
         dict.__setitem__("operator", imp.importName("org.python.antlr.ast.operatorType", false));
         dict.__setitem__("Add", Add.TYPE);

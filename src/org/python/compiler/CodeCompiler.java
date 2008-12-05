@@ -3,7 +3,6 @@
 package org.python.compiler;
 
 import java.io.IOException;
-import java.util.Hashtable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
@@ -63,16 +62,15 @@ import org.python.antlr.ast.UnaryOp;
 import org.python.antlr.ast.While;
 import org.python.antlr.ast.With;
 import org.python.antlr.ast.Yield;
-import org.python.antlr.ast.aliasType;
+import org.python.antlr.ast.alias;
 import org.python.antlr.ast.cmpopType;
-import org.python.antlr.ast.comprehensionType;
-import org.python.antlr.ast.excepthandlerType;
-import org.python.antlr.ast.exprType;
+import org.python.antlr.ast.comprehension;
 import org.python.antlr.ast.expr_contextType;
-import org.python.antlr.ast.keywordType;
-import org.python.antlr.ast.modType;
+import org.python.antlr.ast.keyword;
 import org.python.antlr.ast.operatorType;
-import org.python.antlr.ast.stmtType;
+import org.python.antlr.base.expr;
+import org.python.antlr.base.mod;
+import org.python.antlr.base.stmt;
 import org.python.core.CompilerFlags;
 import org.python.core.PyComplex;
 import org.python.core.PyFloat;
@@ -247,7 +245,7 @@ public class CodeCompiler extends Visitor implements Opcodes, ClassConstants //,
    }
 
 
-    public void parse(modType node, Code code,
+    public void parse(mod node, Code code,
                       boolean fast_locals, String className,
                       boolean classBody, ScopeInfo scope, CompilerFlags cflags)
         throws Exception
@@ -349,7 +347,7 @@ public class CodeCompiler extends Visitor implements Opcodes, ClassConstants //,
         return array;
     }
 
-    public void getDocString(java.util.List<stmtType> suite) throws Exception {
+    public void getDocString(java.util.List<stmt> suite) throws Exception {
         if (suite.size() > 0 && suite.get(0) instanceof Expr &&
             ((Expr) suite.get(0)).getInternalValue() instanceof Str)
         {
@@ -424,13 +422,13 @@ public class CodeCompiler extends Visitor implements Opcodes, ClassConstants //,
         return null;
     }
 
-    private void doDecorators(stmtType node, java.util.List<exprType> decs, String name) throws Exception {
+    private void doDecorators(stmt node, java.util.List<expr> decs, String name) throws Exception {
         if (decs.size() > 0) {
-            exprType currentExpr = new Name(node, name, expr_contextType.Load);
+            expr currentExpr = new Name(node, name, expr_contextType.Load);
             for (int i=decs.size() - 1;i > -1;i--) {
                 java.util.List args = new ArrayList();
                 args.add(currentExpr);
-                currentExpr = new Call(node, decs.get(i), args, new ArrayList<keywordType>(), null, null);
+                currentExpr = new Call(node, decs.get(i), args, new ArrayList<keyword>(), null, null);
             }
             visit(currentExpr);
             set(new Name(node, name, expr_contextType.Store));
@@ -458,7 +456,7 @@ public class CodeCompiler extends Visitor implements Opcodes, ClassConstants //,
             set(node.getInternalTargets().get(0));
         } else {
             int tmp = storeTop();
-            for (exprType target : node.getInternalTargets()) {
+            for (expr target : node.getInternalTargets()) {
                 set(target, tmp);
             }
             code.freeLocal(tmp);
@@ -786,16 +784,16 @@ public class CodeCompiler extends Visitor implements Opcodes, ClassConstants //,
     @Override
     public Object visitImport(Import node) throws Exception {
         setline(node);
-        for (aliasType alias : node.getInternalNames()) {
+        for (alias a : node.getInternalNames()) {
             String asname = null;
-            if (alias.getInternalAsname() != null) {
-                String name = alias.getInternalName();
-                asname = alias.getInternalAsname();
+            if (a.getInternalAsname() != null) {
+                String name = a.getInternalName();
+                asname = a.getInternalAsname();
                 code.ldc(name);
                 loadFrame();
                 code.invokestatic("org/python/core/imp", "importOneAs", "(" + $str + $pyFrame + ")" + $pyObj);
             } else {
-                String name = alias.getInternalName();
+                String name = a.getInternalName();
                 asname = name;
                 if (asname.indexOf('.') > 0)
                     asname = asname.substring(0, asname.indexOf('.'));
@@ -803,7 +801,7 @@ public class CodeCompiler extends Visitor implements Opcodes, ClassConstants //,
                 loadFrame();
                 code.invokestatic("org/python/core/imp", "importOne", "(" + $str + $pyFrame + ")" + $pyObj);
             }
-            set(new Name(alias, asname, expr_contextType.Store));
+            set(new Name(a, asname, expr_contextType.Store));
         }
         return null;
     }
@@ -814,7 +812,7 @@ public class CodeCompiler extends Visitor implements Opcodes, ClassConstants //,
         Future.checkFromFuture(node); // future stmt support
         setline(node);
         code.ldc(node.getInternalModule());
-        java.util.List<aliasType> names = node.getInternalNames();
+        java.util.List<alias> names = node.getInternalNames();
         if (names == null || names.size() == 0) {
             throw new ParseException("Internel parser error", node);
         } else if (names.size() == 1 && names.get(0).getInternalName().equals("*")) {
@@ -1314,8 +1312,8 @@ public class CodeCompiler extends Visitor implements Opcodes, ClassConstants //,
         return suite(node.getInternalBody());
     }
 
-    public Object suite(java.util.List<stmtType> stmts) throws Exception {
-        for(stmtType s: stmts) {
+    public Object suite(java.util.List<stmt> stmts) throws Exception {
+        for(stmt s: stmts) {
             Object exit = visit(s);
             if (exit != null)
                 return Exit;
@@ -1514,7 +1512,7 @@ public class CodeCompiler extends Visitor implements Opcodes, ClassConstants //,
         return strings;
     }
     
-    public Object invokeNoKeywords(Attribute node, java.util.List<exprType> values)
+    public Object invokeNoKeywords(Attribute node, java.util.List<expr> values)
         throws Exception
     {
         String name = getName(node.getInternalAttr());
@@ -1568,7 +1566,7 @@ public class CodeCompiler extends Visitor implements Opcodes, ClassConstants //,
     @Override
     public Object visitCall(Call node) throws Exception {
         java.util.List<String> keys = new ArrayList<String>();//[node.keywords.size()];
-        java.util.List<exprType> values = new ArrayList<exprType>();//[node.args.size() + keys.size()];
+        java.util.List<expr> values = new ArrayList<expr>();//[node.args.size() + keys.size()];
         for (int i = 0; i < node.getInternalArgs().size(); i++) {
             values.add(node.getInternalArgs().get(i));
         }
@@ -1799,7 +1797,7 @@ public class CodeCompiler extends Visitor implements Opcodes, ClassConstants //,
         return null;
     }
 
-    public Object seqSet(java.util.List<exprType> nodes) throws Exception {
+    public Object seqSet(java.util.List<expr> nodes) throws Exception {
         code.aload(temporary);
         code.iconst(nodes.size());
         code.invokestatic("org/python/core/Py", "unpackSequence", "(" + $pyObj + "I)" + $pyObjArr);
@@ -1818,8 +1816,8 @@ public class CodeCompiler extends Visitor implements Opcodes, ClassConstants //,
         return null;
     }
 
-    public Object seqDel(java.util.List<exprType> nodes) throws Exception {
-        for (exprType e: nodes) {
+    public Object seqDel(java.util.List<expr> nodes) throws Exception {
+        for (expr e: nodes) {
             visit(e);
         }
         return null;
@@ -1876,25 +1874,25 @@ public class CodeCompiler extends Visitor implements Opcodes, ClassConstants //,
 
         set(new Name(node, tmp_append, expr_contextType.Store));
 
-        java.util.List<exprType> args = new ArrayList<exprType>();
+        java.util.List<expr> args = new ArrayList<expr>();
         args.add(node.getInternalElt());
-        stmtType n = new Expr(node, new Call(node, new Name(node, tmp_append, expr_contextType.Load), 
+        stmt n = new Expr(node, new Call(node, new Name(node, tmp_append, expr_contextType.Load), 
                                        args,
-                                       new ArrayList<keywordType>(), null, null));
+                                       new ArrayList<keyword>(), null, null));
 
         for (int i = node.getInternalGenerators().size() - 1; i >= 0; i--) {
-            comprehensionType lc = node.getInternalGenerators().get(i);
+            comprehension lc = node.getInternalGenerators().get(i);
             for (int j = lc.getInternalIfs().size() - 1; j >= 0; j--) {
-                java.util.List<stmtType> body = new ArrayList<stmtType>();
+                java.util.List<stmt> body = new ArrayList<stmt>();
                 body.add(n);
-                n = new If(lc.getInternalIfs().get(j), lc.getInternalIfs().get(j), body, new ArrayList<stmtType>());
+                n = new If(lc.getInternalIfs().get(j), lc.getInternalIfs().get(j), body, new ArrayList<stmt>());
             }
-            java.util.List<stmtType> body = new ArrayList<stmtType>();
+            java.util.List<stmt> body = new ArrayList<stmt>();
             body.add(n);
-            n = new For(lc,lc.getInternalTarget(), lc.getInternalIter(), body, new ArrayList<stmtType>());
+            n = new For(lc,lc.getInternalTarget(), lc.getInternalIter(), body, new ArrayList<stmt>());
         }
         visit(n);
-        java.util.List<exprType> targets = new ArrayList<exprType>();
+        java.util.List<expr> targets = new ArrayList<expr>();
         targets.add(new Name(n, tmp_append, expr_contextType.Del));
         visit(new Delete(n, targets));
 
@@ -1930,9 +1928,9 @@ public class CodeCompiler extends Visitor implements Opcodes, ClassConstants //,
         String name = "<lambda>";
 
         //Add a return node onto the outside of suite;
-        java.util.List<stmtType> bod = new ArrayList<stmtType>();
+        java.util.List<stmt> bod = new ArrayList<stmt>();
         bod.add(new Return(node,node.getInternalBody()));
-        modType retSuite = new Suite(node, bod);
+        mod retSuite = new Suite(node, bod);
 
         setline(node);
 
@@ -2190,34 +2188,34 @@ public class CodeCompiler extends Visitor implements Opcodes, ClassConstants //,
 
         ScopeInfo scope = module.getScopeInfo(node);
 
-        int emptyArray = makeArray(new ArrayList<exprType>());
+        int emptyArray = makeArray(new ArrayList<expr>());
         code.aload(emptyArray);
         code.freeLocal(emptyArray);
 
         scope.setup_closure();
         scope.dump();
 
-        stmtType n = new Expr(node, new Yield(node,node.getInternalElt()));
+        stmt n = new Expr(node, new Yield(node,node.getInternalElt()));
 
-        exprType iter = null;
+        expr iter = null;
         for (int i = node.getInternalGenerators().size() - 1; i >= 0; i--) {
-            comprehensionType comp = node.getInternalGenerators().get(i);
+            comprehension comp = node.getInternalGenerators().get(i);
             for (int j = comp.getInternalIfs().size() - 1; j >= 0; j--) {
-                java.util.List<stmtType> bod = new ArrayList<stmtType>();
+                java.util.List<stmt> bod = new ArrayList<stmt>();
                 bod.add(n);
-                n = new If(comp.getInternalIfs().get(j), comp.getInternalIfs().get(j), bod, new ArrayList<stmtType>());
+                n = new If(comp.getInternalIfs().get(j), comp.getInternalIfs().get(j), bod, new ArrayList<stmt>());
             }
-            java.util.List<stmtType> bod = new ArrayList<stmtType>();
+            java.util.List<stmt> bod = new ArrayList<stmt>();
             bod.add(n);
             if (i != 0) {
-                n = new For(comp,comp.getInternalTarget(), comp.getInternalIter(), bod, new ArrayList<stmtType>());
+                n = new For(comp,comp.getInternalTarget(), comp.getInternalIter(), bod, new ArrayList<stmt>());
             } else {
-                n = new For(comp,comp.getInternalTarget(), new Name(node, bound_exp, expr_contextType.Load), bod, new ArrayList<stmtType>());
+                n = new For(comp,comp.getInternalTarget(), new Name(node, bound_exp, expr_contextType.Load), bod, new ArrayList<stmt>());
                 iter = comp.getInternalIter();
             }
         }
 
-        java.util.List<stmtType> bod = new ArrayList<stmtType>();
+        java.util.List<stmt> bod = new ArrayList<stmt>();
         bod.add(n);
         module.PyCode(new Suite(node, bod), "<genexpr>", true,
                       className, false, false,

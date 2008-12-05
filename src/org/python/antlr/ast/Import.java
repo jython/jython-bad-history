@@ -5,6 +5,11 @@ import org.antlr.runtime.Token;
 import org.python.antlr.AST;
 import org.python.antlr.PythonTree;
 import org.python.antlr.adapter.AstAdapters;
+import org.python.antlr.base.excepthandler;
+import org.python.antlr.base.expr;
+import org.python.antlr.base.mod;
+import org.python.antlr.base.slice;
+import org.python.antlr.base.stmt;
 import org.python.core.ArgParser;
 import org.python.core.AstList;
 import org.python.core.Py;
@@ -21,10 +26,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 @ExposedType(name = "_ast.Import", base = AST.class)
-public class Import extends stmtType {
+public class Import extends stmt {
 public static final PyType TYPE = PyType.fromClass(Import.class);
-    private java.util.List<aliasType> names;
-    public java.util.List<aliasType> getInternalNames() {
+    private java.util.List<alias> names;
+    public java.util.List<alias> getInternalNames() {
         return names;
     }
     @ExposedGet(name = "names")
@@ -65,33 +70,33 @@ public static final PyType TYPE = PyType.fromClass(Import.class);
         setNames(names);
     }
 
-    public Import(Token token, java.util.List<aliasType> names) {
+    public Import(Token token, java.util.List<alias> names) {
         super(token);
         this.names = names;
         if (names == null) {
-            this.names = new ArrayList<aliasType>();
+            this.names = new ArrayList<alias>();
         }
         for(PythonTree t : this.names) {
             addChild(t);
         }
     }
 
-    public Import(Integer ttype, Token token, java.util.List<aliasType> names) {
+    public Import(Integer ttype, Token token, java.util.List<alias> names) {
         super(ttype, token);
         this.names = names;
         if (names == null) {
-            this.names = new ArrayList<aliasType>();
+            this.names = new ArrayList<alias>();
         }
         for(PythonTree t : this.names) {
             addChild(t);
         }
     }
 
-    public Import(PythonTree tree, java.util.List<aliasType> names) {
+    public Import(PythonTree tree, java.util.List<alias> names) {
         super(tree);
         this.names = names;
         if (names == null) {
-            this.names = new ArrayList<aliasType>();
+            this.names = new ArrayList<alias>();
         }
         for(PythonTree t : this.names) {
             addChild(t);

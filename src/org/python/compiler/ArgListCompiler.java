@@ -11,25 +11,25 @@ import org.python.antlr.ast.Assign;
 import org.python.antlr.ast.Name;
 import org.python.antlr.ast.Suite;
 import org.python.antlr.ast.Tuple;
-import org.python.antlr.ast.argumentsType;
+import org.python.antlr.ast.arguments;
 import org.python.antlr.ast.expr_contextType;
-import org.python.antlr.ast.exprType;
-import org.python.antlr.ast.stmtType;
+import org.python.antlr.base.expr;
+import org.python.antlr.base.stmt;
 
 public class ArgListCompiler extends Visitor
 {
     public boolean arglist, keywordlist;
-    public List<exprType> defaults;
+    public List<expr> defaults;
     public List<String> names;
     public List<String> fpnames;
-    public List<stmtType> init_code;
+    public List<stmt> init_code;
 
     public ArgListCompiler() {
         arglist = keywordlist = false;
         defaults = null;
         names = new ArrayList<String>();
         fpnames = new ArrayList<String>();
-        init_code = new ArrayList<stmtType>();
+        init_code = new ArrayList<stmt>();
     }
 
     public void reset() {
@@ -43,16 +43,16 @@ public class ArgListCompiler extends Visitor
         node.getInternalBody().addAll(0, init_code);
     }
 
-    public List<exprType> getDefaults() {
+    public List<expr> getDefaults() {
         return defaults;
     }
 
-    public void visitArgs(argumentsType args) throws Exception {
+    public void visitArgs(arguments args) throws Exception {
         for (int i = 0; i < args.getInternalArgs().size(); i++) {
             String name = (String) visit(args.getInternalArgs().get(i));
             names.add(name);
             if (args.getInternalArgs().get(i) instanceof Tuple) {
-                List<exprType> targets = new ArrayList<exprType>();
+                List<expr> targets = new ArrayList<expr>();
                 targets.add(args.getInternalArgs().get(i));
                 Assign ass = new Assign(args.getInternalArgs().get(i),
                     targets,

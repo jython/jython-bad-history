@@ -5,6 +5,11 @@ import org.antlr.runtime.Token;
 import org.python.antlr.AST;
 import org.python.antlr.PythonTree;
 import org.python.antlr.adapter.AstAdapters;
+import org.python.antlr.base.excepthandler;
+import org.python.antlr.base.expr;
+import org.python.antlr.base.mod;
+import org.python.antlr.base.slice;
+import org.python.antlr.base.stmt;
 import org.python.core.ArgParser;
 import org.python.core.AstList;
 import org.python.core.Py;
@@ -21,10 +26,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 @ExposedType(name = "_ast.Lambda", base = AST.class)
-public class Lambda extends exprType {
+public class Lambda extends expr {
 public static final PyType TYPE = PyType.fromClass(Lambda.class);
-    private argumentsType args;
-    public argumentsType getInternalArgs() {
+    private arguments args;
+    public arguments getInternalArgs() {
         return args;
     }
     @ExposedGet(name = "args")
@@ -36,8 +41,8 @@ public static final PyType TYPE = PyType.fromClass(Lambda.class);
         this.args = AstAdapters.py2arguments(args);
     }
 
-    private exprType body;
-    public exprType getInternalBody() {
+    private expr body;
+    public expr getInternalBody() {
         return body;
     }
     @ExposedGet(name = "body")
@@ -80,21 +85,21 @@ public static final PyType TYPE = PyType.fromClass(Lambda.class);
         setBody(body);
     }
 
-    public Lambda(Token token, argumentsType args, exprType body) {
+    public Lambda(Token token, arguments args, expr body) {
         super(token);
         this.args = args;
         this.body = body;
         addChild(body);
     }
 
-    public Lambda(Integer ttype, Token token, argumentsType args, exprType body) {
+    public Lambda(Integer ttype, Token token, arguments args, expr body) {
         super(ttype, token);
         this.args = args;
         this.body = body;
         addChild(body);
     }
 
-    public Lambda(PythonTree tree, argumentsType args, exprType body) {
+    public Lambda(PythonTree tree, arguments args, expr body) {
         super(tree);
         this.args = args;
         this.body = body;

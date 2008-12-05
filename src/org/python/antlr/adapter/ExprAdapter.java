@@ -10,7 +10,7 @@ import org.python.core.PyObject;
 import org.python.core.PyString;
 import org.python.core.PyUnicode;
 
-import org.python.antlr.ast.exprType;
+import org.python.antlr.base.expr;
 import org.python.antlr.ast.Num;
 import org.python.antlr.ast.Str;
 
@@ -20,7 +20,7 @@ import java.util.List;
 public class ExprAdapter implements AstAdapter {
         
     public Object py2ast(PyObject o) {
-        if (o == null || o instanceof exprType) {
+        if (o == null || o instanceof expr) {
             return o;
         } else if (o instanceof PyInteger || o instanceof PyLong || o instanceof PyFloat || o instanceof PyComplex) {
             return new Num(o);
@@ -39,9 +39,9 @@ public class ExprAdapter implements AstAdapter {
     }
 
     public List iter2ast(PyObject iter) {
-        List<exprType> exprs = new ArrayList<exprType>();
+        List<expr> exprs = new ArrayList<expr>();
         for(Object o : (Iterable)iter) {
-            exprs.add((exprType)py2ast((PyObject)o));
+            exprs.add((expr)py2ast((PyObject)o));
         }
         return exprs;
     }

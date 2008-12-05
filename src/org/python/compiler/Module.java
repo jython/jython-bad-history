@@ -18,7 +18,7 @@ import org.python.core.PyException;
 import org.python.antlr.ParseException;
 import org.python.antlr.PythonTree;
 import org.python.antlr.ast.Suite;
-import org.python.antlr.ast.modType;
+import org.python.antlr.base.mod;
 
 class PyIntegerConstant extends Constant implements ClassConstants, Opcodes
 {
@@ -379,7 +379,7 @@ public class Module implements Opcodes, ClassConstants, CompilationContext
 
     private int to_cell;
 
-    public PyCodeConstant PyCode(modType tree, String name,
+    public PyCodeConstant PyCode(mod tree, String name,
                                  boolean fast_locals, String className,
                                  boolean classBody, boolean printResults,
                                  int firstlineno, ScopeInfo scope)
@@ -390,7 +390,7 @@ public class Module implements Opcodes, ClassConstants, CompilationContext
     }
 
 
-    public PyCodeConstant PyCode(modType tree, String name,
+    public PyCodeConstant PyCode(mod tree, String name,
                                  boolean fast_locals, String className,
                                  boolean classBody, boolean printResults,
                                  int firstlineno,
@@ -634,7 +634,7 @@ public class Module implements Opcodes, ClassConstants, CompilationContext
         throw new ParseException(msg,node);
     }
 
-    public static void compile(modType node, OutputStream ostream,
+    public static void compile(mod node, OutputStream ostream,
                                String name, String filename,
                                boolean linenumbers, boolean printResults,
                                org.python.core.CompilerFlags cflags)

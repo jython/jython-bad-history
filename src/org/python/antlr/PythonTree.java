@@ -1,6 +1,5 @@
 package org.python.antlr;
 
-import org.python.core.PyObject;
 import org.antlr.runtime.CommonToken;
 import org.antlr.runtime.Token;
 import org.antlr.runtime.tree.CommonTree;
@@ -12,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PythonTree extends AST {
+
     public boolean from_future_checked = false;
     private int charStartIndex = -1;
     private int charStopIndex = -1;
@@ -248,8 +248,8 @@ public class PythonTree extends AST {
     public void traverse(VisitorIF visitor) throws Exception {
         throw new RuntimeException("Cannot traverse node: " + this);
     }
-
-    //Copied from org.antlr.runtime.tree.BaseTree
+ 
+//XXX: From here down copied from org.antlr.runtime.tree.BaseTree
 	protected List children;
 
 	public PythonTree getChild(int i) {
@@ -448,4 +448,5 @@ public class PythonTree extends AST {
 			child.setParent(this);
 		}
 	}
+
 }

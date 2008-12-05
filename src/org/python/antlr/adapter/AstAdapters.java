@@ -1,6 +1,8 @@
 package org.python.antlr.adapter;
 
 import org.python.antlr.ast.*;
+import org.python.antlr.base.*;
+import org.python.antlr.op.*;
 import org.python.core.*;
 
 import java.util.ArrayList;
@@ -18,44 +20,44 @@ public class AstAdapters {
     public static SliceAdapter sliceAdapter = new SliceAdapter();
     public static StmtAdapter stmtAdapter = new StmtAdapter();
 
-    public static java.util.List<aliasType> py2aliasList(PyObject o) {
-        return (java.util.List<aliasType>)aliasAdapter.iter2ast(o);
+    public static java.util.List<alias> py2aliasList(PyObject o) {
+        return (java.util.List<alias>)aliasAdapter.iter2ast(o);
     }
 
     public static java.util.List<cmpopType> py2cmpopList(PyObject o) {
         return (java.util.List<cmpopType>)cmpopAdapter.iter2ast(o);
     }
 
-    public static java.util.List<comprehensionType> py2comprehensionList(PyObject o) {
-        return (java.util.List<comprehensionType>)comprehensionAdapter.iter2ast(o);
+    public static java.util.List<comprehension> py2comprehensionList(PyObject o) {
+        return (java.util.List<comprehension>)comprehensionAdapter.iter2ast(o);
     }
 
-    public static java.util.List<excepthandlerType> py2excepthandlerList(PyObject o) {
-        return (java.util.List<excepthandlerType>)excepthandlerAdapter.iter2ast(o);
+    public static java.util.List<excepthandler> py2excepthandlerList(PyObject o) {
+        return (java.util.List<excepthandler>)excepthandlerAdapter.iter2ast(o);
     }
 
-    public static java.util.List<exprType> py2exprList(PyObject o) {
-        return (java.util.List<exprType>)exprAdapter.iter2ast(o);
+    public static java.util.List<expr> py2exprList(PyObject o) {
+        return (java.util.List<expr>)exprAdapter.iter2ast(o);
     }
 
     public static java.util.List<String> py2identifierList(PyObject o) {
         return (java.util.List<String>)identifierAdapter.iter2ast(o);
     }
 
-    public static java.util.List<keywordType> py2keywordList(PyObject o) {
-        return (java.util.List<keywordType>)keywordAdapter.iter2ast(o);
+    public static java.util.List<keyword> py2keywordList(PyObject o) {
+        return (java.util.List<keyword>)keywordAdapter.iter2ast(o);
     }
 
-    public static java.util.List<sliceType> py2sliceList(PyObject o) {
-        return (java.util.List<sliceType>)sliceAdapter.iter2ast(o);
+    public static java.util.List<slice> py2sliceList(PyObject o) {
+        return (java.util.List<slice>)sliceAdapter.iter2ast(o);
     }
 
-    public static java.util.List<stmtType> py2stmtList(PyObject o) {
-        return (java.util.List<stmtType>)stmtAdapter.iter2ast(o);
+    public static java.util.List<stmt> py2stmtList(PyObject o) {
+        return (java.util.List<stmt>)stmtAdapter.iter2ast(o);
     }
 
-    public static exprType py2expr(PyObject o) {
-        return (exprType)exprAdapter.py2ast(o);
+    public static expr py2expr(PyObject o) {
+        return (expr)exprAdapter.py2ast(o);
     }
 
     public static int py2int(Object o) {
@@ -93,12 +95,12 @@ public class AstAdapters {
         throw Py.TypeError("Can't convert " + o.getClass().getName() + " to expr_context node");
     }
 
-    public static sliceType py2slice(PyObject o) {
-        return (sliceType)sliceAdapter.py2ast(o);
+    public static slice py2slice(PyObject o) {
+        return (slice)sliceAdapter.py2ast(o);
     }
 
-    public static stmtType py2stmt(PyObject o) {
-        return (stmtType)stmtAdapter.py2ast(o);
+    public static stmt py2stmt(PyObject o) {
+        return (stmt)stmtAdapter.py2ast(o);
     }
 
     public static Object py2string(Object o) {
@@ -236,9 +238,9 @@ public class AstAdapters {
         throw Py.TypeError("Can't convert " + o.getClass().getName() + " to boolop node");
     }
 
-    public static argumentsType py2arguments(Object o) {
-        if (o == null || o instanceof argumentsType) {
-            return (argumentsType)o;
+    public static arguments py2arguments(Object o) {
+        if (o == null || o instanceof arguments) {
+            return (arguments)o;
         }
         //FIXME: investigate the right exception
         throw Py.TypeError("Can't convert " + o.getClass().getName() + " to arguments node");

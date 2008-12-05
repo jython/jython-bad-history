@@ -5,6 +5,11 @@ import org.antlr.runtime.Token;
 import org.python.antlr.AST;
 import org.python.antlr.PythonTree;
 import org.python.antlr.adapter.AstAdapters;
+import org.python.antlr.base.excepthandler;
+import org.python.antlr.base.expr;
+import org.python.antlr.base.mod;
+import org.python.antlr.base.slice;
+import org.python.antlr.base.stmt;
 import org.python.core.ArgParser;
 import org.python.core.AstList;
 import org.python.core.Py;
@@ -21,10 +26,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 @ExposedType(name = "_ast.ExtSlice", base = AST.class)
-public class ExtSlice extends sliceType {
+public class ExtSlice extends slice {
 public static final PyType TYPE = PyType.fromClass(ExtSlice.class);
-    private java.util.List<sliceType> dims;
-    public java.util.List<sliceType> getInternalDims() {
+    private java.util.List<slice> dims;
+    public java.util.List<slice> getInternalDims() {
         return dims;
     }
     @ExposedGet(name = "dims")
@@ -64,33 +69,33 @@ public static final PyType TYPE = PyType.fromClass(ExtSlice.class);
         setDims(dims);
     }
 
-    public ExtSlice(Token token, java.util.List<sliceType> dims) {
+    public ExtSlice(Token token, java.util.List<slice> dims) {
         super(token);
         this.dims = dims;
         if (dims == null) {
-            this.dims = new ArrayList<sliceType>();
+            this.dims = new ArrayList<slice>();
         }
         for(PythonTree t : this.dims) {
             addChild(t);
         }
     }
 
-    public ExtSlice(Integer ttype, Token token, java.util.List<sliceType> dims) {
+    public ExtSlice(Integer ttype, Token token, java.util.List<slice> dims) {
         super(ttype, token);
         this.dims = dims;
         if (dims == null) {
-            this.dims = new ArrayList<sliceType>();
+            this.dims = new ArrayList<slice>();
         }
         for(PythonTree t : this.dims) {
             addChild(t);
         }
     }
 
-    public ExtSlice(PythonTree tree, java.util.List<sliceType> dims) {
+    public ExtSlice(PythonTree tree, java.util.List<slice> dims) {
         super(tree);
         this.dims = dims;
         if (dims == null) {
-            this.dims = new ArrayList<sliceType>();
+            this.dims = new ArrayList<slice>();
         }
         for(PythonTree t : this.dims) {
             addChild(t);

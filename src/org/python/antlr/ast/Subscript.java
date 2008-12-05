@@ -5,6 +5,11 @@ import org.antlr.runtime.Token;
 import org.python.antlr.AST;
 import org.python.antlr.PythonTree;
 import org.python.antlr.adapter.AstAdapters;
+import org.python.antlr.base.excepthandler;
+import org.python.antlr.base.expr;
+import org.python.antlr.base.mod;
+import org.python.antlr.base.slice;
+import org.python.antlr.base.stmt;
 import org.python.core.ArgParser;
 import org.python.core.AstList;
 import org.python.core.Py;
@@ -21,10 +26,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 @ExposedType(name = "_ast.Subscript", base = AST.class)
-public class Subscript extends exprType implements Context {
+public class Subscript extends expr implements Context {
 public static final PyType TYPE = PyType.fromClass(Subscript.class);
-    private exprType value;
-    public exprType getInternalValue() {
+    private expr value;
+    public expr getInternalValue() {
         return value;
     }
     @ExposedGet(name = "value")
@@ -36,8 +41,8 @@ public static final PyType TYPE = PyType.fromClass(Subscript.class);
         this.value = AstAdapters.py2expr(value);
     }
 
-    private sliceType slice;
-    public sliceType getInternalSlice() {
+    private slice slice;
+    public slice getInternalSlice() {
         return slice;
     }
     @ExposedGet(name = "slice")
@@ -95,7 +100,7 @@ public static final PyType TYPE = PyType.fromClass(Subscript.class);
         setCtx(ctx);
     }
 
-    public Subscript(Token token, exprType value, sliceType slice, expr_contextType ctx) {
+    public Subscript(Token token, expr value, slice slice, expr_contextType ctx) {
         super(token);
         this.value = value;
         addChild(value);
@@ -103,8 +108,7 @@ public static final PyType TYPE = PyType.fromClass(Subscript.class);
         this.ctx = ctx;
     }
 
-    public Subscript(Integer ttype, Token token, exprType value, sliceType slice, expr_contextType
-    ctx) {
+    public Subscript(Integer ttype, Token token, expr value, slice slice, expr_contextType ctx) {
         super(ttype, token);
         this.value = value;
         addChild(value);
@@ -112,7 +116,7 @@ public static final PyType TYPE = PyType.fromClass(Subscript.class);
         this.ctx = ctx;
     }
 
-    public Subscript(PythonTree tree, exprType value, sliceType slice, expr_contextType ctx) {
+    public Subscript(PythonTree tree, expr value, slice slice, expr_contextType ctx) {
         super(tree);
         this.value = value;
         addChild(value);

@@ -5,6 +5,11 @@ import org.antlr.runtime.Token;
 import org.python.antlr.AST;
 import org.python.antlr.PythonTree;
 import org.python.antlr.adapter.AstAdapters;
+import org.python.antlr.base.excepthandler;
+import org.python.antlr.base.expr;
+import org.python.antlr.base.mod;
+import org.python.antlr.base.slice;
+import org.python.antlr.base.stmt;
 import org.python.core.ArgParser;
 import org.python.core.AstList;
 import org.python.core.Py;
@@ -21,10 +26,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 @ExposedType(name = "_ast.Attribute", base = AST.class)
-public class Attribute extends exprType implements Context {
+public class Attribute extends expr implements Context {
 public static final PyType TYPE = PyType.fromClass(Attribute.class);
-    private exprType value;
-    public exprType getInternalValue() {
+    private expr value;
+    public expr getInternalValue() {
         return value;
     }
     @ExposedGet(name = "value")
@@ -96,7 +101,7 @@ public static final PyType TYPE = PyType.fromClass(Attribute.class);
         setCtx(ctx);
     }
 
-    public Attribute(Token token, exprType value, String attr, expr_contextType ctx) {
+    public Attribute(Token token, expr value, String attr, expr_contextType ctx) {
         super(token);
         this.value = value;
         addChild(value);
@@ -104,8 +109,7 @@ public static final PyType TYPE = PyType.fromClass(Attribute.class);
         this.ctx = ctx;
     }
 
-    public Attribute(Integer ttype, Token token, exprType value, String attr, expr_contextType ctx)
-    {
+    public Attribute(Integer ttype, Token token, expr value, String attr, expr_contextType ctx) {
         super(ttype, token);
         this.value = value;
         addChild(value);
@@ -113,7 +117,7 @@ public static final PyType TYPE = PyType.fromClass(Attribute.class);
         this.ctx = ctx;
     }
 
-    public Attribute(PythonTree tree, exprType value, String attr, expr_contextType ctx) {
+    public Attribute(PythonTree tree, expr value, String attr, expr_contextType ctx) {
         super(tree);
         this.value = value;
         addChild(value);

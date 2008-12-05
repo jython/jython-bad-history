@@ -5,6 +5,11 @@ import org.antlr.runtime.Token;
 import org.python.antlr.AST;
 import org.python.antlr.PythonTree;
 import org.python.antlr.adapter.AstAdapters;
+import org.python.antlr.base.excepthandler;
+import org.python.antlr.base.expr;
+import org.python.antlr.base.mod;
+import org.python.antlr.base.slice;
+import org.python.antlr.base.stmt;
 import org.python.core.ArgParser;
 import org.python.core.AstList;
 import org.python.core.Py;
@@ -21,10 +26,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 @ExposedType(name = "_ast.AugAssign", base = AST.class)
-public class AugAssign extends stmtType {
+public class AugAssign extends stmt {
 public static final PyType TYPE = PyType.fromClass(AugAssign.class);
-    private exprType target;
-    public exprType getInternalTarget() {
+    private expr target;
+    public expr getInternalTarget() {
         return target;
     }
     @ExposedGet(name = "target")
@@ -49,8 +54,8 @@ public static final PyType TYPE = PyType.fromClass(AugAssign.class);
         this.op = AstAdapters.py2operator(op);
     }
 
-    private exprType value;
-    public exprType getInternalValue() {
+    private expr value;
+    public expr getInternalValue() {
         return value;
     }
     @ExposedGet(name = "value")
@@ -95,7 +100,7 @@ public static final PyType TYPE = PyType.fromClass(AugAssign.class);
         setValue(value);
     }
 
-    public AugAssign(Token token, exprType target, operatorType op, exprType value) {
+    public AugAssign(Token token, expr target, operatorType op, expr value) {
         super(token);
         this.target = target;
         addChild(target);
@@ -104,7 +109,7 @@ public static final PyType TYPE = PyType.fromClass(AugAssign.class);
         addChild(value);
     }
 
-    public AugAssign(Integer ttype, Token token, exprType target, operatorType op, exprType value) {
+    public AugAssign(Integer ttype, Token token, expr target, operatorType op, expr value) {
         super(ttype, token);
         this.target = target;
         addChild(target);
@@ -113,7 +118,7 @@ public static final PyType TYPE = PyType.fromClass(AugAssign.class);
         addChild(value);
     }
 
-    public AugAssign(PythonTree tree, exprType target, operatorType op, exprType value) {
+    public AugAssign(PythonTree tree, expr target, operatorType op, expr value) {
         super(tree);
         this.target = target;
         addChild(target);

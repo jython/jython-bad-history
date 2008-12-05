@@ -5,6 +5,11 @@ import org.antlr.runtime.Token;
 import org.python.antlr.AST;
 import org.python.antlr.PythonTree;
 import org.python.antlr.adapter.AstAdapters;
+import org.python.antlr.base.excepthandler;
+import org.python.antlr.base.expr;
+import org.python.antlr.base.mod;
+import org.python.antlr.base.slice;
+import org.python.antlr.base.stmt;
 import org.python.core.ArgParser;
 import org.python.core.AstList;
 import org.python.core.Py;
@@ -21,10 +26,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 @ExposedType(name = "_ast.For", base = AST.class)
-public class For extends stmtType {
+public class For extends stmt {
 public static final PyType TYPE = PyType.fromClass(For.class);
-    private exprType target;
-    public exprType getInternalTarget() {
+    private expr target;
+    public expr getInternalTarget() {
         return target;
     }
     @ExposedGet(name = "target")
@@ -36,8 +41,8 @@ public static final PyType TYPE = PyType.fromClass(For.class);
         this.target = AstAdapters.py2expr(target);
     }
 
-    private exprType iter;
-    public exprType getInternalIter() {
+    private expr iter;
+    public expr getInternalIter() {
         return iter;
     }
     @ExposedGet(name = "iter")
@@ -49,8 +54,8 @@ public static final PyType TYPE = PyType.fromClass(For.class);
         this.iter = AstAdapters.py2expr(iter);
     }
 
-    private java.util.List<stmtType> body;
-    public java.util.List<stmtType> getInternalBody() {
+    private java.util.List<stmt> body;
+    public java.util.List<stmt> getInternalBody() {
         return body;
     }
     @ExposedGet(name = "body")
@@ -62,8 +67,8 @@ public static final PyType TYPE = PyType.fromClass(For.class);
         this.body = AstAdapters.py2stmtList(body);
     }
 
-    private java.util.List<stmtType> orelse;
-    public java.util.List<stmtType> getInternalOrelse() {
+    private java.util.List<stmt> orelse;
+    public java.util.List<stmt> getInternalOrelse() {
         return orelse;
     }
     @ExposedGet(name = "orelse")
@@ -111,8 +116,8 @@ public static final PyType TYPE = PyType.fromClass(For.class);
         setOrelse(orelse);
     }
 
-    public For(Token token, exprType target, exprType iter, java.util.List<stmtType> body,
-    java.util.List<stmtType> orelse) {
+    public For(Token token, expr target, expr iter, java.util.List<stmt> body, java.util.List<stmt>
+    orelse) {
         super(token);
         this.target = target;
         addChild(target);
@@ -120,22 +125,22 @@ public static final PyType TYPE = PyType.fromClass(For.class);
         addChild(iter);
         this.body = body;
         if (body == null) {
-            this.body = new ArrayList<stmtType>();
+            this.body = new ArrayList<stmt>();
         }
         for(PythonTree t : this.body) {
             addChild(t);
         }
         this.orelse = orelse;
         if (orelse == null) {
-            this.orelse = new ArrayList<stmtType>();
+            this.orelse = new ArrayList<stmt>();
         }
         for(PythonTree t : this.orelse) {
             addChild(t);
         }
     }
 
-    public For(Integer ttype, Token token, exprType target, exprType iter, java.util.List<stmtType>
-    body, java.util.List<stmtType> orelse) {
+    public For(Integer ttype, Token token, expr target, expr iter, java.util.List<stmt> body,
+    java.util.List<stmt> orelse) {
         super(ttype, token);
         this.target = target;
         addChild(target);
@@ -143,22 +148,22 @@ public static final PyType TYPE = PyType.fromClass(For.class);
         addChild(iter);
         this.body = body;
         if (body == null) {
-            this.body = new ArrayList<stmtType>();
+            this.body = new ArrayList<stmt>();
         }
         for(PythonTree t : this.body) {
             addChild(t);
         }
         this.orelse = orelse;
         if (orelse == null) {
-            this.orelse = new ArrayList<stmtType>();
+            this.orelse = new ArrayList<stmt>();
         }
         for(PythonTree t : this.orelse) {
             addChild(t);
         }
     }
 
-    public For(PythonTree tree, exprType target, exprType iter, java.util.List<stmtType> body,
-    java.util.List<stmtType> orelse) {
+    public For(PythonTree tree, expr target, expr iter, java.util.List<stmt> body,
+    java.util.List<stmt> orelse) {
         super(tree);
         this.target = target;
         addChild(target);
@@ -166,14 +171,14 @@ public static final PyType TYPE = PyType.fromClass(For.class);
         addChild(iter);
         this.body = body;
         if (body == null) {
-            this.body = new ArrayList<stmtType>();
+            this.body = new ArrayList<stmt>();
         }
         for(PythonTree t : this.body) {
             addChild(t);
         }
         this.orelse = orelse;
         if (orelse == null) {
-            this.orelse = new ArrayList<stmtType>();
+            this.orelse = new ArrayList<stmt>();
         }
         for(PythonTree t : this.orelse) {
             addChild(t);

@@ -5,6 +5,11 @@ import org.antlr.runtime.Token;
 import org.python.antlr.AST;
 import org.python.antlr.PythonTree;
 import org.python.antlr.adapter.AstAdapters;
+import org.python.antlr.base.excepthandler;
+import org.python.antlr.base.expr;
+import org.python.antlr.base.mod;
+import org.python.antlr.base.slice;
+import org.python.antlr.base.stmt;
 import org.python.core.ArgParser;
 import org.python.core.AstList;
 import org.python.core.Py;
@@ -21,10 +26,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 @ExposedType(name = "_ast.TryExcept", base = AST.class)
-public class TryExcept extends stmtType {
+public class TryExcept extends stmt {
 public static final PyType TYPE = PyType.fromClass(TryExcept.class);
-    private java.util.List<stmtType> body;
-    public java.util.List<stmtType> getInternalBody() {
+    private java.util.List<stmt> body;
+    public java.util.List<stmt> getInternalBody() {
         return body;
     }
     @ExposedGet(name = "body")
@@ -36,8 +41,8 @@ public static final PyType TYPE = PyType.fromClass(TryExcept.class);
         this.body = AstAdapters.py2stmtList(body);
     }
 
-    private java.util.List<excepthandlerType> handlers;
-    public java.util.List<excepthandlerType> getInternalHandlers() {
+    private java.util.List<excepthandler> handlers;
+    public java.util.List<excepthandler> getInternalHandlers() {
         return handlers;
     }
     @ExposedGet(name = "handlers")
@@ -49,8 +54,8 @@ public static final PyType TYPE = PyType.fromClass(TryExcept.class);
         this.handlers = AstAdapters.py2excepthandlerList(handlers);
     }
 
-    private java.util.List<stmtType> orelse;
-    public java.util.List<stmtType> getInternalOrelse() {
+    private java.util.List<stmt> orelse;
+    public java.util.List<stmt> getInternalOrelse() {
         return orelse;
     }
     @ExposedGet(name = "orelse")
@@ -95,78 +100,78 @@ public static final PyType TYPE = PyType.fromClass(TryExcept.class);
         setOrelse(orelse);
     }
 
-    public TryExcept(Token token, java.util.List<stmtType> body, java.util.List<excepthandlerType>
-    handlers, java.util.List<stmtType> orelse) {
+    public TryExcept(Token token, java.util.List<stmt> body, java.util.List<excepthandler>
+    handlers, java.util.List<stmt> orelse) {
         super(token);
         this.body = body;
         if (body == null) {
-            this.body = new ArrayList<stmtType>();
+            this.body = new ArrayList<stmt>();
         }
         for(PythonTree t : this.body) {
             addChild(t);
         }
         this.handlers = handlers;
         if (handlers == null) {
-            this.handlers = new ArrayList<excepthandlerType>();
+            this.handlers = new ArrayList<excepthandler>();
         }
         for(PythonTree t : this.handlers) {
             addChild(t);
         }
         this.orelse = orelse;
         if (orelse == null) {
-            this.orelse = new ArrayList<stmtType>();
+            this.orelse = new ArrayList<stmt>();
         }
         for(PythonTree t : this.orelse) {
             addChild(t);
         }
     }
 
-    public TryExcept(Integer ttype, Token token, java.util.List<stmtType> body,
-    java.util.List<excepthandlerType> handlers, java.util.List<stmtType> orelse) {
+    public TryExcept(Integer ttype, Token token, java.util.List<stmt> body,
+    java.util.List<excepthandler> handlers, java.util.List<stmt> orelse) {
         super(ttype, token);
         this.body = body;
         if (body == null) {
-            this.body = new ArrayList<stmtType>();
+            this.body = new ArrayList<stmt>();
         }
         for(PythonTree t : this.body) {
             addChild(t);
         }
         this.handlers = handlers;
         if (handlers == null) {
-            this.handlers = new ArrayList<excepthandlerType>();
+            this.handlers = new ArrayList<excepthandler>();
         }
         for(PythonTree t : this.handlers) {
             addChild(t);
         }
         this.orelse = orelse;
         if (orelse == null) {
-            this.orelse = new ArrayList<stmtType>();
+            this.orelse = new ArrayList<stmt>();
         }
         for(PythonTree t : this.orelse) {
             addChild(t);
         }
     }
 
-    public TryExcept(PythonTree tree, java.util.List<stmtType> body,
-    java.util.List<excepthandlerType> handlers, java.util.List<stmtType> orelse) {
+    public TryExcept(PythonTree tree, java.util.List<stmt> body, java.util.List<excepthandler>
+    handlers, java.util.List<stmt> orelse) {
         super(tree);
         this.body = body;
         if (body == null) {
-            this.body = new ArrayList<stmtType>();
+            this.body = new ArrayList<stmt>();
         }
         for(PythonTree t : this.body) {
             addChild(t);
         }
         this.handlers = handlers;
         if (handlers == null) {
-            this.handlers = new ArrayList<excepthandlerType>();
+            this.handlers = new ArrayList<excepthandler>();
         }
         for(PythonTree t : this.handlers) {
             addChild(t);
         }
         this.orelse = orelse;
         if (orelse == null) {
-            this.orelse = new ArrayList<stmtType>();
+            this.orelse = new ArrayList<stmt>();
         }
         for(PythonTree t : this.orelse) {
             addChild(t);

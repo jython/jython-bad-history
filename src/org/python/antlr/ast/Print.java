@@ -5,6 +5,11 @@ import org.antlr.runtime.Token;
 import org.python.antlr.AST;
 import org.python.antlr.PythonTree;
 import org.python.antlr.adapter.AstAdapters;
+import org.python.antlr.base.excepthandler;
+import org.python.antlr.base.expr;
+import org.python.antlr.base.mod;
+import org.python.antlr.base.slice;
+import org.python.antlr.base.stmt;
 import org.python.core.ArgParser;
 import org.python.core.AstList;
 import org.python.core.Py;
@@ -21,10 +26,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 @ExposedType(name = "_ast.Print", base = AST.class)
-public class Print extends stmtType {
+public class Print extends stmt {
 public static final PyType TYPE = PyType.fromClass(Print.class);
-    private exprType dest;
-    public exprType getInternalDest() {
+    private expr dest;
+    public expr getInternalDest() {
         return dest;
     }
     @ExposedGet(name = "dest")
@@ -36,8 +41,8 @@ public static final PyType TYPE = PyType.fromClass(Print.class);
         this.dest = AstAdapters.py2expr(dest);
     }
 
-    private java.util.List<exprType> values;
-    public java.util.List<exprType> getInternalValues() {
+    private java.util.List<expr> values;
+    public java.util.List<expr> getInternalValues() {
         return values;
     }
     @ExposedGet(name = "values")
@@ -96,13 +101,13 @@ public static final PyType TYPE = PyType.fromClass(Print.class);
         setNl(nl);
     }
 
-    public Print(Token token, exprType dest, java.util.List<exprType> values, Boolean nl) {
+    public Print(Token token, expr dest, java.util.List<expr> values, Boolean nl) {
         super(token);
         this.dest = dest;
         addChild(dest);
         this.values = values;
         if (values == null) {
-            this.values = new ArrayList<exprType>();
+            this.values = new ArrayList<expr>();
         }
         for(PythonTree t : this.values) {
             addChild(t);
@@ -110,14 +115,13 @@ public static final PyType TYPE = PyType.fromClass(Print.class);
         this.nl = nl;
     }
 
-    public Print(Integer ttype, Token token, exprType dest, java.util.List<exprType> values,
-    Boolean nl) {
+    public Print(Integer ttype, Token token, expr dest, java.util.List<expr> values, Boolean nl) {
         super(ttype, token);
         this.dest = dest;
         addChild(dest);
         this.values = values;
         if (values == null) {
-            this.values = new ArrayList<exprType>();
+            this.values = new ArrayList<expr>();
         }
         for(PythonTree t : this.values) {
             addChild(t);
@@ -125,13 +129,13 @@ public static final PyType TYPE = PyType.fromClass(Print.class);
         this.nl = nl;
     }
 
-    public Print(PythonTree tree, exprType dest, java.util.List<exprType> values, Boolean nl) {
+    public Print(PythonTree tree, expr dest, java.util.List<expr> values, Boolean nl) {
         super(tree);
         this.dest = dest;
         addChild(dest);
         this.values = values;
         if (values == null) {
-            this.values = new ArrayList<exprType>();
+            this.values = new ArrayList<expr>();
         }
         for(PythonTree t : this.values) {
             addChild(t);

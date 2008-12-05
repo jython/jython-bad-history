@@ -4,7 +4,7 @@ import org.python.core.Py;
 import org.python.core.PyJavaInstance;
 import org.python.core.PyObject;
 
-import org.python.antlr.ast.stmtType;
+import org.python.antlr.base.stmt;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,7 +15,7 @@ public class StmtAdapter implements AstAdapter {
         if (o == null) {
             return o;
         }
-        if (o instanceof stmtType) {
+        if (o instanceof stmt) {
             return o;
         }
         //FIXME: investigate the right exception
@@ -27,9 +27,9 @@ public class StmtAdapter implements AstAdapter {
     }
 
     public List iter2ast(PyObject iter) {
-        List<stmtType> stmts = new ArrayList<stmtType>();
+        List<stmt> stmts = new ArrayList<stmt>();
         for(Object o : (Iterable)iter) {
-            stmts.add((stmtType)py2ast((PyObject)o));
+            stmts.add((stmt)py2ast((PyObject)o));
         }
         return stmts;
     }

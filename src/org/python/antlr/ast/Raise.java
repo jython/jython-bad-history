@@ -5,6 +5,11 @@ import org.antlr.runtime.Token;
 import org.python.antlr.AST;
 import org.python.antlr.PythonTree;
 import org.python.antlr.adapter.AstAdapters;
+import org.python.antlr.base.excepthandler;
+import org.python.antlr.base.expr;
+import org.python.antlr.base.mod;
+import org.python.antlr.base.slice;
+import org.python.antlr.base.stmt;
 import org.python.core.ArgParser;
 import org.python.core.AstList;
 import org.python.core.Py;
@@ -21,10 +26,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 @ExposedType(name = "_ast.Raise", base = AST.class)
-public class Raise extends stmtType {
+public class Raise extends stmt {
 public static final PyType TYPE = PyType.fromClass(Raise.class);
-    private exprType excepttype;
-    public exprType getInternalExcepttype() {
+    private expr excepttype;
+    public expr getInternalExcepttype() {
         return excepttype;
     }
     @ExposedGet(name = "excepttype")
@@ -36,8 +41,8 @@ public static final PyType TYPE = PyType.fromClass(Raise.class);
         this.excepttype = AstAdapters.py2expr(excepttype);
     }
 
-    private exprType inst;
-    public exprType getInternalInst() {
+    private expr inst;
+    public expr getInternalInst() {
         return inst;
     }
     @ExposedGet(name = "inst")
@@ -49,8 +54,8 @@ public static final PyType TYPE = PyType.fromClass(Raise.class);
         this.inst = AstAdapters.py2expr(inst);
     }
 
-    private exprType tback;
-    public exprType getInternalTback() {
+    private expr tback;
+    public expr getInternalTback() {
         return tback;
     }
     @ExposedGet(name = "tback")
@@ -95,7 +100,7 @@ public static final PyType TYPE = PyType.fromClass(Raise.class);
         setTback(tback);
     }
 
-    public Raise(Token token, exprType excepttype, exprType inst, exprType tback) {
+    public Raise(Token token, expr excepttype, expr inst, expr tback) {
         super(token);
         this.excepttype = excepttype;
         addChild(excepttype);
@@ -105,7 +110,7 @@ public static final PyType TYPE = PyType.fromClass(Raise.class);
         addChild(tback);
     }
 
-    public Raise(Integer ttype, Token token, exprType excepttype, exprType inst, exprType tback) {
+    public Raise(Integer ttype, Token token, expr excepttype, expr inst, expr tback) {
         super(ttype, token);
         this.excepttype = excepttype;
         addChild(excepttype);
@@ -115,7 +120,7 @@ public static final PyType TYPE = PyType.fromClass(Raise.class);
         addChild(tback);
     }
 
-    public Raise(PythonTree tree, exprType excepttype, exprType inst, exprType tback) {
+    public Raise(PythonTree tree, expr excepttype, expr inst, expr tback) {
         super(tree);
         this.excepttype = excepttype;
         addChild(excepttype);

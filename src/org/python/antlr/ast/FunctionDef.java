@@ -5,6 +5,11 @@ import org.antlr.runtime.Token;
 import org.python.antlr.AST;
 import org.python.antlr.PythonTree;
 import org.python.antlr.adapter.AstAdapters;
+import org.python.antlr.base.excepthandler;
+import org.python.antlr.base.expr;
+import org.python.antlr.base.mod;
+import org.python.antlr.base.slice;
+import org.python.antlr.base.stmt;
 import org.python.core.ArgParser;
 import org.python.core.AstList;
 import org.python.core.Py;
@@ -21,7 +26,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 @ExposedType(name = "_ast.FunctionDef", base = AST.class)
-public class FunctionDef extends stmtType {
+public class FunctionDef extends stmt {
 public static final PyType TYPE = PyType.fromClass(FunctionDef.class);
     private String name;
     public String getInternalName() {
@@ -37,8 +42,8 @@ public static final PyType TYPE = PyType.fromClass(FunctionDef.class);
         this.name = AstAdapters.py2identifier(name);
     }
 
-    private argumentsType args;
-    public argumentsType getInternalArgs() {
+    private arguments args;
+    public arguments getInternalArgs() {
         return args;
     }
     @ExposedGet(name = "args")
@@ -50,8 +55,8 @@ public static final PyType TYPE = PyType.fromClass(FunctionDef.class);
         this.args = AstAdapters.py2arguments(args);
     }
 
-    private java.util.List<stmtType> body;
-    public java.util.List<stmtType> getInternalBody() {
+    private java.util.List<stmt> body;
+    public java.util.List<stmt> getInternalBody() {
         return body;
     }
     @ExposedGet(name = "body")
@@ -63,8 +68,8 @@ public static final PyType TYPE = PyType.fromClass(FunctionDef.class);
         this.body = AstAdapters.py2stmtList(body);
     }
 
-    private java.util.List<exprType> decorator_list;
-    public java.util.List<exprType> getInternalDecorator_list() {
+    private java.util.List<expr> decorator_list;
+    public java.util.List<expr> getInternalDecorator_list() {
         return decorator_list;
     }
     @ExposedGet(name = "decorator_list")
@@ -112,63 +117,63 @@ public static final PyType TYPE = PyType.fromClass(FunctionDef.class);
         setDecorator_list(decorator_list);
     }
 
-    public FunctionDef(Token token, String name, argumentsType args, java.util.List<stmtType> body,
-    java.util.List<exprType> decorator_list) {
+    public FunctionDef(Token token, String name, arguments args, java.util.List<stmt> body,
+    java.util.List<expr> decorator_list) {
         super(token);
         this.name = name;
         this.args = args;
         this.body = body;
         if (body == null) {
-            this.body = new ArrayList<stmtType>();
+            this.body = new ArrayList<stmt>();
         }
         for(PythonTree t : this.body) {
             addChild(t);
         }
         this.decorator_list = decorator_list;
         if (decorator_list == null) {
-            this.decorator_list = new ArrayList<exprType>();
+            this.decorator_list = new ArrayList<expr>();
         }
         for(PythonTree t : this.decorator_list) {
             addChild(t);
         }
     }
 
-    public FunctionDef(Integer ttype, Token token, String name, argumentsType args,
-    java.util.List<stmtType> body, java.util.List<exprType> decorator_list) {
+    public FunctionDef(Integer ttype, Token token, String name, arguments args,
+    java.util.List<stmt> body, java.util.List<expr> decorator_list) {
         super(ttype, token);
         this.name = name;
         this.args = args;
         this.body = body;
         if (body == null) {
-            this.body = new ArrayList<stmtType>();
+            this.body = new ArrayList<stmt>();
         }
         for(PythonTree t : this.body) {
             addChild(t);
         }
         this.decorator_list = decorator_list;
         if (decorator_list == null) {
-            this.decorator_list = new ArrayList<exprType>();
+            this.decorator_list = new ArrayList<expr>();
         }
         for(PythonTree t : this.decorator_list) {
             addChild(t);
         }
     }
 
-    public FunctionDef(PythonTree tree, String name, argumentsType args, java.util.List<stmtType>
-    body, java.util.List<exprType> decorator_list) {
+    public FunctionDef(PythonTree tree, String name, arguments args, java.util.List<stmt> body,
+    java.util.List<expr> decorator_list) {
         super(tree);
         this.name = name;
         this.args = args;
         this.body = body;
         if (body == null) {
-            this.body = new ArrayList<stmtType>();
+            this.body = new ArrayList<stmt>();
         }
         for(PythonTree t : this.body) {
             addChild(t);
         }
         this.decorator_list = decorator_list;
         if (decorator_list == null) {
-            this.decorator_list = new ArrayList<exprType>();
+            this.decorator_list = new ArrayList<expr>();
         }
         for(PythonTree t : this.decorator_list) {
             addChild(t);

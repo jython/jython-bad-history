@@ -5,6 +5,11 @@ import org.antlr.runtime.Token;
 import org.python.antlr.AST;
 import org.python.antlr.PythonTree;
 import org.python.antlr.adapter.AstAdapters;
+import org.python.antlr.base.excepthandler;
+import org.python.antlr.base.expr;
+import org.python.antlr.base.mod;
+import org.python.antlr.base.slice;
+import org.python.antlr.base.stmt;
 import org.python.core.ArgParser;
 import org.python.core.AstList;
 import org.python.core.Py;
@@ -21,10 +26,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 @ExposedType(name = "_ast.Assert", base = AST.class)
-public class Assert extends stmtType {
+public class Assert extends stmt {
 public static final PyType TYPE = PyType.fromClass(Assert.class);
-    private exprType test;
-    public exprType getInternalTest() {
+    private expr test;
+    public expr getInternalTest() {
         return test;
     }
     @ExposedGet(name = "test")
@@ -36,8 +41,8 @@ public static final PyType TYPE = PyType.fromClass(Assert.class);
         this.test = AstAdapters.py2expr(test);
     }
 
-    private exprType msg;
-    public exprType getInternalMsg() {
+    private expr msg;
+    public expr getInternalMsg() {
         return msg;
     }
     @ExposedGet(name = "msg")
@@ -80,7 +85,7 @@ public static final PyType TYPE = PyType.fromClass(Assert.class);
         setMsg(msg);
     }
 
-    public Assert(Token token, exprType test, exprType msg) {
+    public Assert(Token token, expr test, expr msg) {
         super(token);
         this.test = test;
         addChild(test);
@@ -88,7 +93,7 @@ public static final PyType TYPE = PyType.fromClass(Assert.class);
         addChild(msg);
     }
 
-    public Assert(Integer ttype, Token token, exprType test, exprType msg) {
+    public Assert(Integer ttype, Token token, expr test, expr msg) {
         super(ttype, token);
         this.test = test;
         addChild(test);
@@ -96,7 +101,7 @@ public static final PyType TYPE = PyType.fromClass(Assert.class);
         addChild(msg);
     }
 
-    public Assert(PythonTree tree, exprType test, exprType msg) {
+    public Assert(PythonTree tree, expr test, expr msg) {
         super(tree);
         this.test = test;
         addChild(test);

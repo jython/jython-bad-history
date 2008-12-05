@@ -5,6 +5,11 @@ import org.antlr.runtime.Token;
 import org.python.antlr.AST;
 import org.python.antlr.PythonTree;
 import org.python.antlr.adapter.AstAdapters;
+import org.python.antlr.base.excepthandler;
+import org.python.antlr.base.expr;
+import org.python.antlr.base.mod;
+import org.python.antlr.base.slice;
+import org.python.antlr.base.stmt;
 import org.python.core.ArgParser;
 import org.python.core.AstList;
 import org.python.core.Py;
@@ -21,10 +26,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 @ExposedType(name = "_ast.Expression", base = AST.class)
-public class Expression extends modType {
+public class Expression extends mod {
 public static final PyType TYPE = PyType.fromClass(Expression.class);
-    private exprType body;
-    public exprType getInternalBody() {
+    private expr body;
+    public expr getInternalBody() {
         return body;
     }
     @ExposedGet(name = "body")
@@ -64,19 +69,19 @@ public static final PyType TYPE = PyType.fromClass(Expression.class);
         setBody(body);
     }
 
-    public Expression(Token token, exprType body) {
+    public Expression(Token token, expr body) {
         super(token);
         this.body = body;
         addChild(body);
     }
 
-    public Expression(Integer ttype, Token token, exprType body) {
+    public Expression(Integer ttype, Token token, expr body) {
         super(ttype, token);
         this.body = body;
         addChild(body);
     }
 
-    public Expression(PythonTree tree, exprType body) {
+    public Expression(PythonTree tree, expr body) {
         super(tree);
         this.body = body;
         addChild(body);

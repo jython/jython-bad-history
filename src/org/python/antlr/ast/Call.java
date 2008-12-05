@@ -5,6 +5,11 @@ import org.antlr.runtime.Token;
 import org.python.antlr.AST;
 import org.python.antlr.PythonTree;
 import org.python.antlr.adapter.AstAdapters;
+import org.python.antlr.base.excepthandler;
+import org.python.antlr.base.expr;
+import org.python.antlr.base.mod;
+import org.python.antlr.base.slice;
+import org.python.antlr.base.stmt;
 import org.python.core.ArgParser;
 import org.python.core.AstList;
 import org.python.core.Py;
@@ -21,10 +26,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 @ExposedType(name = "_ast.Call", base = AST.class)
-public class Call extends exprType {
+public class Call extends expr {
 public static final PyType TYPE = PyType.fromClass(Call.class);
-    private exprType func;
-    public exprType getInternalFunc() {
+    private expr func;
+    public expr getInternalFunc() {
         return func;
     }
     @ExposedGet(name = "func")
@@ -36,8 +41,8 @@ public static final PyType TYPE = PyType.fromClass(Call.class);
         this.func = AstAdapters.py2expr(func);
     }
 
-    private java.util.List<exprType> args;
-    public java.util.List<exprType> getInternalArgs() {
+    private java.util.List<expr> args;
+    public java.util.List<expr> getInternalArgs() {
         return args;
     }
     @ExposedGet(name = "args")
@@ -49,8 +54,8 @@ public static final PyType TYPE = PyType.fromClass(Call.class);
         this.args = AstAdapters.py2exprList(args);
     }
 
-    private java.util.List<keywordType> keywords;
-    public java.util.List<keywordType> getInternalKeywords() {
+    private java.util.List<keyword> keywords;
+    public java.util.List<keyword> getInternalKeywords() {
         return keywords;
     }
     @ExposedGet(name = "keywords")
@@ -62,8 +67,8 @@ public static final PyType TYPE = PyType.fromClass(Call.class);
         this.keywords = AstAdapters.py2keywordList(keywords);
     }
 
-    private exprType starargs;
-    public exprType getInternalStarargs() {
+    private expr starargs;
+    public expr getInternalStarargs() {
         return starargs;
     }
     @ExposedGet(name = "starargs")
@@ -75,8 +80,8 @@ public static final PyType TYPE = PyType.fromClass(Call.class);
         this.starargs = AstAdapters.py2expr(starargs);
     }
 
-    private exprType kwargs;
-    public exprType getInternalKwargs() {
+    private expr kwargs;
+    public expr getInternalKwargs() {
         return kwargs;
     }
     @ExposedGet(name = "kwargs")
@@ -127,21 +132,21 @@ public static final PyType TYPE = PyType.fromClass(Call.class);
         setKwargs(kwargs);
     }
 
-    public Call(Token token, exprType func, java.util.List<exprType> args,
-    java.util.List<keywordType> keywords, exprType starargs, exprType kwargs) {
+    public Call(Token token, expr func, java.util.List<expr> args, java.util.List<keyword>
+    keywords, expr starargs, expr kwargs) {
         super(token);
         this.func = func;
         addChild(func);
         this.args = args;
         if (args == null) {
-            this.args = new ArrayList<exprType>();
+            this.args = new ArrayList<expr>();
         }
         for(PythonTree t : this.args) {
             addChild(t);
         }
         this.keywords = keywords;
         if (keywords == null) {
-            this.keywords = new ArrayList<keywordType>();
+            this.keywords = new ArrayList<keyword>();
         }
         for(PythonTree t : this.keywords) {
             addChild(t);
@@ -152,21 +157,21 @@ public static final PyType TYPE = PyType.fromClass(Call.class);
         addChild(kwargs);
     }
 
-    public Call(Integer ttype, Token token, exprType func, java.util.List<exprType> args,
-    java.util.List<keywordType> keywords, exprType starargs, exprType kwargs) {
+    public Call(Integer ttype, Token token, expr func, java.util.List<expr> args,
+    java.util.List<keyword> keywords, expr starargs, expr kwargs) {
         super(ttype, token);
         this.func = func;
         addChild(func);
         this.args = args;
         if (args == null) {
-            this.args = new ArrayList<exprType>();
+            this.args = new ArrayList<expr>();
         }
         for(PythonTree t : this.args) {
             addChild(t);
         }
         this.keywords = keywords;
         if (keywords == null) {
-            this.keywords = new ArrayList<keywordType>();
+            this.keywords = new ArrayList<keyword>();
         }
         for(PythonTree t : this.keywords) {
             addChild(t);
@@ -177,21 +182,21 @@ public static final PyType TYPE = PyType.fromClass(Call.class);
         addChild(kwargs);
     }
 
-    public Call(PythonTree tree, exprType func, java.util.List<exprType> args,
-    java.util.List<keywordType> keywords, exprType starargs, exprType kwargs) {
+    public Call(PythonTree tree, expr func, java.util.List<expr> args, java.util.List<keyword>
+    keywords, expr starargs, expr kwargs) {
         super(tree);
         this.func = func;
         addChild(func);
         this.args = args;
         if (args == null) {
-            this.args = new ArrayList<exprType>();
+            this.args = new ArrayList<expr>();
         }
         for(PythonTree t : this.args) {
             addChild(t);
         }
         this.keywords = keywords;
         if (keywords == null) {
-            this.keywords = new ArrayList<keywordType>();
+            this.keywords = new ArrayList<keyword>();
         }
         for(PythonTree t : this.keywords) {
             addChild(t);
