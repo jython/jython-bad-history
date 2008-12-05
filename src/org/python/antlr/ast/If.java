@@ -5,6 +5,11 @@ import org.antlr.runtime.Token;
 import org.python.antlr.AST;
 import org.python.antlr.PythonTree;
 import org.python.antlr.adapter.AstAdapters;
+import org.python.antlr.base.excepthandler;
+import org.python.antlr.base.expr;
+import org.python.antlr.base.mod;
+import org.python.antlr.base.slice;
+import org.python.antlr.base.stmt;
 import org.python.core.ArgParser;
 import org.python.core.AstList;
 import org.python.core.Py;
@@ -21,10 +26,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 @ExposedType(name = "_ast.If", base = AST.class)
-public class If extends stmtType {
+public class If extends stmt {
 public static final PyType TYPE = PyType.fromClass(If.class);
-    private exprType test;
-    public exprType getInternalTest() {
+    private expr test;
+    public expr getInternalTest() {
         return test;
     }
     @ExposedGet(name = "test")
@@ -36,8 +41,8 @@ public static final PyType TYPE = PyType.fromClass(If.class);
         this.test = AstAdapters.py2expr(test);
     }
 
-    private java.util.List<stmtType> body;
-    public java.util.List<stmtType> getInternalBody() {
+    private java.util.List<stmt> body;
+    public java.util.List<stmt> getInternalBody() {
         return body;
     }
     @ExposedGet(name = "body")
@@ -49,8 +54,8 @@ public static final PyType TYPE = PyType.fromClass(If.class);
         this.body = AstAdapters.py2stmtList(body);
     }
 
-    private java.util.List<stmtType> orelse;
-    public java.util.List<stmtType> getInternalOrelse() {
+    private java.util.List<stmt> orelse;
+    public java.util.List<stmt> getInternalOrelse() {
         return orelse;
     }
     @ExposedGet(name = "orelse")
@@ -95,63 +100,61 @@ public static final PyType TYPE = PyType.fromClass(If.class);
         setOrelse(orelse);
     }
 
-    public If(Token token, exprType test, java.util.List<stmtType> body, java.util.List<stmtType>
-    orelse) {
+    public If(Token token, expr test, java.util.List<stmt> body, java.util.List<stmt> orelse) {
         super(token);
         this.test = test;
         addChild(test);
         this.body = body;
         if (body == null) {
-            this.body = new ArrayList<stmtType>();
+            this.body = new ArrayList<stmt>();
         }
         for(PythonTree t : this.body) {
             addChild(t);
         }
         this.orelse = orelse;
         if (orelse == null) {
-            this.orelse = new ArrayList<stmtType>();
+            this.orelse = new ArrayList<stmt>();
         }
         for(PythonTree t : this.orelse) {
             addChild(t);
         }
     }
 
-    public If(Integer ttype, Token token, exprType test, java.util.List<stmtType> body,
-    java.util.List<stmtType> orelse) {
+    public If(Integer ttype, Token token, expr test, java.util.List<stmt> body,
+    java.util.List<stmt> orelse) {
         super(ttype, token);
         this.test = test;
         addChild(test);
         this.body = body;
         if (body == null) {
-            this.body = new ArrayList<stmtType>();
+            this.body = new ArrayList<stmt>();
         }
         for(PythonTree t : this.body) {
             addChild(t);
         }
         this.orelse = orelse;
         if (orelse == null) {
-            this.orelse = new ArrayList<stmtType>();
+            this.orelse = new ArrayList<stmt>();
         }
         for(PythonTree t : this.orelse) {
             addChild(t);
         }
     }
 
-    public If(PythonTree tree, exprType test, java.util.List<stmtType> body,
-    java.util.List<stmtType> orelse) {
+    public If(PythonTree tree, expr test, java.util.List<stmt> body, java.util.List<stmt> orelse) {
         super(tree);
         this.test = test;
         addChild(test);
         this.body = body;
         if (body == null) {
-            this.body = new ArrayList<stmtType>();
+            this.body = new ArrayList<stmt>();
         }
         for(PythonTree t : this.body) {
             addChild(t);
         }
         this.orelse = orelse;
         if (orelse == null) {
-            this.orelse = new ArrayList<stmtType>();
+            this.orelse = new ArrayList<stmt>();
         }
         for(PythonTree t : this.orelse) {
             addChild(t);

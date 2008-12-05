@@ -5,6 +5,11 @@ import org.antlr.runtime.Token;
 import org.python.antlr.AST;
 import org.python.antlr.PythonTree;
 import org.python.antlr.adapter.AstAdapters;
+import org.python.antlr.base.excepthandler;
+import org.python.antlr.base.expr;
+import org.python.antlr.base.mod;
+import org.python.antlr.base.slice;
+import org.python.antlr.base.stmt;
 import org.python.core.ArgParser;
 import org.python.core.AstList;
 import org.python.core.Py;
@@ -21,10 +26,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 @ExposedType(name = "_ast.Delete", base = AST.class)
-public class Delete extends stmtType {
+public class Delete extends stmt {
 public static final PyType TYPE = PyType.fromClass(Delete.class);
-    private java.util.List<exprType> targets;
-    public java.util.List<exprType> getInternalTargets() {
+    private java.util.List<expr> targets;
+    public java.util.List<expr> getInternalTargets() {
         return targets;
     }
     @ExposedGet(name = "targets")
@@ -65,33 +70,33 @@ public static final PyType TYPE = PyType.fromClass(Delete.class);
         setTargets(targets);
     }
 
-    public Delete(Token token, java.util.List<exprType> targets) {
+    public Delete(Token token, java.util.List<expr> targets) {
         super(token);
         this.targets = targets;
         if (targets == null) {
-            this.targets = new ArrayList<exprType>();
+            this.targets = new ArrayList<expr>();
         }
         for(PythonTree t : this.targets) {
             addChild(t);
         }
     }
 
-    public Delete(Integer ttype, Token token, java.util.List<exprType> targets) {
+    public Delete(Integer ttype, Token token, java.util.List<expr> targets) {
         super(ttype, token);
         this.targets = targets;
         if (targets == null) {
-            this.targets = new ArrayList<exprType>();
+            this.targets = new ArrayList<expr>();
         }
         for(PythonTree t : this.targets) {
             addChild(t);
         }
     }
 
-    public Delete(PythonTree tree, java.util.List<exprType> targets) {
+    public Delete(PythonTree tree, java.util.List<expr> targets) {
         super(tree);
         this.targets = targets;
         if (targets == null) {
-            this.targets = new ArrayList<exprType>();
+            this.targets = new ArrayList<expr>();
         }
         for(PythonTree t : this.targets) {
             addChild(t);

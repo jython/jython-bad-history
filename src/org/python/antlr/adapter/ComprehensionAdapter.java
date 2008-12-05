@@ -4,7 +4,7 @@ import org.python.core.Py;
 import org.python.core.PyObject;
 import org.python.core.PyJavaInstance;
 
-import org.python.antlr.ast.comprehensionType;
+import org.python.antlr.ast.comprehension;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,7 +15,7 @@ public class ComprehensionAdapter implements AstAdapter {
         if (o == null) {
             return o;
         }
-        if (o instanceof comprehensionType) {
+        if (o instanceof comprehension) {
             return o;
         }
         //FIXME: investigate the right exception
@@ -27,9 +27,9 @@ public class ComprehensionAdapter implements AstAdapter {
     }
 
     public List iter2ast(PyObject iter) {
-        List<comprehensionType> comprehensions = new ArrayList<comprehensionType>();
+        List<comprehension> comprehensions = new ArrayList<comprehension>();
         for(Object o : (Iterable)iter) {
-            comprehensions.add((comprehensionType)py2ast((PyObject)o));
+            comprehensions.add((comprehension)py2ast((PyObject)o));
         }
         return comprehensions;
     }

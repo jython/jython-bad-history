@@ -5,16 +5,16 @@ import org.python.core.PyObject;
 import org.python.core.PyJavaInstance;
 
 import org.python.antlr.ast.cmpopType;
-import org.python.antlr.ast.Eq;
-import org.python.antlr.ast.NotEq;
-import org.python.antlr.ast.Lt;
-import org.python.antlr.ast.LtE;
-import org.python.antlr.ast.Gt;
-import org.python.antlr.ast.GtE;
-import org.python.antlr.ast.Is;
-import org.python.antlr.ast.IsNot;
-import org.python.antlr.ast.In;
-import org.python.antlr.ast.NotIn;
+import org.python.antlr.op.Eq;
+import org.python.antlr.op.NotEq;
+import org.python.antlr.op.Lt;
+import org.python.antlr.op.LtE;
+import org.python.antlr.op.Gt;
+import org.python.antlr.op.GtE;
+import org.python.antlr.op.Is;
+import org.python.antlr.op.IsNot;
+import org.python.antlr.op.In;
+import org.python.antlr.op.NotIn;
 
 import java.util.ArrayList;
 import java.util.List;

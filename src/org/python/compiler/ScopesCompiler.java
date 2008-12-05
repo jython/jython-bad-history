@@ -19,11 +19,11 @@ import org.python.antlr.ast.Name;
 import org.python.antlr.ast.Return;
 import org.python.antlr.ast.With;
 import org.python.antlr.ast.Yield;
-import org.python.antlr.ast.comprehensionType;
-import org.python.antlr.ast.argumentsType;
+import org.python.antlr.ast.comprehension;
+import org.python.antlr.ast.arguments;
 import org.python.antlr.ast.expr_contextType;
-import org.python.antlr.ast.exprType;
-import org.python.antlr.ast.stmtType;
+import org.python.antlr.base.expr;
+import org.python.antlr.base.stmt;
 
 import java.util.ArrayList;
 import java.util.Hashtable;
@@ -125,12 +125,12 @@ public class ScopesCompiler extends Visitor implements ScopeConstants {
         ArgListCompiler ac = new ArgListCompiler();
         ac.visitArgs(node.getInternalArgs());
 
-        List<exprType> defaults = ac.getDefaults();
+        List<expr> defaults = ac.getDefaults();
         for (int i = 0; i < defaults.size(); i++) {
             visit(defaults.get(i));
         }
 
-        List<exprType> decs = node.getInternalDecorator_list();
+        List<expr> decs = node.getInternalDecorator_list();
         for (int i = decs.size() - 1; i >= 0; i--) {
             visit(decs.get(i));
         }
@@ -141,7 +141,7 @@ public class ScopesCompiler extends Visitor implements ScopeConstants {
             cur.addParam((String) ac.names.get(i));
         }
         for (int i = 0; i < ac.init_code.size(); i++) {
-            visit((stmtType) ac.init_code.get(i));
+            visit((stmt) ac.init_code.get(i));
         }
         cur.markFromParam();
         suite(node.getInternalBody());
@@ -164,7 +164,7 @@ public class ScopesCompiler extends Visitor implements ScopeConstants {
             cur.addParam((String) o);
         }
         for (Object o : ac.init_code) {
-            visit((stmtType) o);
+            visit((stmt) o);
         }
         cur.markFromParam();
         visit(node.getInternalBody());
@@ -172,7 +172,7 @@ public class ScopesCompiler extends Visitor implements ScopeConstants {
         return null;
     }
 
-    public void suite(List<stmtType> stmts) throws Exception {
+    public void suite(List<stmt> stmts) throws Exception {
         for (int i = 0; i < stmts.size(); i++)
             visit(stmts.get(i));
     }
@@ -312,9 +312,9 @@ public class ScopesCompiler extends Visitor implements ScopeConstants {
                 + ")";
         def(tmp);
         ArgListCompiler ac = new ArgListCompiler();
-        List<exprType> args = new ArrayList<exprType>();
+        List<expr> args = new ArrayList<expr>();
         args.add(new Name(node.getToken(), bound_exp, expr_contextType.Param));
-        ac.visitArgs(new argumentsType(node, args, null, null, new ArrayList<exprType>()));
+        ac.visitArgs(new arguments(node, args, null, null, new ArrayList<expr>()));
         beginScope(tmp, FUNCSCOPE, node, ac);
         cur.addParam(bound_exp);
         cur.markFromParam();
@@ -331,7 +331,7 @@ public class ScopesCompiler extends Visitor implements ScopeConstants {
                     if (i == 0) {
                         visit(node.getInternalGenerators().get(i).getInternalTarget());
                         if (node.getInternalGenerators().get(i).getInternalIfs() != null) {
-                            for (exprType cond : node.getInternalGenerators().get(i).getInternalIfs()) {
+                            for (expr cond : node.getInternalGenerators().get(i).getInternalIfs()) {
                                 if (cond != null) {
                                     visit(cond);
                                 }

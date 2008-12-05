@@ -5,6 +5,11 @@ import org.antlr.runtime.Token;
 import org.python.antlr.AST;
 import org.python.antlr.PythonTree;
 import org.python.antlr.adapter.AstAdapters;
+import org.python.antlr.base.excepthandler;
+import org.python.antlr.base.expr;
+import org.python.antlr.base.mod;
+import org.python.antlr.base.slice;
+import org.python.antlr.base.stmt;
 import org.python.core.ArgParser;
 import org.python.core.AstList;
 import org.python.core.Py;
@@ -21,10 +26,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 @ExposedType(name = "_ast.TryFinally", base = AST.class)
-public class TryFinally extends stmtType {
+public class TryFinally extends stmt {
 public static final PyType TYPE = PyType.fromClass(TryFinally.class);
-    private java.util.List<stmtType> body;
-    public java.util.List<stmtType> getInternalBody() {
+    private java.util.List<stmt> body;
+    public java.util.List<stmt> getInternalBody() {
         return body;
     }
     @ExposedGet(name = "body")
@@ -36,8 +41,8 @@ public static final PyType TYPE = PyType.fromClass(TryFinally.class);
         this.body = AstAdapters.py2stmtList(body);
     }
 
-    private java.util.List<stmtType> finalbody;
-    public java.util.List<stmtType> getInternalFinalbody() {
+    private java.util.List<stmt> finalbody;
+    public java.util.List<stmt> getInternalFinalbody() {
         return finalbody;
     }
     @ExposedGet(name = "finalbody")
@@ -80,57 +85,55 @@ public static final PyType TYPE = PyType.fromClass(TryFinally.class);
         setFinalbody(finalbody);
     }
 
-    public TryFinally(Token token, java.util.List<stmtType> body, java.util.List<stmtType>
-    finalbody) {
+    public TryFinally(Token token, java.util.List<stmt> body, java.util.List<stmt> finalbody) {
         super(token);
         this.body = body;
         if (body == null) {
-            this.body = new ArrayList<stmtType>();
+            this.body = new ArrayList<stmt>();
         }
         for(PythonTree t : this.body) {
             addChild(t);
         }
         this.finalbody = finalbody;
         if (finalbody == null) {
-            this.finalbody = new ArrayList<stmtType>();
+            this.finalbody = new ArrayList<stmt>();
         }
         for(PythonTree t : this.finalbody) {
             addChild(t);
         }
     }
 
-    public TryFinally(Integer ttype, Token token, java.util.List<stmtType> body,
-    java.util.List<stmtType> finalbody) {
+    public TryFinally(Integer ttype, Token token, java.util.List<stmt> body, java.util.List<stmt>
+    finalbody) {
         super(ttype, token);
         this.body = body;
         if (body == null) {
-            this.body = new ArrayList<stmtType>();
+            this.body = new ArrayList<stmt>();
         }
         for(PythonTree t : this.body) {
             addChild(t);
         }
         this.finalbody = finalbody;
         if (finalbody == null) {
-            this.finalbody = new ArrayList<stmtType>();
+            this.finalbody = new ArrayList<stmt>();
         }
         for(PythonTree t : this.finalbody) {
             addChild(t);
         }
     }
 
-    public TryFinally(PythonTree tree, java.util.List<stmtType> body, java.util.List<stmtType>
-    finalbody) {
+    public TryFinally(PythonTree tree, java.util.List<stmt> body, java.util.List<stmt> finalbody) {
         super(tree);
         this.body = body;
         if (body == null) {
-            this.body = new ArrayList<stmtType>();
+            this.body = new ArrayList<stmt>();
         }
         for(PythonTree t : this.body) {
             addChild(t);
         }
         this.finalbody = finalbody;
         if (finalbody == null) {
-            this.finalbody = new ArrayList<stmtType>();
+            this.finalbody = new ArrayList<stmt>();
         }
         for(PythonTree t : this.finalbody) {
             addChild(t);

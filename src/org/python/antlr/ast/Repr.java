@@ -5,6 +5,11 @@ import org.antlr.runtime.Token;
 import org.python.antlr.AST;
 import org.python.antlr.PythonTree;
 import org.python.antlr.adapter.AstAdapters;
+import org.python.antlr.base.excepthandler;
+import org.python.antlr.base.expr;
+import org.python.antlr.base.mod;
+import org.python.antlr.base.slice;
+import org.python.antlr.base.stmt;
 import org.python.core.ArgParser;
 import org.python.core.AstList;
 import org.python.core.Py;
@@ -21,10 +26,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 @ExposedType(name = "_ast.Repr", base = AST.class)
-public class Repr extends exprType {
+public class Repr extends expr {
 public static final PyType TYPE = PyType.fromClass(Repr.class);
-    private exprType value;
-    public exprType getInternalValue() {
+    private expr value;
+    public expr getInternalValue() {
         return value;
     }
     @ExposedGet(name = "value")
@@ -65,19 +70,19 @@ public static final PyType TYPE = PyType.fromClass(Repr.class);
         setValue(value);
     }
 
-    public Repr(Token token, exprType value) {
+    public Repr(Token token, expr value) {
         super(token);
         this.value = value;
         addChild(value);
     }
 
-    public Repr(Integer ttype, Token token, exprType value) {
+    public Repr(Integer ttype, Token token, expr value) {
         super(ttype, token);
         this.value = value;
         addChild(value);
     }
 
-    public Repr(PythonTree tree, exprType value) {
+    public Repr(PythonTree tree, expr value) {
         super(tree);
         this.value = value;
         addChild(value);

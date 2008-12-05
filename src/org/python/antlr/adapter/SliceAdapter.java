@@ -4,8 +4,8 @@ import org.python.core.Py;
 import org.python.core.PyJavaInstance;
 import org.python.core.PyObject;
 
-import org.python.antlr.ast.sliceType;
 import org.python.antlr.ast.Num;
+import org.python.antlr.base.slice;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,7 +16,7 @@ public class SliceAdapter implements AstAdapter {
         if (o == null) {
             return o;
         }
-        if (o instanceof sliceType) {
+        if (o instanceof slice) {
             return o;
         }
 
@@ -29,9 +29,9 @@ public class SliceAdapter implements AstAdapter {
     }
 
     public List iter2ast(PyObject iter) {
-        List<sliceType> slices = new ArrayList<sliceType>();
+        List<slice> slices = new ArrayList<slice>();
         for(Object o : (Iterable)iter) {
-            slices.add((sliceType)py2ast((PyObject)o));
+            slices.add((slice)py2ast((PyObject)o));
         }
         return slices;
     }

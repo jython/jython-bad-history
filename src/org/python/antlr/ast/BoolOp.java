@@ -5,6 +5,11 @@ import org.antlr.runtime.Token;
 import org.python.antlr.AST;
 import org.python.antlr.PythonTree;
 import org.python.antlr.adapter.AstAdapters;
+import org.python.antlr.base.excepthandler;
+import org.python.antlr.base.expr;
+import org.python.antlr.base.mod;
+import org.python.antlr.base.slice;
+import org.python.antlr.base.stmt;
 import org.python.core.ArgParser;
 import org.python.core.AstList;
 import org.python.core.Py;
@@ -21,7 +26,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 @ExposedType(name = "_ast.BoolOp", base = AST.class)
-public class BoolOp extends exprType {
+public class BoolOp extends expr {
 public static final PyType TYPE = PyType.fromClass(BoolOp.class);
     private boolopType op;
     public boolopType getInternalOp() {
@@ -36,8 +41,8 @@ public static final PyType TYPE = PyType.fromClass(BoolOp.class);
         this.op = AstAdapters.py2boolop(op);
     }
 
-    private java.util.List<exprType> values;
-    public java.util.List<exprType> getInternalValues() {
+    private java.util.List<expr> values;
+    public java.util.List<expr> getInternalValues() {
         return values;
     }
     @ExposedGet(name = "values")
@@ -80,36 +85,36 @@ public static final PyType TYPE = PyType.fromClass(BoolOp.class);
         setValues(values);
     }
 
-    public BoolOp(Token token, boolopType op, java.util.List<exprType> values) {
+    public BoolOp(Token token, boolopType op, java.util.List<expr> values) {
         super(token);
         this.op = op;
         this.values = values;
         if (values == null) {
-            this.values = new ArrayList<exprType>();
+            this.values = new ArrayList<expr>();
         }
         for(PythonTree t : this.values) {
             addChild(t);
         }
     }
 
-    public BoolOp(Integer ttype, Token token, boolopType op, java.util.List<exprType> values) {
+    public BoolOp(Integer ttype, Token token, boolopType op, java.util.List<expr> values) {
         super(ttype, token);
         this.op = op;
         this.values = values;
         if (values == null) {
-            this.values = new ArrayList<exprType>();
+            this.values = new ArrayList<expr>();
         }
         for(PythonTree t : this.values) {
             addChild(t);
         }
     }
 
-    public BoolOp(PythonTree tree, boolopType op, java.util.List<exprType> values) {
+    public BoolOp(PythonTree tree, boolopType op, java.util.List<expr> values) {
         super(tree);
         this.op = op;
         this.values = values;
         if (values == null) {
-            this.values = new ArrayList<exprType>();
+            this.values = new ArrayList<expr>();
         }
         for(PythonTree t : this.values) {
             addChild(t);

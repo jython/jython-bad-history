@@ -5,6 +5,11 @@ import org.antlr.runtime.Token;
 import org.python.antlr.AST;
 import org.python.antlr.PythonTree;
 import org.python.antlr.adapter.AstAdapters;
+import org.python.antlr.base.excepthandler;
+import org.python.antlr.base.expr;
+import org.python.antlr.base.mod;
+import org.python.antlr.base.slice;
+import org.python.antlr.base.stmt;
 import org.python.core.ArgParser;
 import org.python.core.AstList;
 import org.python.core.Py;
@@ -21,10 +26,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 @ExposedType(name = "_ast.Dict", base = AST.class)
-public class Dict extends exprType {
+public class Dict extends expr {
 public static final PyType TYPE = PyType.fromClass(Dict.class);
-    private java.util.List<exprType> keys;
-    public java.util.List<exprType> getInternalKeys() {
+    private java.util.List<expr> keys;
+    public java.util.List<expr> getInternalKeys() {
         return keys;
     }
     @ExposedGet(name = "keys")
@@ -36,8 +41,8 @@ public static final PyType TYPE = PyType.fromClass(Dict.class);
         this.keys = AstAdapters.py2exprList(keys);
     }
 
-    private java.util.List<exprType> values;
-    public java.util.List<exprType> getInternalValues() {
+    private java.util.List<expr> values;
+    public java.util.List<expr> getInternalValues() {
         return values;
     }
     @ExposedGet(name = "values")
@@ -80,55 +85,55 @@ public static final PyType TYPE = PyType.fromClass(Dict.class);
         setValues(values);
     }
 
-    public Dict(Token token, java.util.List<exprType> keys, java.util.List<exprType> values) {
+    public Dict(Token token, java.util.List<expr> keys, java.util.List<expr> values) {
         super(token);
         this.keys = keys;
         if (keys == null) {
-            this.keys = new ArrayList<exprType>();
+            this.keys = new ArrayList<expr>();
         }
         for(PythonTree t : this.keys) {
             addChild(t);
         }
         this.values = values;
         if (values == null) {
-            this.values = new ArrayList<exprType>();
+            this.values = new ArrayList<expr>();
         }
         for(PythonTree t : this.values) {
             addChild(t);
         }
     }
 
-    public Dict(Integer ttype, Token token, java.util.List<exprType> keys, java.util.List<exprType>
-    values) {
+    public Dict(Integer ttype, Token token, java.util.List<expr> keys, java.util.List<expr> values)
+    {
         super(ttype, token);
         this.keys = keys;
         if (keys == null) {
-            this.keys = new ArrayList<exprType>();
+            this.keys = new ArrayList<expr>();
         }
         for(PythonTree t : this.keys) {
             addChild(t);
         }
         this.values = values;
         if (values == null) {
-            this.values = new ArrayList<exprType>();
+            this.values = new ArrayList<expr>();
         }
         for(PythonTree t : this.values) {
             addChild(t);
         }
     }
 
-    public Dict(PythonTree tree, java.util.List<exprType> keys, java.util.List<exprType> values) {
+    public Dict(PythonTree tree, java.util.List<expr> keys, java.util.List<expr> values) {
         super(tree);
         this.keys = keys;
         if (keys == null) {
-            this.keys = new ArrayList<exprType>();
+            this.keys = new ArrayList<expr>();
         }
         for(PythonTree t : this.keys) {
             addChild(t);
         }
         this.values = values;
         if (values == null) {
-            this.values = new ArrayList<exprType>();
+            this.values = new ArrayList<expr>();
         }
         for(PythonTree t : this.values) {
             addChild(t);

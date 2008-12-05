@@ -5,6 +5,11 @@ import org.antlr.runtime.Token;
 import org.python.antlr.AST;
 import org.python.antlr.PythonTree;
 import org.python.antlr.adapter.AstAdapters;
+import org.python.antlr.base.excepthandler;
+import org.python.antlr.base.expr;
+import org.python.antlr.base.mod;
+import org.python.antlr.base.slice;
+import org.python.antlr.base.stmt;
 import org.python.core.ArgParser;
 import org.python.core.AstList;
 import org.python.core.Py;
@@ -21,10 +26,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 @ExposedType(name = "_ast.List", base = AST.class)
-public class List extends exprType implements Context {
+public class List extends expr implements Context {
 public static final PyType TYPE = PyType.fromClass(List.class);
-    private java.util.List<exprType> elts;
-    public java.util.List<exprType> getInternalElts() {
+    private java.util.List<expr> elts;
+    public java.util.List<expr> getInternalElts() {
         return elts;
     }
     @ExposedGet(name = "elts")
@@ -80,11 +85,11 @@ public static final PyType TYPE = PyType.fromClass(List.class);
         setCtx(ctx);
     }
 
-    public List(Token token, java.util.List<exprType> elts, expr_contextType ctx) {
+    public List(Token token, java.util.List<expr> elts, expr_contextType ctx) {
         super(token);
         this.elts = elts;
         if (elts == null) {
-            this.elts = new ArrayList<exprType>();
+            this.elts = new ArrayList<expr>();
         }
         for(PythonTree t : this.elts) {
             addChild(t);
@@ -92,11 +97,11 @@ public static final PyType TYPE = PyType.fromClass(List.class);
         this.ctx = ctx;
     }
 
-    public List(Integer ttype, Token token, java.util.List<exprType> elts, expr_contextType ctx) {
+    public List(Integer ttype, Token token, java.util.List<expr> elts, expr_contextType ctx) {
         super(ttype, token);
         this.elts = elts;
         if (elts == null) {
-            this.elts = new ArrayList<exprType>();
+            this.elts = new ArrayList<expr>();
         }
         for(PythonTree t : this.elts) {
             addChild(t);
@@ -104,11 +109,11 @@ public static final PyType TYPE = PyType.fromClass(List.class);
         this.ctx = ctx;
     }
 
-    public List(PythonTree tree, java.util.List<exprType> elts, expr_contextType ctx) {
+    public List(PythonTree tree, java.util.List<expr> elts, expr_contextType ctx) {
         super(tree);
         this.elts = elts;
         if (elts == null) {
-            this.elts = new ArrayList<exprType>();
+            this.elts = new ArrayList<expr>();
         }
         for(PythonTree t : this.elts) {
             addChild(t);

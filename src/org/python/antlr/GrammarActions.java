@@ -1,6 +1,5 @@
 package org.python.antlr;
 
-import org.antlr.runtime.CommonToken;
 import org.antlr.runtime.Token;
 
 import org.python.core.Py;
@@ -8,53 +7,30 @@ import org.python.core.PyComplex;
 import org.python.core.PyFloat;
 import org.python.core.PyInteger;
 import org.python.core.PyLong;
-import org.python.core.PyObject;
 import org.python.core.PyString;
 import org.python.core.PyUnicode;
-import org.python.antlr.ParseException;
-import org.python.antlr.ast.aliasType;
-import org.python.antlr.ast.argumentsType;
+import org.python.antlr.ast.alias;
+import org.python.antlr.ast.arguments;
 import org.python.antlr.ast.boolopType;
-import org.python.antlr.ast.comprehensionType;
-import org.python.antlr.ast.Context;
 import org.python.antlr.ast.cmpopType;
-import org.python.antlr.ast.excepthandlerType;
-import org.python.antlr.ast.exprType;
 import org.python.antlr.ast.expr_contextType;
-import org.python.antlr.ast.keywordType;
-import org.python.antlr.ast.modType;
 import org.python.antlr.ast.operatorType;
-import org.python.antlr.ast.sliceType;
-import org.python.antlr.ast.stmtType;
 import org.python.antlr.ast.unaryopType;
-import org.python.antlr.ast.Assert;
-import org.python.antlr.ast.Assign;
+import org.python.antlr.ast.Context;
+import org.python.antlr.ast.keyword;
 import org.python.antlr.ast.Attribute;
-import org.python.antlr.ast.AugAssign;
 import org.python.antlr.ast.BinOp;
 import org.python.antlr.ast.BoolOp;
-import org.python.antlr.ast.Break;
 import org.python.antlr.ast.Call;
 import org.python.antlr.ast.ClassDef;
-import org.python.antlr.ast.Compare;
-import org.python.antlr.ast.Continue;
-import org.python.antlr.ast.Delete;
-import org.python.antlr.ast.Dict;
-import org.python.antlr.ast.Ellipsis;
-import org.python.antlr.ast.ErrorStmt;
-import org.python.antlr.ast.Exec;
-import org.python.antlr.ast.Expr;
 import org.python.antlr.ast.Expression;
 import org.python.antlr.ast.ExtSlice;
 import org.python.antlr.ast.For;
 import org.python.antlr.ast.FunctionDef;
 import org.python.antlr.ast.GeneratorExp;
-import org.python.antlr.ast.Global;
 import org.python.antlr.ast.If;
 import org.python.antlr.ast.IfExp;
 import org.python.antlr.ast.Index;
-import org.python.antlr.ast.Import;
-import org.python.antlr.ast.ImportFrom;
 import org.python.antlr.ast.Interactive;
 import org.python.antlr.ast.Lambda;
 import org.python.antlr.ast.ListComp;
@@ -62,31 +38,24 @@ import org.python.antlr.ast.Module;
 import org.python.antlr.ast.Name;
 import org.python.antlr.ast.Num;
 import org.python.antlr.ast.Slice;
-import org.python.antlr.ast.Subscript;
 import org.python.antlr.ast.TryExcept;
 import org.python.antlr.ast.TryFinally;
 import org.python.antlr.ast.Tuple;
-import org.python.antlr.ast.Pass;
-import org.python.antlr.ast.Print;
-import org.python.antlr.ast.Raise;
 import org.python.antlr.ast.Repr;
-import org.python.antlr.ast.Return;
 import org.python.antlr.ast.Str;
 import org.python.antlr.ast.UnaryOp;
-import org.python.antlr.ast.With;
 import org.python.antlr.ast.While;
 import org.python.antlr.ast.Yield;
+import org.python.antlr.base.excepthandler;
+import org.python.antlr.base.expr;
+import org.python.antlr.base.mod;
+import org.python.antlr.base.slice;
+import org.python.antlr.base.stmt;
 
 import java.math.BigInteger;
-import java.util.Arrays;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
-import java.util.Set;
 
 public class GrammarActions {
     private ErrorHandler errorHandler = null;
@@ -117,21 +86,21 @@ public class GrammarActions {
         return lev.size();
     }
 
-    List<aliasType> makeStarAlias(Token t) {
-        List<aliasType> result = new ArrayList<aliasType>();
-        result.add(new aliasType(t, "*", null));
+    List<alias> makeStarAlias(Token t) {
+        List<alias> result = new ArrayList<alias>();
+        result.add(new alias(t, "*", null));
         return result;
     }
 
-    List<aliasType> makeAliases(List<aliasType> atypes) {
+    List<alias> makeAliases(List<alias> atypes) {
         if (atypes == null) {
-            return new ArrayList<aliasType>();
+            return new ArrayList<alias>();
         }
         return atypes;
     }
 
-    List<exprType> makeBases(exprType etype) {
-        List<exprType> result = new ArrayList<exprType>();
+    List<expr> makeBases(expr etype) {
+        List<expr> result = new ArrayList<expr>();
         if (etype != null) {
             if (etype instanceof Tuple) {
                 return ((Tuple)etype).getInternalElts();
@@ -153,9 +122,9 @@ public class GrammarActions {
         errorHandler.error("Generator expression must be parenthesized if not sole argument", t);
     }
 
-    exprType castExpr(Object o) {
-        if (o instanceof exprType) {
-            return (exprType)o;
+    expr castExpr(Object o) {
+        if (o instanceof expr) {
+            return (expr)o;
         }
         if (o instanceof PythonTree) {
             return errorHandler.errorExpr((PythonTree)o);
@@ -164,67 +133,67 @@ public class GrammarActions {
     }
 
 
-    List<exprType> castExprs(List exprs) {
+    List<expr> castExprs(List exprs) {
         return castExprs(exprs, 0);
     }
 
-    List<exprType> castExprs(List exprs, int start) {
-        List<exprType> result = new ArrayList<exprType>();
+    List<expr> castExprs(List exprs, int start) {
+        List<expr> result = new ArrayList<expr>();
         if (exprs != null) {
             for (int i=start; i<exprs.size(); i++) {
                 Object o = exprs.get(i);
-                if (o instanceof exprType) {
-                    result.add((exprType)o);
+                if (o instanceof expr) {
+                    result.add((expr)o);
                 } else if (o instanceof PythonParser.test_return) {
-                    result.add((exprType)((PythonParser.test_return)o).tree);
+                    result.add((expr)((PythonParser.test_return)o).tree);
                 }
             }
         }
         return result;
     }
     
-    List<stmtType> makeElse(List elseSuite, PythonTree elif) {
+    List<stmt> makeElse(List elseSuite, PythonTree elif) {
         if (elseSuite != null) {
             return castStmts(elseSuite);
         } else if (elif == null) {
-            return new ArrayList<stmtType>();
+            return new ArrayList<stmt>();
         }
-        List <stmtType> s = new ArrayList<stmtType>();
-        s.add((stmtType)elif);
+        List <stmt> s = new ArrayList<stmt>();
+        s.add((stmt)elif);
         return s;
     }
 
-    stmtType castStmt(Object o) {
-        if (o instanceof stmtType) {
-            return (stmtType)o;
+    stmt castStmt(Object o) {
+        if (o instanceof stmt) {
+            return (stmt)o;
         } else if (o instanceof PythonParser.stmt_return) {
-            return (stmtType)((PythonParser.stmt_return)o).tree;
+            return (stmt)((PythonParser.stmt_return)o).tree;
         } else if (o instanceof PythonTree) {
             return errorHandler.errorStmt((PythonTree)o);
         }
         return null;
     }
 
-    List<stmtType> castStmts(PythonTree t) {
-        stmtType s = (stmtType)t;
-        List<stmtType> stmts = new ArrayList<stmtType>();
+    List<stmt> castStmts(PythonTree t) {
+        stmt s = (stmt)t;
+        List<stmt> stmts = new ArrayList<stmt>();
         stmts.add(s);
         return stmts;
     }
 
-    List<stmtType> castStmts(List stmts) {
+    List<stmt> castStmts(List stmts) {
         if (stmts != null) {
-            List<stmtType> result = new ArrayList<stmtType>();
+            List<stmt> result = new ArrayList<stmt>();
             for (Object o:stmts) {
                 result.add(castStmt(o));
             }
             return result;
         }
-        return new ArrayList<stmtType>();
+        return new ArrayList<stmt>();
     }
 
-    exprType makeDottedAttr(Token nameToken, List attrs) {
-        exprType current = new Name(nameToken, nameToken.getText(), expr_contextType.Load);
+    expr makeDottedAttr(Token nameToken, List attrs) {
+        expr current = new Name(nameToken, nameToken.getText(), expr_contextType.Load);
         for (Object o: attrs) {
             Token t = (Token)o;
             current = new Attribute(t, current, t.getText(),
@@ -233,76 +202,76 @@ public class GrammarActions {
         return current;
     }
 
-    stmtType makeWhile(Token t, exprType test, List body, List orelse) {
+    stmt makeWhile(Token t, expr test, List body, List orelse) {
         if (test == null) {
             return errorHandler.errorStmt(new PythonTree(t));
         }
-        List<stmtType> o = castStmts(orelse);
-        List<stmtType> b = castStmts(body);
+        List<stmt> o = castStmts(orelse);
+        List<stmt> b = castStmts(body);
         return new While(t, test, b, o);
     }
 
-    stmtType makeFor(Token t, exprType target, exprType iter, List body, List orelse) {
+    stmt makeFor(Token t, expr target, expr iter, List body, List orelse) {
         if (target == null || iter == null) {
             return errorHandler.errorStmt(new PythonTree(t));
         }
         cantBeNone(target);
 
-        List<stmtType> o = castStmts(orelse);
-        List<stmtType> b = castStmts(body);
+        List<stmt> o = castStmts(orelse);
+        List<stmt> b = castStmts(body);
         return new For(t, target, iter, b, o);
     }
 
-    stmtType makeTryExcept(Token t, List body, List handlers, List orelse, List finBody) {
-        List<stmtType> b = castStmts(body);
-        List<excepthandlerType> e = handlers;
-        List<stmtType> o = castStmts(orelse);
-        stmtType te = new TryExcept(t, b, e, o);
+    stmt makeTryExcept(Token t, List body, List handlers, List orelse, List finBody) {
+        List<stmt> b = castStmts(body);
+        List<excepthandler> e = handlers;
+        List<stmt> o = castStmts(orelse);
+        stmt te = new TryExcept(t, b, e, o);
         if (finBody == null) {
             return te;
         }
-        List<stmtType> f = castStmts(finBody);
-        List<stmtType> mainBody = new ArrayList<stmtType>();
+        List<stmt> f = castStmts(finBody);
+        List<stmt> mainBody = new ArrayList<stmt>();
         mainBody.add(te);
         return new TryFinally(t, mainBody, f);
     }
 
     TryFinally makeTryFinally(Token t,  List body, List finBody) {
-        List<stmtType> b = castStmts(body);
-        List<stmtType> f = castStmts(finBody);
+        List<stmt> b = castStmts(body);
+        List<stmt> f = castStmts(finBody);
         return new TryFinally(t, b, f);
     }
  
-    stmtType makeFuncdef(Token t, Token nameToken, argumentsType args, List funcStatements, List decorators) {
+    stmt makeFuncdef(Token t, Token nameToken, arguments args, List funcStatements, List decorators) {
         if (nameToken == null) {
             return errorHandler.errorStmt(new PythonTree(t));
         }
         cantBeNone(nameToken);
-        argumentsType a;
+        arguments a;
         if (args != null) {
             a = args;
         } else {
-            a = new argumentsType(t, new ArrayList<exprType>(), null, null, new ArrayList<exprType>()); 
+            a = new arguments(t, new ArrayList<expr>(), null, null, new ArrayList<expr>()); 
         }
-        List<stmtType> s = castStmts(funcStatements);
-        List<exprType> d = castExprs(decorators);
+        List<stmt> s = castStmts(funcStatements);
+        List<expr> d = castExprs(decorators);
         return new FunctionDef(t, nameToken.getText(), a, s, d);
     }
 
-    List<exprType> makeAssignTargets(exprType lhs, List rhs) {
-        List<exprType> e = new ArrayList<exprType>();
+    List<expr> makeAssignTargets(expr lhs, List rhs) {
+        List<expr> e = new ArrayList<expr>();
         checkAssign(lhs);
         e.add(lhs);
         for(int i=0;i<rhs.size() - 1;i++) {
-            exprType r = castExpr(rhs.get(i));
+            expr r = castExpr(rhs.get(i));
             checkAssign(r);
             e.add(r);
         }
         return e;
     }
 
-    exprType makeAssignValue(List rhs) {
-        exprType value = castExpr(rhs.get(rhs.size() -1));
+    expr makeAssignValue(List rhs) {
+        expr value = castExpr(rhs.get(rhs.size() -1));
         recurseSetContext(value, expr_contextType.Load);
         return value;
     }
@@ -324,11 +293,11 @@ public class GrammarActions {
         }
     }
 
-    argumentsType makeArgumentsType(Token t, List params, Token snameToken,
+    arguments makeArgumentsType(Token t, List params, Token snameToken,
         Token knameToken, List defaults) {
 
-        List<exprType> p = castExprs(params);
-        List<exprType> d = castExprs(defaults);
+        List<expr> p = castExprs(params);
+        List<expr> d = castExprs(defaults);
         String s;
         String k;
         if (snameToken == null) {
@@ -341,22 +310,22 @@ public class GrammarActions {
         } else {
             k = cantBeNone(knameToken);
         }
-        return new argumentsType(t, p, s, k, d);
+        return new arguments(t, p, s, k, d);
     }
 
-    List<exprType> extractArgs(List args) {
+    List<expr> extractArgs(List args) {
         return castExprs(args);
     }
 
-    List<keywordType> makeKeywords(List args) {
-        List<keywordType> k = new ArrayList<keywordType>();
+    List<keyword> makeKeywords(List args) {
+        List<keyword> k = new ArrayList<keyword>();
         if (args != null) {
             for(int i=0;i<args.size();i++) {
                 List e = (List)args.get(i);
                 checkAssign(castExpr(e.get(0)));
                 if (e.get(0) instanceof Name) {
                     Name arg = (Name)e.get(0);
-                    k.add(new keywordType(arg, arg.getInternalId(), castExpr(e.get(1))));
+                    k.add(new keyword(arg, arg.getInternalId(), castExpr(e.get(1))));
                 } else {
                     errorHandler.error("keyword must be a name", (PythonTree)e.get(0));
                 }
@@ -493,98 +462,98 @@ public class GrammarActions {
     }
 
     //FROM Walker:
-    modType makeMod(PythonTree t, List stmts) {
-        List<stmtType> s = castStmts(stmts);
+    mod makeMod(PythonTree t, List stmts) {
+        List<stmt> s = castStmts(stmts);
         return new Module(t, s);
     }
 
-    modType makeExpression(PythonTree t, exprType e) {
+    mod makeExpression(PythonTree t, expr e) {
         return new Expression(t, e);
     }
 
-    modType makeInteractive(PythonTree t, List stmts) {
-        List<stmtType> s = castStmts(stmts);
+    mod makeInteractive(PythonTree t, List stmts) {
+        List<stmt> s = castStmts(stmts);
         return new Interactive(t, s);
     }
 
-    stmtType makeClassDef(PythonTree t, PythonTree nameToken, List bases, List body, List decorators) {
+    stmt makeClassDef(PythonTree t, PythonTree nameToken, List bases, List body, List decorators) {
         if (nameToken == null) {
             return errorHandler.errorStmt(t);
         }
         cantBeNone(nameToken);
-        List<exprType> b = castExprs(bases);
-        List<stmtType> s = castStmts(body);
-	List<exprType> d = castExprs(decorators);
+        List<expr> b = castExprs(bases);
+        List<stmt> s = castStmts(body);
+	List<expr> d = castExprs(decorators);
         return new ClassDef(t, nameToken.getText(), b, s, d);
     }
 
-    stmtType makeTryExcept(PythonTree t, List body, List handlers, List orelse, List finBody) {
-        List<stmtType> b = castStmts(body);
-        List<excepthandlerType> e = handlers;
-        List<stmtType> o = castStmts(orelse);
+    stmt makeTryExcept(PythonTree t, List body, List handlers, List orelse, List finBody) {
+        List<stmt> b = castStmts(body);
+        List<excepthandler> e = handlers;
+        List<stmt> o = castStmts(orelse);
  
-        stmtType te = new TryExcept(t, b, e, o);
+        stmt te = new TryExcept(t, b, e, o);
         if (finBody == null) {
             return te;
         }
-        List<stmtType> f = castStmts(finBody);
-        List<stmtType> mainBody = new ArrayList<stmtType>();
+        List<stmt> f = castStmts(finBody);
+        List<stmt> mainBody = new ArrayList<stmt>();
         mainBody.add(te);
         return new TryFinally(t, mainBody, f);
     }
 
     TryFinally makeTryFinally(PythonTree t,  List body, List finBody) {
-        List<stmtType> b = castStmts(body);
-        List<stmtType> f = castStmts(finBody);
+        List<stmt> b = castStmts(body);
+        List<stmt> f = castStmts(finBody);
         return new TryFinally(t, b, f);
     }
 
-    stmtType makeIf(PythonTree t, exprType test, List body, List orelse) {
+    stmt makeIf(PythonTree t, expr test, List body, List orelse) {
         if (test == null) {
             return errorHandler.errorStmt(t);
         }
-        List<stmtType> o = castStmts(orelse);
-        List<stmtType> b = castStmts(body);
+        List<stmt> o = castStmts(orelse);
+        List<stmt> b = castStmts(body);
         return new If(t, test, b, o);
     }
 
-    stmtType makeWhile(PythonTree t, exprType test, List body, List orelse) {
+    stmt makeWhile(PythonTree t, expr test, List body, List orelse) {
         if (test == null) {
             return errorHandler.errorStmt(t);
         }
-        List<stmtType> o = castStmts(orelse);
-        List<stmtType> b = castStmts(body);
+        List<stmt> o = castStmts(orelse);
+        List<stmt> b = castStmts(body);
         return new While(t, test, b, o);
     }
 
-    stmtType makeFor(PythonTree t, exprType target, exprType iter, List body, List orelse) {
+    stmt makeFor(PythonTree t, expr target, expr iter, List body, List orelse) {
         if (target == null || iter == null) {
             return errorHandler.errorStmt(t);
         }
         cantBeNone(target);
-        List<stmtType> o = castStmts(orelse);
-        List<stmtType> b = castStmts(body);
+        List<stmt> o = castStmts(orelse);
+        List<stmt> b = castStmts(body);
         return new For(t, target, iter, b, o);
     }
     
-    exprType makeCall(Token t, exprType func) {
+    expr makeCall(Token t, expr func) {
         return makeCall(t, func, null, null, null, null);
     }
 
-    exprType makeCall(Token t, exprType func, List args, List keywords, exprType starargs, exprType kwargs) {
+    expr makeCall(Token t, expr func, List args, List keywords, expr starargs, expr kwargs) {
         if (func == null) {
             return errorHandler.errorExpr(new PythonTree(t));
         }
-        List<keywordType> k = makeKeywords(keywords);
-        List<exprType> a = castExprs(args);
+        List<keyword> k = makeKeywords(keywords);
+        List<expr> a = castExprs(args);
         return new Call(t, func, a, k, starargs, kwargs);
     }
 
-    exprType negate(Token t, exprType o) {
+    expr negate(Token t, expr o) {
         return negate(new PythonTree(t), o);
     }
 
-    exprType negate(PythonTree t, exprType o) {
+    expr negate(PythonTree t, expr o) {
         if (o instanceof Num) {
             Num num = (Num)o;
             if (num.getInternalN() instanceof PyInteger) {
@@ -629,7 +598,7 @@ public class GrammarActions {
         }
     }
 
-    void checkAssign(exprType e) {
+    void checkAssign(expr e) {
         if (e instanceof Name && ((Name)e).getInternalId().equals("None")) {
             errorHandler.error("assignment to None", e);
         } else if (e instanceof GeneratorExp) {
@@ -652,7 +621,7 @@ public class GrammarActions {
             errorHandler.error("can't assign to conditional expression", e);
         } else if (e instanceof Tuple) {
             //XXX: performance problem?  Any way to do this better?
-            List<exprType> elts = ((Tuple)e).getInternalElts();
+            List<expr> elts = ((Tuple)e).getInternalElts();
             if (elts.size() == 0) {
                 errorHandler.error("can't assign to ()", e);
             }
@@ -661,16 +630,16 @@ public class GrammarActions {
             }
         } else if (e instanceof org.python.antlr.ast.List) {
             //XXX: performance problem?  Any way to do this better?
-            List<exprType> elts = ((org.python.antlr.ast.List)e).getInternalElts();
+            List<expr> elts = ((org.python.antlr.ast.List)e).getInternalElts();
             for (int i=0;i<elts.size();i++) {
                 checkAssign(elts.get(i));
             }
         }
     }
 
-    List<exprType> makeDeleteList(List e) {
-        List<exprType> exprs = castExprs(e);
-        for(exprType expr : exprs) {
+    List<expr> makeDeleteList(List e) {
+        List<expr> exprs = castExprs(e);
+        for(expr expr : exprs) {
             if (expr instanceof Call) {
                 errorHandler.error("can't delete function call", expr);
             }
@@ -678,11 +647,11 @@ public class GrammarActions {
         return exprs;
     }
 
-    sliceType makeSubscript(PythonTree lower, Token colon, PythonTree upper, PythonTree sliceop) {
+    slice makeSubscript(PythonTree lower, Token colon, PythonTree upper, PythonTree sliceop) {
             boolean isSlice = false;
-        exprType s = null;
-        exprType e = null;
-        exprType o = null;
+        expr s = null;
+        expr e = null;
+        expr o = null;
         if (lower != null) {
             s = castExpr(lower);
         }
@@ -733,7 +702,7 @@ public class GrammarActions {
     BinOp makeBinOp(PythonTree left, operatorType op, List rights) {
         BinOp current = new BinOp(left, castExpr(left), op, castExpr(rights.get(0)));
         for (int i = 1; i< rights.size(); i++) {
-            exprType right = castExpr(rights.get(i));
+            expr right = castExpr(rights.get(i));
             current = new BinOp(left, current, op, right);
         }
         return current;
@@ -742,15 +711,15 @@ public class GrammarActions {
     BinOp makeBinOp(PythonTree left, List ops, List rights) {
         BinOp current = new BinOp(left, castExpr(left), (operatorType)ops.get(0), castExpr(rights.get(0)));
         for (int i = 1; i< rights.size(); i++) {
-            exprType right = castExpr(rights.get(i));
+            expr right = castExpr(rights.get(i));
             operatorType op = (operatorType)ops.get(i);
             current = new BinOp(left, current, op, right);
         }
         return current;
     }
 
-    List<sliceType> castSlices(List slices) {
-        List<sliceType> result = new ArrayList<sliceType>();
+    List<slice> castSlices(List slices) {
+        List<slice> result = new ArrayList<slice>();
         if (slices != null) {
             for (Object o:slices) {
                 result.add(castSlice(o));
@@ -759,23 +728,23 @@ public class GrammarActions {
         return result;
     }
  
-    sliceType castSlice(Object o) {
-        if (o instanceof sliceType) {
-            return (sliceType)o;
+    slice castSlice(Object o) {
+        if (o instanceof slice) {
+            return (slice)o;
         }
         return errorHandler.errorSlice((PythonTree)o);
     }
 
-    sliceType makeSliceType(Token begin, Token c1, Token c2, List sltypes) {
+    slice makeSliceType(Token begin, Token c1, Token c2, List sltypes) {
         boolean isTuple = false;
         if (c1 != null || c2 != null) {
             isTuple = true;
         }
-        sliceType s = null;
+        slice s = null;
         boolean extslice = false;
 
         if (isTuple) {
-            List<sliceType> st;
+            List<slice> st;
             List etypes = new ArrayList();
             for (Object o : sltypes) {
                 if (o instanceof Index) {
@@ -787,8 +756,8 @@ public class GrammarActions {
                 }
             }
             if (!extslice) {
-                List<exprType> es = etypes;
-                exprType t = new Tuple(begin, es, expr_contextType.Load);
+                List<expr> es = etypes;
+                expr t = new Tuple(begin, es, expr_contextType.Load);
                 s = new Index(begin, t);
             }
         } else if (sltypes.size() == 1) {
@@ -797,7 +766,7 @@ public class GrammarActions {
             extslice = true;
         }
         if (extslice) {
-            List<sliceType> st = castSlices(sltypes);//.toArray(new sliceType[sltypes.size()]);
+            List<slice> st = castSlices(sltypes);
             s = new ExtSlice(begin, st);
         }
         return s;

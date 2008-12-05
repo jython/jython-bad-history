@@ -5,6 +5,11 @@ import org.antlr.runtime.Token;
 import org.python.antlr.AST;
 import org.python.antlr.PythonTree;
 import org.python.antlr.adapter.AstAdapters;
+import org.python.antlr.base.excepthandler;
+import org.python.antlr.base.expr;
+import org.python.antlr.base.mod;
+import org.python.antlr.base.slice;
+import org.python.antlr.base.stmt;
 import org.python.core.ArgParser;
 import org.python.core.AstList;
 import org.python.core.Py;
@@ -21,10 +26,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 @ExposedType(name = "_ast.ListComp", base = AST.class)
-public class ListComp extends exprType {
+public class ListComp extends expr {
 public static final PyType TYPE = PyType.fromClass(ListComp.class);
-    private exprType elt;
-    public exprType getInternalElt() {
+    private expr elt;
+    public expr getInternalElt() {
         return elt;
     }
     @ExposedGet(name = "elt")
@@ -36,8 +41,8 @@ public static final PyType TYPE = PyType.fromClass(ListComp.class);
         this.elt = AstAdapters.py2expr(elt);
     }
 
-    private java.util.List<comprehensionType> generators;
-    public java.util.List<comprehensionType> getInternalGenerators() {
+    private java.util.List<comprehension> generators;
+    public java.util.List<comprehension> getInternalGenerators() {
         return generators;
     }
     @ExposedGet(name = "generators")
@@ -80,40 +85,40 @@ public static final PyType TYPE = PyType.fromClass(ListComp.class);
         setGenerators(generators);
     }
 
-    public ListComp(Token token, exprType elt, java.util.List<comprehensionType> generators) {
+    public ListComp(Token token, expr elt, java.util.List<comprehension> generators) {
         super(token);
         this.elt = elt;
         addChild(elt);
         this.generators = generators;
         if (generators == null) {
-            this.generators = new ArrayList<comprehensionType>();
+            this.generators = new ArrayList<comprehension>();
         }
         for(PythonTree t : this.generators) {
             addChild(t);
         }
     }
 
-    public ListComp(Integer ttype, Token token, exprType elt, java.util.List<comprehensionType>
-    generators) {
+    public ListComp(Integer ttype, Token token, expr elt, java.util.List<comprehension> generators)
+    {
         super(ttype, token);
         this.elt = elt;
         addChild(elt);
         this.generators = generators;
         if (generators == null) {
-            this.generators = new ArrayList<comprehensionType>();
+            this.generators = new ArrayList<comprehension>();
         }
         for(PythonTree t : this.generators) {
             addChild(t);
         }
     }
 
-    public ListComp(PythonTree tree, exprType elt, java.util.List<comprehensionType> generators) {
+    public ListComp(PythonTree tree, expr elt, java.util.List<comprehension> generators) {
         super(tree);
         this.elt = elt;
         addChild(elt);
         this.generators = generators;
         if (generators == null) {
-            this.generators = new ArrayList<comprehensionType>();
+            this.generators = new ArrayList<comprehension>();
         }
         for(PythonTree t : this.generators) {
             addChild(t);

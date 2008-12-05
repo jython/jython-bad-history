@@ -5,6 +5,11 @@ import org.antlr.runtime.Token;
 import org.python.antlr.AST;
 import org.python.antlr.PythonTree;
 import org.python.antlr.adapter.AstAdapters;
+import org.python.antlr.base.excepthandler;
+import org.python.antlr.base.expr;
+import org.python.antlr.base.mod;
+import org.python.antlr.base.slice;
+import org.python.antlr.base.stmt;
 import org.python.core.ArgParser;
 import org.python.core.AstList;
 import org.python.core.Py;
@@ -21,10 +26,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 @ExposedType(name = "_ast.BinOp", base = AST.class)
-public class BinOp extends exprType {
+public class BinOp extends expr {
 public static final PyType TYPE = PyType.fromClass(BinOp.class);
-    private exprType left;
-    public exprType getInternalLeft() {
+    private expr left;
+    public expr getInternalLeft() {
         return left;
     }
     @ExposedGet(name = "left")
@@ -49,8 +54,8 @@ public static final PyType TYPE = PyType.fromClass(BinOp.class);
         this.op = AstAdapters.py2operator(op);
     }
 
-    private exprType right;
-    public exprType getInternalRight() {
+    private expr right;
+    public expr getInternalRight() {
         return right;
     }
     @ExposedGet(name = "right")
@@ -95,7 +100,7 @@ public static final PyType TYPE = PyType.fromClass(BinOp.class);
         setRight(right);
     }
 
-    public BinOp(Token token, exprType left, operatorType op, exprType right) {
+    public BinOp(Token token, expr left, operatorType op, expr right) {
         super(token);
         this.left = left;
         addChild(left);
@@ -104,7 +109,7 @@ public static final PyType TYPE = PyType.fromClass(BinOp.class);
         addChild(right);
     }
 
-    public BinOp(Integer ttype, Token token, exprType left, operatorType op, exprType right) {
+    public BinOp(Integer ttype, Token token, expr left, operatorType op, expr right) {
         super(ttype, token);
         this.left = left;
         addChild(left);
@@ -113,7 +118,7 @@ public static final PyType TYPE = PyType.fromClass(BinOp.class);
         addChild(right);
     }
 
-    public BinOp(PythonTree tree, exprType left, operatorType op, exprType right) {
+    public BinOp(PythonTree tree, expr left, operatorType op, expr right) {
         super(tree);
         this.left = left;
         addChild(left);

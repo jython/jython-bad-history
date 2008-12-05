@@ -5,6 +5,11 @@ import org.antlr.runtime.Token;
 import org.python.antlr.AST;
 import org.python.antlr.PythonTree;
 import org.python.antlr.adapter.AstAdapters;
+import org.python.antlr.base.excepthandler;
+import org.python.antlr.base.expr;
+import org.python.antlr.base.mod;
+import org.python.antlr.base.slice;
+import org.python.antlr.base.stmt;
 import org.python.core.ArgParser;
 import org.python.core.AstList;
 import org.python.core.Py;
@@ -21,10 +26,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 @ExposedType(name = "_ast.Assign", base = AST.class)
-public class Assign extends stmtType {
+public class Assign extends stmt {
 public static final PyType TYPE = PyType.fromClass(Assign.class);
-    private java.util.List<exprType> targets;
-    public java.util.List<exprType> getInternalTargets() {
+    private java.util.List<expr> targets;
+    public java.util.List<expr> getInternalTargets() {
         return targets;
     }
     @ExposedGet(name = "targets")
@@ -36,8 +41,8 @@ public static final PyType TYPE = PyType.fromClass(Assign.class);
         this.targets = AstAdapters.py2exprList(targets);
     }
 
-    private exprType value;
-    public exprType getInternalValue() {
+    private expr value;
+    public expr getInternalValue() {
         return value;
     }
     @ExposedGet(name = "value")
@@ -80,11 +85,11 @@ public static final PyType TYPE = PyType.fromClass(Assign.class);
         setValue(value);
     }
 
-    public Assign(Token token, java.util.List<exprType> targets, exprType value) {
+    public Assign(Token token, java.util.List<expr> targets, expr value) {
         super(token);
         this.targets = targets;
         if (targets == null) {
-            this.targets = new ArrayList<exprType>();
+            this.targets = new ArrayList<expr>();
         }
         for(PythonTree t : this.targets) {
             addChild(t);
@@ -93,11 +98,11 @@ public static final PyType TYPE = PyType.fromClass(Assign.class);
         addChild(value);
     }
 
-    public Assign(Integer ttype, Token token, java.util.List<exprType> targets, exprType value) {
+    public Assign(Integer ttype, Token token, java.util.List<expr> targets, expr value) {
         super(ttype, token);
         this.targets = targets;
         if (targets == null) {
-            this.targets = new ArrayList<exprType>();
+            this.targets = new ArrayList<expr>();
         }
         for(PythonTree t : this.targets) {
             addChild(t);
@@ -106,11 +111,11 @@ public static final PyType TYPE = PyType.fromClass(Assign.class);
         addChild(value);
     }
 
-    public Assign(PythonTree tree, java.util.List<exprType> targets, exprType value) {
+    public Assign(PythonTree tree, java.util.List<expr> targets, expr value) {
         super(tree);
         this.targets = targets;
         if (targets == null) {
-            this.targets = new ArrayList<exprType>();
+            this.targets = new ArrayList<expr>();
         }
         for(PythonTree t : this.targets) {
             addChild(t);

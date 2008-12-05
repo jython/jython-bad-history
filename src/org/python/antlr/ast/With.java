@@ -5,6 +5,11 @@ import org.antlr.runtime.Token;
 import org.python.antlr.AST;
 import org.python.antlr.PythonTree;
 import org.python.antlr.adapter.AstAdapters;
+import org.python.antlr.base.excepthandler;
+import org.python.antlr.base.expr;
+import org.python.antlr.base.mod;
+import org.python.antlr.base.slice;
+import org.python.antlr.base.stmt;
 import org.python.core.ArgParser;
 import org.python.core.AstList;
 import org.python.core.Py;
@@ -21,10 +26,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 @ExposedType(name = "_ast.With", base = AST.class)
-public class With extends stmtType {
+public class With extends stmt {
 public static final PyType TYPE = PyType.fromClass(With.class);
-    private exprType context_expr;
-    public exprType getInternalContext_expr() {
+    private expr context_expr;
+    public expr getInternalContext_expr() {
         return context_expr;
     }
     @ExposedGet(name = "context_expr")
@@ -36,8 +41,8 @@ public static final PyType TYPE = PyType.fromClass(With.class);
         this.context_expr = AstAdapters.py2expr(context_expr);
     }
 
-    private exprType optional_vars;
-    public exprType getInternalOptional_vars() {
+    private expr optional_vars;
+    public expr getInternalOptional_vars() {
         return optional_vars;
     }
     @ExposedGet(name = "optional_vars")
@@ -49,8 +54,8 @@ public static final PyType TYPE = PyType.fromClass(With.class);
         this.optional_vars = AstAdapters.py2expr(optional_vars);
     }
 
-    private java.util.List<stmtType> body;
-    public java.util.List<stmtType> getInternalBody() {
+    private java.util.List<stmt> body;
+    public java.util.List<stmt> getInternalBody() {
         return body;
     }
     @ExposedGet(name = "body")
@@ -96,8 +101,7 @@ public static final PyType TYPE = PyType.fromClass(With.class);
         setBody(body);
     }
 
-    public With(Token token, exprType context_expr, exprType optional_vars,
-    java.util.List<stmtType> body) {
+    public With(Token token, expr context_expr, expr optional_vars, java.util.List<stmt> body) {
         super(token);
         this.context_expr = context_expr;
         addChild(context_expr);
@@ -105,15 +109,15 @@ public static final PyType TYPE = PyType.fromClass(With.class);
         addChild(optional_vars);
         this.body = body;
         if (body == null) {
-            this.body = new ArrayList<stmtType>();
+            this.body = new ArrayList<stmt>();
         }
         for(PythonTree t : this.body) {
             addChild(t);
         }
     }
 
-    public With(Integer ttype, Token token, exprType context_expr, exprType optional_vars,
-    java.util.List<stmtType> body) {
+    public With(Integer ttype, Token token, expr context_expr, expr optional_vars,
+    java.util.List<stmt> body) {
         super(ttype, token);
         this.context_expr = context_expr;
         addChild(context_expr);
@@ -121,15 +125,14 @@ public static final PyType TYPE = PyType.fromClass(With.class);
         addChild(optional_vars);
         this.body = body;
         if (body == null) {
-            this.body = new ArrayList<stmtType>();
+            this.body = new ArrayList<stmt>();
         }
         for(PythonTree t : this.body) {
             addChild(t);
         }
     }
 
-    public With(PythonTree tree, exprType context_expr, exprType optional_vars,
-    java.util.List<stmtType> body) {
+    public With(PythonTree tree, expr context_expr, expr optional_vars, java.util.List<stmt> body) {
         super(tree);
         this.context_expr = context_expr;
         addChild(context_expr);
@@ -137,7 +140,7 @@ public static final PyType TYPE = PyType.fromClass(With.class);
         addChild(optional_vars);
         this.body = body;
         if (body == null) {
-            this.body = new ArrayList<stmtType>();
+            this.body = new ArrayList<stmt>();
         }
         for(PythonTree t : this.body) {
             addChild(t);

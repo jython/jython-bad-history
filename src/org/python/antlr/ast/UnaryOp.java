@@ -5,6 +5,11 @@ import org.antlr.runtime.Token;
 import org.python.antlr.AST;
 import org.python.antlr.PythonTree;
 import org.python.antlr.adapter.AstAdapters;
+import org.python.antlr.base.excepthandler;
+import org.python.antlr.base.expr;
+import org.python.antlr.base.mod;
+import org.python.antlr.base.slice;
+import org.python.antlr.base.stmt;
 import org.python.core.ArgParser;
 import org.python.core.AstList;
 import org.python.core.Py;
@@ -21,7 +26,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 @ExposedType(name = "_ast.UnaryOp", base = AST.class)
-public class UnaryOp extends exprType {
+public class UnaryOp extends expr {
 public static final PyType TYPE = PyType.fromClass(UnaryOp.class);
     private unaryopType op;
     public unaryopType getInternalOp() {
@@ -36,8 +41,8 @@ public static final PyType TYPE = PyType.fromClass(UnaryOp.class);
         this.op = AstAdapters.py2unaryop(op);
     }
 
-    private exprType operand;
-    public exprType getInternalOperand() {
+    private expr operand;
+    public expr getInternalOperand() {
         return operand;
     }
     @ExposedGet(name = "operand")
@@ -80,21 +85,21 @@ public static final PyType TYPE = PyType.fromClass(UnaryOp.class);
         setOperand(operand);
     }
 
-    public UnaryOp(Token token, unaryopType op, exprType operand) {
+    public UnaryOp(Token token, unaryopType op, expr operand) {
         super(token);
         this.op = op;
         this.operand = operand;
         addChild(operand);
     }
 
-    public UnaryOp(Integer ttype, Token token, unaryopType op, exprType operand) {
+    public UnaryOp(Integer ttype, Token token, unaryopType op, expr operand) {
         super(ttype, token);
         this.op = op;
         this.operand = operand;
         addChild(operand);
     }
 
-    public UnaryOp(PythonTree tree, unaryopType op, exprType operand) {
+    public UnaryOp(PythonTree tree, unaryopType op, expr operand) {
         super(tree);
         this.op = op;
         this.operand = operand;

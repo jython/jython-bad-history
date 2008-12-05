@@ -5,6 +5,11 @@ import org.antlr.runtime.Token;
 import org.python.antlr.AST;
 import org.python.antlr.PythonTree;
 import org.python.antlr.adapter.AstAdapters;
+import org.python.antlr.base.excepthandler;
+import org.python.antlr.base.expr;
+import org.python.antlr.base.mod;
+import org.python.antlr.base.slice;
+import org.python.antlr.base.stmt;
 import org.python.core.ArgParser;
 import org.python.core.AstList;
 import org.python.core.Py;
@@ -21,10 +26,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 @ExposedType(name = "_ast.ExceptHandler", base = AST.class)
-public class ExceptHandler extends excepthandlerType {
+public class ExceptHandler extends excepthandler {
 public static final PyType TYPE = PyType.fromClass(ExceptHandler.class);
-    private exprType excepttype;
-    public exprType getInternalExcepttype() {
+    private expr excepttype;
+    public expr getInternalExcepttype() {
         return excepttype;
     }
     @ExposedGet(name = "excepttype")
@@ -36,8 +41,8 @@ public static final PyType TYPE = PyType.fromClass(ExceptHandler.class);
         this.excepttype = AstAdapters.py2expr(excepttype);
     }
 
-    private exprType name;
-    public exprType getInternalName() {
+    private expr name;
+    public expr getInternalName() {
         return name;
     }
     @ExposedGet(name = "name")
@@ -49,8 +54,8 @@ public static final PyType TYPE = PyType.fromClass(ExceptHandler.class);
         this.name = AstAdapters.py2expr(name);
     }
 
-    private java.util.List<stmtType> body;
-    public java.util.List<stmtType> getInternalBody() {
+    private java.util.List<stmt> body;
+    public java.util.List<stmt> getInternalBody() {
         return body;
     }
     @ExposedGet(name = "body")
@@ -95,8 +100,7 @@ public static final PyType TYPE = PyType.fromClass(ExceptHandler.class);
         setBody(body);
     }
 
-    public ExceptHandler(Token token, exprType excepttype, exprType name, java.util.List<stmtType>
-    body) {
+    public ExceptHandler(Token token, expr excepttype, expr name, java.util.List<stmt> body) {
         super(token);
         this.excepttype = excepttype;
         addChild(excepttype);
@@ -104,15 +108,15 @@ public static final PyType TYPE = PyType.fromClass(ExceptHandler.class);
         addChild(name);
         this.body = body;
         if (body == null) {
-            this.body = new ArrayList<stmtType>();
+            this.body = new ArrayList<stmt>();
         }
         for(PythonTree t : this.body) {
             addChild(t);
         }
     }
 
-    public ExceptHandler(Integer ttype, Token token, exprType excepttype, exprType name,
-    java.util.List<stmtType> body) {
+    public ExceptHandler(Integer ttype, Token token, expr excepttype, expr name,
+    java.util.List<stmt> body) {
         super(ttype, token);
         this.excepttype = excepttype;
         addChild(excepttype);
@@ -120,15 +124,14 @@ public static final PyType TYPE = PyType.fromClass(ExceptHandler.class);
         addChild(name);
         this.body = body;
         if (body == null) {
-            this.body = new ArrayList<stmtType>();
+            this.body = new ArrayList<stmt>();
         }
         for(PythonTree t : this.body) {
             addChild(t);
         }
     }
 
-    public ExceptHandler(PythonTree tree, exprType excepttype, exprType name,
-    java.util.List<stmtType> body) {
+    public ExceptHandler(PythonTree tree, expr excepttype, expr name, java.util.List<stmt> body) {
         super(tree);
         this.excepttype = excepttype;
         addChild(excepttype);
@@ -136,7 +139,7 @@ public static final PyType TYPE = PyType.fromClass(ExceptHandler.class);
         addChild(name);
         this.body = body;
         if (body == null) {
-            this.body = new ArrayList<stmtType>();
+            this.body = new ArrayList<stmt>();
         }
         for(PythonTree t : this.body) {
             addChild(t);

@@ -5,6 +5,11 @@ import org.antlr.runtime.Token;
 import org.python.antlr.AST;
 import org.python.antlr.PythonTree;
 import org.python.antlr.adapter.AstAdapters;
+import org.python.antlr.base.excepthandler;
+import org.python.antlr.base.expr;
+import org.python.antlr.base.mod;
+import org.python.antlr.base.slice;
+import org.python.antlr.base.stmt;
 import org.python.core.ArgParser;
 import org.python.core.AstList;
 import org.python.core.Py;
@@ -21,10 +26,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 @ExposedType(name = "_ast.Suite", base = AST.class)
-public class Suite extends modType {
+public class Suite extends mod {
 public static final PyType TYPE = PyType.fromClass(Suite.class);
-    private java.util.List<stmtType> body;
-    public java.util.List<stmtType> getInternalBody() {
+    private java.util.List<stmt> body;
+    public java.util.List<stmt> getInternalBody() {
         return body;
     }
     @ExposedGet(name = "body")
@@ -64,33 +69,33 @@ public static final PyType TYPE = PyType.fromClass(Suite.class);
         setBody(body);
     }
 
-    public Suite(Token token, java.util.List<stmtType> body) {
+    public Suite(Token token, java.util.List<stmt> body) {
         super(token);
         this.body = body;
         if (body == null) {
-            this.body = new ArrayList<stmtType>();
+            this.body = new ArrayList<stmt>();
         }
         for(PythonTree t : this.body) {
             addChild(t);
         }
     }
 
-    public Suite(Integer ttype, Token token, java.util.List<stmtType> body) {
+    public Suite(Integer ttype, Token token, java.util.List<stmt> body) {
         super(ttype, token);
         this.body = body;
         if (body == null) {
-            this.body = new ArrayList<stmtType>();
+            this.body = new ArrayList<stmt>();
         }
         for(PythonTree t : this.body) {
             addChild(t);
         }
     }
 
-    public Suite(PythonTree tree, java.util.List<stmtType> body) {
+    public Suite(PythonTree tree, java.util.List<stmt> body) {
         super(tree);
         this.body = body;
         if (body == null) {
-            this.body = new ArrayList<stmtType>();
+            this.body = new ArrayList<stmt>();
         }
         for(PythonTree t : this.body) {
             addChild(t);

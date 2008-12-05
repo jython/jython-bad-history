@@ -5,6 +5,11 @@ import org.antlr.runtime.Token;
 import org.python.antlr.AST;
 import org.python.antlr.PythonTree;
 import org.python.antlr.adapter.AstAdapters;
+import org.python.antlr.base.excepthandler;
+import org.python.antlr.base.expr;
+import org.python.antlr.base.mod;
+import org.python.antlr.base.slice;
+import org.python.antlr.base.stmt;
 import org.python.core.ArgParser;
 import org.python.core.AstList;
 import org.python.core.Py;
@@ -21,10 +26,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 @ExposedType(name = "_ast.Compare", base = AST.class)
-public class Compare extends exprType {
+public class Compare extends expr {
 public static final PyType TYPE = PyType.fromClass(Compare.class);
-    private exprType left;
-    public exprType getInternalLeft() {
+    private expr left;
+    public expr getInternalLeft() {
         return left;
     }
     @ExposedGet(name = "left")
@@ -49,8 +54,8 @@ public static final PyType TYPE = PyType.fromClass(Compare.class);
         this.ops = AstAdapters.py2cmpopList(ops);
     }
 
-    private java.util.List<exprType> comparators;
-    public java.util.List<exprType> getInternalComparators() {
+    private java.util.List<expr> comparators;
+    public java.util.List<expr> getInternalComparators() {
         return comparators;
     }
     @ExposedGet(name = "comparators")
@@ -95,45 +100,45 @@ public static final PyType TYPE = PyType.fromClass(Compare.class);
         setComparators(comparators);
     }
 
-    public Compare(Token token, exprType left, java.util.List<cmpopType> ops,
-    java.util.List<exprType> comparators) {
+    public Compare(Token token, expr left, java.util.List<cmpopType> ops, java.util.List<expr>
+    comparators) {
         super(token);
         this.left = left;
         addChild(left);
         this.ops = ops;
         this.comparators = comparators;
         if (comparators == null) {
-            this.comparators = new ArrayList<exprType>();
+            this.comparators = new ArrayList<expr>();
         }
         for(PythonTree t : this.comparators) {
             addChild(t);
         }
     }
 
-    public Compare(Integer ttype, Token token, exprType left, java.util.List<cmpopType> ops,
-    java.util.List<exprType> comparators) {
+    public Compare(Integer ttype, Token token, expr left, java.util.List<cmpopType> ops,
+    java.util.List<expr> comparators) {
         super(ttype, token);
         this.left = left;
         addChild(left);
         this.ops = ops;
         this.comparators = comparators;
         if (comparators == null) {
-            this.comparators = new ArrayList<exprType>();
+            this.comparators = new ArrayList<expr>();
         }
         for(PythonTree t : this.comparators) {
             addChild(t);
         }
     }
 
-    public Compare(PythonTree tree, exprType left, java.util.List<cmpopType> ops,
-    java.util.List<exprType> comparators) {
+    public Compare(PythonTree tree, expr left, java.util.List<cmpopType> ops, java.util.List<expr>
+    comparators) {
         super(tree);
         this.left = left;
         addChild(left);
         this.ops = ops;
         this.comparators = comparators;
         if (comparators == null) {
-            this.comparators = new ArrayList<exprType>();
+            this.comparators = new ArrayList<expr>();
         }
         for(PythonTree t : this.comparators) {
             addChild(t);

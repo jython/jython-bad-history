@@ -8,8 +8,8 @@ import org.python.antlr.ast.Expr;
 import org.python.antlr.ast.Interactive;
 import org.python.antlr.ast.Module;
 import org.python.antlr.ast.Str;
-import org.python.antlr.ast.modType;
-import org.python.antlr.ast.stmtType;
+import org.python.antlr.base.mod;
+import org.python.antlr.base.stmt;
 
 import java.util.List;
 
@@ -62,7 +62,7 @@ public class Future {
         return true;
     }
 
-    public void preprocessFutures(modType node,
+    public void preprocessFutures(mod node,
                                   org.python.core.CompilerFlags cflags)
         throws Exception
     {
@@ -70,7 +70,7 @@ public class Future {
             division = cflags.division;
         }
         int beg = 0;
-        List<stmtType> suite = null;
+        List<stmt> suite = null;
         if (node instanceof Module) {
             suite = ((Module) node).getInternalBody();
             if (suite.size() > 0 && suite.get(0) instanceof Expr &&
@@ -84,11 +84,11 @@ public class Future {
         }
 
         for (int i = beg; i < suite.size(); i++) {
-            stmtType stmt = suite.get(i);
-            if (!(stmt instanceof ImportFrom))
+            stmt s = suite.get(i);
+            if (!(s instanceof ImportFrom))
                 break;
-            stmt.from_future_checked = true;
-            if (!check((ImportFrom) stmt))
+            s.from_future_checked = true;
+            if (!check((ImportFrom) s))
                 break;
         }
 

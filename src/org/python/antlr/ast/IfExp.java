@@ -5,6 +5,11 @@ import org.antlr.runtime.Token;
 import org.python.antlr.AST;
 import org.python.antlr.PythonTree;
 import org.python.antlr.adapter.AstAdapters;
+import org.python.antlr.base.excepthandler;
+import org.python.antlr.base.expr;
+import org.python.antlr.base.mod;
+import org.python.antlr.base.slice;
+import org.python.antlr.base.stmt;
 import org.python.core.ArgParser;
 import org.python.core.AstList;
 import org.python.core.Py;
@@ -21,10 +26,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 @ExposedType(name = "_ast.IfExp", base = AST.class)
-public class IfExp extends exprType {
+public class IfExp extends expr {
 public static final PyType TYPE = PyType.fromClass(IfExp.class);
-    private exprType test;
-    public exprType getInternalTest() {
+    private expr test;
+    public expr getInternalTest() {
         return test;
     }
     @ExposedGet(name = "test")
@@ -36,8 +41,8 @@ public static final PyType TYPE = PyType.fromClass(IfExp.class);
         this.test = AstAdapters.py2expr(test);
     }
 
-    private exprType body;
-    public exprType getInternalBody() {
+    private expr body;
+    public expr getInternalBody() {
         return body;
     }
     @ExposedGet(name = "body")
@@ -49,8 +54,8 @@ public static final PyType TYPE = PyType.fromClass(IfExp.class);
         this.body = AstAdapters.py2expr(body);
     }
 
-    private exprType orelse;
-    public exprType getInternalOrelse() {
+    private expr orelse;
+    public expr getInternalOrelse() {
         return orelse;
     }
     @ExposedGet(name = "orelse")
@@ -95,7 +100,7 @@ public static final PyType TYPE = PyType.fromClass(IfExp.class);
         setOrelse(orelse);
     }
 
-    public IfExp(Token token, exprType test, exprType body, exprType orelse) {
+    public IfExp(Token token, expr test, expr body, expr orelse) {
         super(token);
         this.test = test;
         addChild(test);
@@ -105,7 +110,7 @@ public static final PyType TYPE = PyType.fromClass(IfExp.class);
         addChild(orelse);
     }
 
-    public IfExp(Integer ttype, Token token, exprType test, exprType body, exprType orelse) {
+    public IfExp(Integer ttype, Token token, expr test, expr body, expr orelse) {
         super(ttype, token);
         this.test = test;
         addChild(test);
@@ -115,7 +120,7 @@ public static final PyType TYPE = PyType.fromClass(IfExp.class);
         addChild(orelse);
     }
 
-    public IfExp(PythonTree tree, exprType test, exprType body, exprType orelse) {
+    public IfExp(PythonTree tree, expr test, expr body, expr orelse) {
         super(tree);
         this.test = test;
         addChild(test);
