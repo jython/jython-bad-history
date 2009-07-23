@@ -1,3 +1,4 @@
+/* Copyright (c) Jython Developers */
 package org.python.core.util;
 
 import java.io.IOException;
@@ -99,7 +100,7 @@ public abstract class importer<T> extends PyObject {
         // module code may (directly or indirectly) import itself
         PyModule mod = imp.addModule(fullname);
         mod.__dict__.__setitem__("__loader__", this);
-        if (moduleCodeData.ispackage) {
+        if (moduleCodeData.isPackage) {
             // add __path__ to the module *before* the code gets executed
             PyList pkgpath = new PyList();
             pkgpath.add(makePackagePath(fullname));
@@ -127,7 +128,14 @@ public abstract class importer<T> extends PyObject {
         public abstract void close();
     }
 
-    protected abstract boolean isAcceptableBytecode(String searchPath, T entry);
+    /**
+     * Given a path to a compiled file in the archive, return the modification time of the
+     * matching .py file.
+     *
+     * @param path to the compiled file
+     * @return long mtime of the .py, or -1 if no source is available
+     */
+    protected abstract long getSourceMtime(String path);
 
     /**
      * Return module information for the module with the fully qualified name.
@@ -179,33 +187,35 @@ public abstract class importer<T> extends PyObject {
                 continue;
             }
 
-            boolean ispackage = entry.type.contains(EntryType.IS_PACKAGE);
-            boolean isbytecode = entry.type.contains(EntryType.IS_BYTECODE);
-
-            if (isbytecode && !isAcceptableBytecode(searchPath, tocEntry)) {
-                continue;
+            boolean isPackage = entry.type.contains(EntryType.IS_PACKAGE);
+            boolean isBytecode = entry.type.contains(EntryType.IS_BYTECODE);
+            long mtime = -1;
+            if (isBytecode) {
+                mtime = getSourceMtime(searchPath);
             }
 
             Bundle bundle = makeBundle(searchPath, tocEntry);
             byte[] codeBytes;
-            if (isbytecode) {
-                try {
-                    codeBytes = imp.readCode(fullname, bundle.inputStream, true);
-                } catch (IOException ioe) {
-                    throw Py.ImportError(ioe.getMessage() + "[path=" + fullSearchPath + "]");
+            try {
+                if (isBytecode) {
+                    try {
+                        codeBytes = imp.readCode(fullname, bundle.inputStream, true, mtime);
+                    } catch (IOException ioe) {
+                        throw Py.ImportError(ioe.getMessage() + "[path=" + fullSearchPath + "]");
+                    }
+                    if (codeBytes == null) {
+                        // bad magic number or non-matching mtime in byte code, try next
+                        continue;
+                    }
+                } else {
+                    codeBytes = imp.compileSource(fullname, bundle.inputStream, fullSearchPath);
                 }
-            } else {
-                codeBytes = imp.compileSource(fullname, bundle.inputStream, fullSearchPath);
-            }
-            bundle.close();
-
-            if (codeBytes == null) {
-                // bad magic number or non-matching mtime in byte code, try next
-                continue;
+            } finally {
+                bundle.close();
             }
 
             PyCode code = BytecodeLoader.makeCode(fullname + "$py", codeBytes, fullSearchPath);
-            return new ModuleCodeData(code, ispackage, fullSearchPath);
+            return new ModuleCodeData(code, isPackage, fullSearchPath);
         }
         return null;
     }
@@ -215,12 +225,12 @@ public abstract class importer<T> extends PyObject {
      */
     protected class ModuleCodeData {
         public PyCode code;
-        public boolean ispackage;
+        public boolean isPackage;
         public String path;
 
-        public ModuleCodeData(PyCode code, boolean ispackage, String path) {
+        public ModuleCodeData(PyCode code, boolean isPackage, String path) {
             this.code = code;
-            this.ispackage = ispackage;
+            this.isPackage = isPackage;
             this.path = path;
         }
     }

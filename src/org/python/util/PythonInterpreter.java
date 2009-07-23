@@ -101,6 +101,7 @@ public class PythonInterpreter {
     }
 
     /** @deprecated */
+    @Deprecated
     public void setOut(java.io.Writer outStream) {
         setOut(new PyFileWriter(outStream));
     }
@@ -120,6 +121,7 @@ public class PythonInterpreter {
     }
 
     /** @deprecated */
+    @Deprecated
     public void setErr(java.io.Writer outStream) {
         setErr(new PyFileWriter(outStream));
     }
@@ -177,7 +179,7 @@ public class PythonInterpreter {
 
     public void execfile(java.io.InputStream s, String name) {
         setState();
-        Py.runCode((PyCode)Py.compile_flags(s, name, CompileMode.exec, cflags), locals, locals);
+        Py.runCode(Py.compile_flags(s, name, CompileMode.exec, cflags), locals, locals);
         Py.flushLine();
     }
 

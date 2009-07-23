@@ -47,6 +47,12 @@ public class PyObject implements Serializable {
         primitiveMap.put(Long.TYPE, Long.class);
         primitiveMap.put(Float.TYPE, Float.class);
         primitiveMap.put(Double.TYPE, Double.class);
+
+        if (Py.BOOTSTRAP_TYPES.size() > 0) {
+            Py.writeWarning("init", "Bootstrap types weren't encountered in bootstrapping: "
+                            + Py.BOOTSTRAP_TYPES);
+            
+        }
     }
 
     public PyObject(PyType objtype) {
@@ -289,7 +295,7 @@ public class PyObject implements Serializable {
             try {
                 return __float__().getValue();
             } catch (PyException pye) {
-                if (!Py.matchException(pye, Py.AttributeError)) {
+                if (!pye.match(Py.AttributeError)) {
                     throw pye;
                 }
             }
@@ -451,7 +457,6 @@ public class PyObject implements Serializable {
         return __call__(arg0, arg1, arg2, arg3);
     }
 
-    /** @deprecated **/
     public PyObject _callextra(PyObject[] args,
                                String[] keywords,
                                PyObject starargs,
@@ -863,7 +868,7 @@ public class PyObject implements Serializable {
         try {
             return  __findattr_ex__(name);
         } catch (PyException exc) {
-            if (Py.matchException(exc, Py.AttributeError)) {
+            if (exc.match(Py.AttributeError)) {
                 return null;
             }
             throw exc;
@@ -899,7 +904,7 @@ public class PyObject implements Serializable {
      * @return the value corresponding to name
      * @exception Py.AttributeError if the name is not found.
      *
-     * @see #__findattr_ex__(PyString)
+     * @see #__findattr_ex__(String)
      **/
     public final PyObject __getattr__(PyString name) {
         return __getattr__(name.internedString());
@@ -1252,6 +1257,10 @@ public class PyObject implements Serializable {
      * @return -1 if this < 0; 0 if this == o; +1 if this > o
      **/
     public final int _cmp(PyObject o) {
+        if (this == o) {
+            return 0;
+        }
+
         PyObject token = null;
         ThreadState ts = Py.getThreadState();
         try {
@@ -1260,27 +1269,30 @@ public class PyObject implements Serializable {
                     return 0;
             }
 
-            PyObject r;
-            r = __eq__(o);
-            if (r != null && r.__nonzero__())
+            PyObject result;
+            result = __eq__(o);
+            if (result == null) {
+                result = o.__eq__(this);
+            }
+            if (result != null && result.__nonzero__()) {
                 return 0;
-            r = o.__eq__(this);
-            if (r != null && r.__nonzero__())
-                return 0;
+            }
 
-            r = __lt__(o);
-            if (r != null && r.__nonzero__())
+            result = __lt__(o);
+            if (result == null) {
+                result = o.__gt__(this);
+            }
+            if (result != null && result.__nonzero__()) {
                 return -1;
-            r = o.__gt__(this);
-            if (r != null && r.__nonzero__())
-                return -1;
+            }
 
-            r = __gt__(o);
-            if (r != null && r.__nonzero__())
+            result = __gt__(o);
+            if (result == null) {
+                result = o.__lt__(this);
+            }
+            if (result != null && result.__nonzero__()) {
                 return 1;
-            r = o.__lt__(this);
-            if (r != null && r.__nonzero__())
-                return 1;
+            }
 
             return _cmp_unsafe(o);
         } finally {
@@ -1673,7 +1685,7 @@ public class PyObject implements Serializable {
 
     final boolean object___contains__(PyObject o) {
         for (PyObject item : asIterable()) {
-            if (o._eq(item).__nonzero__()) {
+            if (o.equals(item)) {
                 return true;
             }
         }
@@ -3779,7 +3791,7 @@ public class PyObject implements Serializable {
             try {
                 obj_dict.__delitem__(name);
             } catch (PyException exc) {
-                if (Py.matchException(exc, Py.KeyError))
+                if (exc.match(Py.KeyError))
                     noAttributeError(name);
                 else
                     throw exc;
@@ -4007,7 +4019,7 @@ public class PyObject implements Serializable {
         try {
             intObj = __int__();
         } catch (PyException pye) {
-            if (Py.matchException(pye, Py.AttributeError)) {
+            if (pye.match(Py.AttributeError)) {
                 throw Py.TypeError("an integer is required");
             }
             throw pye;
@@ -4033,7 +4045,7 @@ public class PyObject implements Serializable {
         try {
             floatObj = __float__();
         } catch (PyException pye) {
-            if (Py.matchException(pye, Py.AttributeError)) {
+            if (pye.match(Py.AttributeError)) {
                 throw Py.TypeError("a float is required");
             }
             throw pye;
@@ -4061,13 +4073,6 @@ public class PyObject implements Serializable {
     public int asIndex(PyObject err) {
         // OverflowErrors are handled in PyLong.asIndex
         return __index__().asInt();
-    }
-
-    static {
-        for (Class<?> unbootstrapped : Py.BOOTSTRAP_TYPES) {
-            Py.writeWarning("init", "Bootstrap type wasn't encountered in bootstrapping[class="
-                    + unbootstrapped + "]");
-        }
     }
 }
 

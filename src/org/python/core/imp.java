@@ -11,6 +11,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.python.compiler.Module;
 import org.python.core.util.FileUtil;
+import org.python.core.util.PlatformUtil;
 
 /**
  * Utility functions for "import" support.
@@ -20,7 +21,7 @@ public class imp {
 
     private static final String UNKNOWN_SOURCEFILE = "<unknown>";
 
-    public static final int APIVersion = 20;
+    private static final int APIVersion = 24;
 
     public static final int NO_MTIME = -1;
 
@@ -79,7 +80,7 @@ public class imp {
                 modules.__delitem__(name);
             } catch (PyException pye) {
                 // another thread may have deleted it
-                if (!Py.matchException(pye, Py.KeyError)) {
+                if (!pye.match(Py.KeyError)) {
                     throw pye;
                 }
             }
@@ -362,7 +363,7 @@ public class imp {
                 importer = hook.__call__(p);
                 break;
             } catch (PyException e) {
-                if (!Py.matchException(e, Py.ImportError)) {
+                if (!e.match(Py.ImportError)) {
                     throw e;
                 }
             }
@@ -474,10 +475,12 @@ public class imp {
 
         boolean pkg = false;
         try {
-            pkg = dir.isDirectory() && caseok(dir, name) && (sourceFile.isFile()
-                                                                 || compiledFile.isFile());
+            pkg = dir.isDirectory() && caseok(dir, name)
+                    && (sourceFile.isFile() || compiledFile.isFile());
         } catch (SecurityException e) {
+            // ok
         }
+
         if (!pkg) {
             Py.writeDebug(IMPORT_LOG, "trying source " + dir.getPath());
             sourceName = name + ".py";
@@ -506,7 +509,7 @@ public class imp {
                         }
                     }
                     return createFromSource(modName, makeStream(sourceFile), displaySourceName,
-                                            compiledFile.getPath());
+                                            compiledFile.getPath(), pyTime);
                 }
                 return createFromSource(modName, makeStream(sourceFile), displaySourceName,
                                         compiledFile.getPath(), pyTime);
@@ -519,17 +522,32 @@ public class imp {
                                          displayCompiledName);
             }
         } catch (SecurityException e) {
+            // ok
         }
         return null;
     }
 
     public static boolean caseok(File file, String filename) {
-        if (Options.caseok) {
+        if (Options.caseok || !PlatformUtil.isCaseInsensitive()) {
             return true;
         }
         try {
             File canFile = new File(file.getCanonicalPath());
-            return filename.regionMatches(0, canFile.getName(), 0, filename.length());
+            boolean match = filename.regionMatches(0, canFile.getName(), 0, filename.length());
+            if (!match) {
+                //possibly a symlink.  Get parent and look for exact match in listdir()
+                //This is what CPython does in the case of Mac OS X and Cygwin.
+                //XXX: This will be a performance hit, maybe jdk7 nio2 can give us a better
+                //     method?
+                File parent = file.getParentFile();
+                String[] children = parent.list();
+                for (String c: children) {
+                    if (c.equals(filename)) {
+                        return true;
+                    }
+                }
+            }
+            return match;
         } catch (IOException exc) {
             return false;
         }
@@ -827,6 +845,7 @@ public class imp {
      * replaced by importFrom with level param.  Kept for backwards compatibility.
      * @deprecated use importFrom with level param.
      */
+    @Deprecated
     public static PyObject[] importFrom(String mod, String[] names,
             PyFrame frame) {
         return importFromAs(mod, names, null, frame, DEFAULT_LEVEL);
@@ -845,6 +864,7 @@ public class imp {
      * replaced by importFromAs with level param.  Kept for backwards compatibility.
      * @deprecated use importFromAs with level param.
      */
+    @Deprecated
     public static PyObject[] importFromAs(String mod, String[] names,
             PyFrame frame) {
         return importFromAs(mod, names, null, frame, DEFAULT_LEVEL);
@@ -984,5 +1004,9 @@ public class imp {
         PyObject ret = find_module(name, modName, path);
         modules.__setitem__(modName, ret);
         return ret;
+    }
+
+    public static int getAPIVersion() {
+        return APIVersion;
     }
 }

@@ -13,11 +13,13 @@ import java.nio.charset.Charset;
 import java.nio.charset.UnsupportedCharsetException;
 import java.security.AccessControlException;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.StringTokenizer;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
+import org.jruby.ext.posix.util.Platform;
 import org.python.Version;
 import org.python.core.adapter.ClassicPyObjectAdapter;
 import org.python.core.adapter.ExtensiblePyObjectAdapter;
@@ -36,7 +38,9 @@ public class PySystemState extends PyObject
 {
     public static final String PYTHON_CACHEDIR = "python.cachedir";
     public static final String PYTHON_CACHEDIR_SKIP = "python.cachedir.skip";
+    public static final String PYTHON_CONSOLE_ENCODING = "python.console.encoding";
     protected static final String CACHEDIR_DEFAULT_NAME = "cachedir";
+    public static final String PYTHON_JAVAPROXYDIR = "python.javaproxydir";
 
     public static final String JYTHON_JAR = "jython.jar";
     public static final String JYTHON_DEV_JAR = "jython-dev.jar";
@@ -135,6 +139,13 @@ public class PySystemState extends PyObject
     public PyObject last_type = Py.None;
     public PyObject last_traceback = Py.None;
 
+    private static String defaultJavaProxyDir;
+
+    /**
+     * The directory where named Java proxies are written.
+     */
+    public String javaproxy_dir;
+
     public PyObject __name__ = new PyString("sys");
 
     public PyObject __dict__;
@@ -164,19 +175,19 @@ public class PySystemState extends PyObject
         // Set up the initial standard ins and outs
         String mode = Options.unbuffered ? "b" : "";
         int buffering = Options.unbuffered ? 0 : 1;
-        stdout = new PyFile(System.out, "<stdout>", "w" + mode, buffering, false);
-        stderr = new PyFile(System.err, "<stderr>", "w" + mode, 0, false);
-        stdin = new PyFile(System.in, "<stdin>", "r" + mode, buffering, false);
+        stdin = __stdin__ = new PyFile(System.in, "<stdin>", "r" + mode, buffering, false);
+        stdout = __stdout__ = new PyFile(System.out, "<stdout>", "w" + mode, buffering, false);
+        stderr = __stderr__ = new PyFile(System.err, "<stderr>", "w" + mode, 0, false);
+        if (Py.getSystemState() != null) {
+            // XXX: initEncoding fails without an existing sys module as it can't import
+            // os (for os.isatty). In that case PySystemState.doInitialize calls it for
+            // us. The correct fix for this is rewriting the posix/nt module portions of
+            // os in Java
+            initEncoding();
+        }
+
         __displayhook__ = new PySystemStateFunctions("displayhook", 10, 1, 1);
         __excepthook__ = new PySystemStateFunctions("excepthook", 30, 3, 3);
-
-        String encoding = registry.getProperty("python.console.encoding", "US-ASCII");
-        ((PyFile)stdout).encoding = encoding;
-        ((PyFile)stderr).encoding = encoding;
-        ((PyFile)stdin).encoding = encoding;
-        __stdout__ = stdout;
-        __stderr__ = stderr;
-        __stdin__ = stdin;
 
         if (builtins == null) {
             builtins = getDefaultBuiltins();
@@ -186,6 +197,8 @@ public class PySystemState extends PyObject
         __dict__.invoke("update", getType().fastGetDict());
         __dict__.__setitem__("displayhook", __displayhook__);
         __dict__.__setitem__("excepthook", __excepthook__);
+
+        javaproxy_dir = defaultJavaProxyDir;
     }
 
     void reload() throws PyIgnoreMethodTag {
@@ -212,6 +225,20 @@ public class PySystemState extends PyObject
             name == "builtins" ||
             name == "warnoptions") {
             throw Py.TypeError("readonly attribute");
+        }
+    }
+
+    private void initEncoding() {
+        String encoding = registry.getProperty(PYTHON_CONSOLE_ENCODING);
+        if (encoding == null) {
+            return;
+        }
+
+        for (PyFile stdStream : new PyFile[] {(PyFile)this.stdin, (PyFile)this.stdout,
+                                              (PyFile)this.stderr}) {
+            if (stdStream.isatty()) {
+                stdStream.encoding = encoding;
+            }
         }
     }
 
@@ -466,16 +493,42 @@ public class PySystemState extends PyObject
      * @return a resolved path String
      */
     public String getPath(String path) {
+        return getPath(this, path);
+    }
+
+    /**
+     * Resolve a path. Returns the full path taking the current
+     * working directory into account.
+     *
+     * Like getPath but called statically. The current PySystemState
+     * is only consulted for the current working directory when it's
+     * necessary (when the path is relative).
+     *
+     * @param path a path String
+     * @return a resolved path String
+     */
+    public static String getPathLazy(String path) {
+        // XXX: This method likely an unnecessary optimization
+        return getPath(null, path);
+    }
+
+    private static String getPath(PySystemState sys, String path) {
         if (path == null) {
             return path;
-        } else {
-            File file = new File(path);
-            if (!file.isAbsolute()) {
-                file = new File(getCurrentWorkingDir(), path);
-            }
-            // This needs to be performed always to trim trailing backslashes on Windows
-            return file.getPath();
         }
+
+        File file = new File(path);
+        // Python considers r'\Jython25' and '/Jython25' abspaths on Windows, unlike
+        // java.io.File
+        if (!file.isAbsolute() && (!Platform.IS_WINDOWS
+                                   || !(path.startsWith("\\") || path.startsWith("/")))) {
+            if (sys == null) {
+                sys = Py.getSystemState();
+            }
+            file = new File(sys.getCurrentWorkingDir(), path);
+        }
+        // This needs to be performed always to trim trailing backslashes on Windows
+        return file.getPath();
     }
 
     public void callExitFunc() throws PyIgnoreMethodTag {
@@ -484,7 +537,7 @@ public class PySystemState extends PyObject
             try {
                 exitfunc.__call__();
             } catch (PyException exc) {
-                if (!Py.matchException(exc, Py.SystemExit)) {
+                if (!exc.match(Py.SystemExit)) {
                     Py.println(stderr,
                                Py.newString("Error in sys.exitfunc:"));
                 }
@@ -612,6 +665,17 @@ public class PySystemState extends PyObject
                 registry.put(PYTHON_CACHEDIR_SKIP, "true");
             }
         }
+        if (!registry.containsKey(PYTHON_CONSOLE_ENCODING)) {
+            String encoding;
+            try {
+                encoding = System.getProperty("file.encoding");
+            } catch (SecurityException se) {
+                encoding = null;
+            }
+            if (encoding != null) {
+                registry.put(PYTHON_CONSOLE_ENCODING, encoding);
+            }
+        }
         // Set up options from registry
         Options.setFromRegistry();
     }
@@ -626,9 +690,10 @@ public class PySystemState extends PyObject
                     FileInputStream fp = new FileInputStream(file);
                     try {
                         fileProperties.load(fp);
-                        for (Object key : fileProperties.keySet()) {
+                        for (Entry kv : fileProperties.entrySet()) {
+                            Object key = kv.getKey();
                             if (!registry.containsKey(key)) {
-                                registry.put(key, fileProperties.get(key));
+                                registry.put(key, kv.getValue());
                             }
                         }
                     } finally {
@@ -643,10 +708,10 @@ public class PySystemState extends PyObject
         }
     }
 
-    public static Properties getBaseProperties(){
-        try{
+    public static Properties getBaseProperties() {
+        try {
             return System.getProperties();
-        }catch(AccessControlException ace){
+        } catch (AccessControlException ace) {
             return new Properties();
         }
     }
@@ -802,6 +867,8 @@ public class PySystemState extends PyObject
         // other initializations
         initBuiltins(registry);
         initStaticFields();
+        defaultJavaProxyDir = registry.getProperty(PYTHON_JAVAPROXYDIR);
+
         // Initialize the path (and add system defaults)
         defaultPath = initPath(registry, standalone, jarFileName);
         defaultArgv = initArgv(argv);
@@ -815,6 +882,8 @@ public class PySystemState extends PyObject
             Py.defaultSystemState.setClassLoader(classLoader);
         }
         Py.initClassExceptions(getDefaultBuiltins());
+        // defaultSystemState can't init its own encoding, see its constructor
+        Py.defaultSystemState.initEncoding();
         // Make sure that Exception classes have been loaded
         new PySyntaxError("", 1, 1, "", "");
         return Py.defaultSystemState;
@@ -1038,7 +1107,8 @@ public class PySystemState extends PyObject
         // we expect an URL like jar:file:/install_dir/jython.jar!/org/python/core/PySystemState.class
         if (url != null) {
             try {
-                String urlString = URLDecoder.decode(url.toString());
+                String urlString = URLDecoder.decode(url.toString(),
+                                                     Charset.defaultCharset().name());
                 int jarSeparatorIndex = urlString.lastIndexOf(JAR_SEPARATOR);
                 if (urlString.startsWith(JAR_URL_PREFIX) && jarSeparatorIndex > 0) {
                     jarFileName = urlString.substring(JAR_URL_PREFIX.length(), jarSeparatorIndex);
@@ -1115,24 +1185,6 @@ public class PySystemState extends PyObject
      */
     public static void add_extdir(String directoryPath, boolean cache) {
         packageManager.addJarDir(directoryPath, cache);
-    }
-
-    /**
-     * Resolve a path. Returns the full path taking the current
-     * working directory into account.
-     *
-     * Like getPath but called statically. The current PySystemState
-     * is only consulted for the current working directory when it's
-     * necessary (when the path is relative).
-     *
-     * @param path a path String
-     * @return a resolved path String
-     */
-    public static String getPathLazy(String path) {
-        if (path == null || new File(path).isAbsolute()) {
-            return path;
-        }
-        return new File(Py.getSystemState().getCurrentWorkingDir(), path).getPath();
     }
 
     // Not public by design. We can't rebind the displayhook if

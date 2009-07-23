@@ -17,7 +17,6 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 
 import org.python.core.Py;
-import org.python.core.imp;
 import org.python.core.util.FileUtil;
 
 /**
@@ -135,6 +134,18 @@ public class StreamIO extends RawIOBase {
     }
 
     /** {@inheritDoc} */
+    public void flush() {
+        if (outputStream == null) {
+            return;
+        }
+        try {
+            outputStream.flush();
+        } catch (IOException ioe) {
+            throw Py.IOError(ioe);
+        }
+    }
+
+    /** {@inheritDoc} */
     public void close() {
         if (closed()) {
             return;
@@ -173,8 +184,9 @@ public class StreamIO extends RawIOBase {
             } catch (Exception e) {
                 // XXX: masking other exceptions
             } finally {
-                if (inField != null && inField.isAccessible())
+                if (inField != null && inField.isAccessible()) {
                     inField.setAccessible(false);
+                }
             }
         }
         return null;
@@ -197,8 +209,9 @@ public class StreamIO extends RawIOBase {
             } catch (Exception e) {
                 // XXX: masking other exceptions
             } finally {
-                if (outField != null && outField.isAccessible())
+                if (outField != null && outField.isAccessible()) {
                     outField.setAccessible(false);
+                }
             }
         }
         return null;

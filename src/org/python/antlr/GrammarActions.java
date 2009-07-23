@@ -9,6 +9,7 @@ import org.python.core.PyInteger;
 import org.python.core.PyLong;
 import org.python.core.PyString;
 import org.python.core.PyUnicode;
+import org.python.core.codecs;
 import org.python.antlr.ast.alias;
 import org.python.antlr.ast.arguments;
 import org.python.antlr.ast.boolopType;
@@ -22,19 +23,14 @@ import org.python.antlr.ast.Attribute;
 import org.python.antlr.ast.BinOp;
 import org.python.antlr.ast.BoolOp;
 import org.python.antlr.ast.Call;
-import org.python.antlr.ast.ClassDef;
-import org.python.antlr.ast.Expression;
 import org.python.antlr.ast.ExtSlice;
 import org.python.antlr.ast.For;
 import org.python.antlr.ast.FunctionDef;
 import org.python.antlr.ast.GeneratorExp;
-import org.python.antlr.ast.If;
 import org.python.antlr.ast.IfExp;
 import org.python.antlr.ast.Index;
-import org.python.antlr.ast.Interactive;
 import org.python.antlr.ast.Lambda;
 import org.python.antlr.ast.ListComp;
-import org.python.antlr.ast.Module;
 import org.python.antlr.ast.Name;
 import org.python.antlr.ast.Num;
 import org.python.antlr.ast.Slice;
@@ -48,7 +44,6 @@ import org.python.antlr.ast.While;
 import org.python.antlr.ast.Yield;
 import org.python.antlr.base.excepthandler;
 import org.python.antlr.base.expr;
-import org.python.antlr.base.mod;
 import org.python.antlr.base.slice;
 import org.python.antlr.base.stmt;
 
@@ -447,8 +442,12 @@ public class GrammarActions {
                                                        ustring);
             }
         } else if (raw) {
-            // Raw str without an encoding or raw unicode: simply passthru
+            // Raw str without an encoding or raw unicode
             string = string.substring(start, end);
+            if (ustring) {
+                // Raw unicode: handle unicode escapes
+                string = codecs.PyUnicode_DecodeRawUnicodeEscape(string, "strict");
+            }
         } else {
             // Plain unicode: already decoded, just handle escapes
             string = PyString.decode_UnicodeEscape(string, start, end, "strict", ustring);

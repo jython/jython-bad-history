@@ -12,6 +12,7 @@ import java.util.zip.ZipFile;
 import org.python.core.ArgParser;
 import org.python.core.Py;
 import org.python.core.PyDictionary;
+import org.python.core.PyException;
 import org.python.core.PyInteger;
 import org.python.core.PyLong;
 import org.python.core.PyObject;
@@ -97,6 +98,7 @@ public class zipimporter extends importer<PyObject> {
                   break;
               }
             } catch (SecurityException se) {
+                // continue
             }
 
             // back up one path element
@@ -127,10 +129,6 @@ public class zipimporter extends importer<PyObject> {
         return zipimporter_find_module(fullname, null);
     }
 
-    public PyObject find_module(String fullname, String path) {
-        return zipimporter_find_module(fullname, path);
-    }
-
     /**
      * Find the module for the fully qualified name.
      *
@@ -139,13 +137,13 @@ public class zipimporter extends importer<PyObject> {
      * @return a loader instance if this importer can load the module, None
      *         otherwise
      */
+    public PyObject find_module(String fullname, String path) {
+        return zipimporter_find_module(fullname, path);
+    }
+
     @ExposedMethod(defaults = "null")
     final PyObject zipimporter_find_module(String fullname, String path) {
         return importer_find_module(fullname, path);
-    }
-
-    public PyObject load_module(String fullname) {
-        return zipimporter_load_module(fullname);
     }
 
     /**
@@ -154,13 +152,13 @@ public class zipimporter extends importer<PyObject> {
      * @param fullname the fully qualified name of the module
      * @return a loaded PyModule
      */
+    public PyObject load_module(String fullname) {
+        return zipimporter_load_module(fullname);
+    }
+
     @ExposedMethod
     final PyObject zipimporter_load_module(String fullname) {
         return importer_load_module(fullname);
-    }
-
-    public String get_data(String path) {
-        return zipimporter_get_data(path);
     }
 
     /**
@@ -170,6 +168,10 @@ public class zipimporter extends importer<PyObject> {
      * @param path a String path name within the archive
      * @return a String of data in binary mode (no CRLF)
      */
+    public String get_data(String path) {
+        return zipimporter_get_data(path);
+    }
+
     @ExposedMethod
     final String zipimporter_get_data(String path) {
         int len = archive.length();
@@ -186,18 +188,12 @@ public class zipimporter extends importer<PyObject> {
         byte[] data;
         try {
             data = FileUtil.readBytes(zipBundle.inputStream);
-        }
-        catch (IOException ioe) {
+        } catch (IOException ioe) {
             throw Py.IOError(ioe);
-        }
-        finally {
+        } finally {
             zipBundle.close();
         }
         return StringUtil.fromBytes(data);
-    }
-
-    public boolean is_package(String fullname) {
-        return zipimporter_is_package(fullname);
     }
 
     /**
@@ -207,17 +203,17 @@ public class zipimporter extends importer<PyObject> {
      * @param fullname the fully qualified name of the module
      * @return a boolean describing if the module is a package
      */
+    public boolean is_package(String fullname) {
+        return zipimporter_is_package(fullname);
+    }
+
     @ExposedMethod
     final boolean zipimporter_is_package(String fullname) {
         ModuleInfo moduleInfo = getModuleInfo(fullname);
         if (moduleInfo == ModuleInfo.NOT_FOUND) {
-            throw zipimport.ZipImportError("can't find module '" + fullname + "'");
+            throw zipimport.ZipImportError(String.format("can't find module '%s'", fullname));
         }
         return moduleInfo == ModuleInfo.PACKAGE;
-    }
-
-    public PyObject get_code(String fullname) {
-        return zipimporter_get_code(fullname);
     }
 
     /**
@@ -226,6 +222,10 @@ public class zipimporter extends importer<PyObject> {
      * @param fullname the fully qualified name of the module
      * @return the module's PyCode object or None
      */
+    public PyObject get_code(String fullname) {
+        return zipimporter_get_code(fullname);
+    }
+
     @ExposedMethod
     final PyObject zipimporter_get_code(String fullname) {
         ModuleCodeData moduleCodeData = getModuleCode(fullname);
@@ -235,10 +235,6 @@ public class zipimporter extends importer<PyObject> {
         return Py.None;
     }
 
-    public String get_source(String fullname) {
-        return zipimporter_get_source(fullname);
-    }
-
     /**
      * Return the source code for the module as a string (using
      * newline characters for line endings)
@@ -246,6 +242,10 @@ public class zipimporter extends importer<PyObject> {
      * @param fullname the fully qualified name of the module
      * @return a String of the module's source code or null
      */
+    public String get_source(String fullname) {
+        return zipimporter_get_source(fullname);
+    }
+
     @ExposedMethod
     final String zipimporter_get_source(String fullname) {
         ModuleInfo moduleInfo = getModuleInfo(fullname);
@@ -254,14 +254,13 @@ public class zipimporter extends importer<PyObject> {
             return null;
         }
         if (moduleInfo == ModuleInfo.NOT_FOUND) {
-            throw zipimport.ZipImportError("can't find module '" + fullname + "'");
+            throw zipimport.ZipImportError(String.format("can't find module '%s'", fullname));
         }
 
         String path = makeFilename(fullname);
         if (moduleInfo == ModuleInfo.PACKAGE) {
             path += File.separator + "__init__.py";
-        }
-        else {
+        } else {
             path += ".py";
         }
 
@@ -282,52 +281,46 @@ public class zipimporter extends importer<PyObject> {
      * @return a ZipBundle with an InputStream to the file's
      * uncompressed data
      */
+    @Override
     public ZipBundle makeBundle(String datapath, PyObject entry) {
         datapath = datapath.replace(File.separatorChar, '/');
         ZipFile zipArchive;
         try {
             zipArchive = new ZipFile(new File(sys.getPath(archive)));
-        }
-        catch (IOException ioe) {
+        } catch (IOException ioe) {
             throw zipimport.ZipImportError("zipimport: can not open file: " + archive);
         }
 
         ZipEntry dataEntry = zipArchive.getEntry(datapath);
         try {
             return new ZipBundle(zipArchive, zipArchive.getInputStream(dataEntry));
-        }
-        catch (IOException ioe) {
+        } catch (IOException ioe) {
             Py.writeDebug("import", "zipimporter.getDataStream exception: " + ioe.toString());
             throw zipimport.ZipImportError("zipimport: can not open file: " + archive);
         }
     }
 
-    /**
-     * Determine if the byte code at path with the specified toc entry has a modification time
-     * greater than its accompanying source code's.
-     *
-     * @param path
-     *            a String path to the byte code
-     * @param tocEntry
-     *            the byte code's PyObject toc entry
-     * @return boolean whether or not the byte code is older
-     */
-    protected boolean isAcceptableBytecode(String path, PyObject tocEntry) {
+    @Override
+    protected long getSourceMtime(String path) {
         String sourcePath = path.substring(0, path.length() - 9) + ".py";
         PyObject sourceTocEntry = files.__finditem__(sourcePath);
         if (sourceTocEntry == null) {
-            return true;// If there is no source, assume the bytecode is ok
+            return -1;
         }
+
+        int time;
+        int date;
         try {
-            long bytecodeTime = dosTimeToEpoch(tocEntry.__finditem__(5).asInt(0),
-                                             tocEntry.__finditem__(6).asInt(0));
-            long sourceTime = dosTimeToEpoch(sourceTocEntry.__finditem__(5).asInt(0),
-                                             sourceTocEntry.__finditem__(6).asInt(0));
-            return bytecodeTime < sourceTime;
+            time = sourceTocEntry.__finditem__(5).asInt();
+            date = sourceTocEntry.__finditem__(6).asInt();
+        } catch (PyException pye) {
+            if (!pye.match(Py.TypeError)) {
+                throw pye;
+            }
+            time = -1;
+            date = -1;
         }
-        catch (PyObject.ConversionException ce) {
-            return false;
-        }
+        return dosTimeToEpoch(time, date);
     }
 
     /**
@@ -336,9 +329,42 @@ public class zipimporter extends importer<PyObject> {
      * Given a path to a Zip archive, build a dict, mapping file names
      * (local to the archive, using SEP as a separator) to toc entries.
      *
+     * @param archive PyString path to the archive
+     * @return a PyDictionary of tocEntrys
+     * @see #readZipFile(ZipFile, PyObject)
+     */
+    private PyObject readDirectory(String archive) {
+        File file = new File(sys.getPath(archive));
+        if (!file.canRead()) {
+            throw zipimport.ZipImportError(String.format("can't open Zip file: '%s'", archive));
+        }
+
+        ZipFile zipFile;
+        try {
+            zipFile = new ZipFile(file);
+        } catch (IOException ioe) {
+            throw zipimport.ZipImportError(String.format("can't read Zip file: '%s'", archive));
+        }
+
+        PyObject files = new PyDictionary();
+        try {
+            readZipFile(zipFile, files);
+        } finally {
+            try {
+                zipFile.close();
+            } catch (IOException ioe) {
+                throw Py.IOError(ioe);
+            }
+        }
+        return files;
+    }
+
+    /**
+     * Read ZipFile metadata into a dict of toc entries.
+     *
      * A tocEntry is a tuple:
      *
-     *     (__file__,      # value to use for __file__, available for all files
+     *     (__file__,     # value to use for __file__, available for all files
      *     compress,      # compression kind; 0 for uncompressed
      *     data_size,     # size of compressed data on disk
      *     file_size,     # size of decompressed data
@@ -348,40 +374,26 @@ public class zipimporter extends importer<PyObject> {
      *     crc,           # crc checksum of the data
      *     )
      *
-     * Directories can be recognized by the trailing SEP in the name,
-     * data_size and file_offset are 0.
+     * Directories can be recognized by the trailing SEP in the name, data_size and
+     * file_offset are 0.
      *
-     * @param archive PyString path to the archive
-     * @return a PyDictionary of tocEntrys
+     * @param zipFile ZipFile to read
+     * @param files a dict-like PyObject
      */
-    private PyObject readDirectory(String archive) {
-        File file = new File(sys.getPath(archive));
-        if (!file.canRead()) {
-            throw zipimport.ZipImportError("can't open Zip file: '" + archive + "'");
-        }
-
-        ZipFile zipFile;
-        try {
-            zipFile = new ZipFile(file);
-        }
-        catch (IOException ioe) {
-            throw zipimport.ZipImportError("can't read Zip file: '" + archive + "'");
-        }
-
-        PyObject files = new PyDictionary();
+    private void readZipFile(ZipFile zipFile, PyObject files) {
         for (Enumeration<? extends ZipEntry> zipEntries = zipFile.entries();
              zipEntries.hasMoreElements();) {
             ZipEntry zipEntry = zipEntries.nextElement();
             String name = zipEntry.getName().replace('/', File.separatorChar);
 
             PyObject __file__ = new PyString(archive + File.separator + name);
-            PyObject compress = new PyInteger(zipEntry.getMethod());
+            PyObject compress = Py.newInteger(zipEntry.getMethod());
             PyObject data_size = new PyLong(zipEntry.getCompressedSize());
             PyObject file_size = new PyLong(zipEntry.getSize());
-            // file_offset is a CPython optimization; it's used to
-            // seek directly to the file when reading it later. Jython
-            // doesn't do this nor is the offset available
-            PyObject file_offset = new PyInteger(-1);
+            // file_offset is a CPython optimization; it's used to seek directly to the
+            // file when reading it later. Jython doesn't do this nor is the offset
+            // available
+            PyObject file_offset = Py.newInteger(-1);
             PyObject time = new PyInteger(epochToDosTime(zipEntry.getTime()));
             PyObject date = new PyInteger(epochToDosDate(zipEntry.getTime()));
             PyObject crc = new PyLong(zipEntry.getCrc());
@@ -390,30 +402,14 @@ public class zipimporter extends importer<PyObject> {
                                         time, date, crc);
             files.__setitem__(new PyString(name), entry);
         }
-
-        try {
-            zipFile.close();
-        }
-        catch (IOException ioe) {
-            throw Py.IOError(ioe);
-        }
-
-        return files;
     }
 
+    @Override
     protected String getSeparator() {
         return File.separator;
     }
 
-    /**
-     * Given a full module name, return the potential file path in the archive (without extension).
-     *
-     * @param prefix
-     *            a String value
-     * @param name
-     *            a String modulename value
-     * @return the file path String value
-     */
+    @Override
     protected String makeFilename(String fullname) {
         return prefix + getSubname(fullname).replace('.', File.separatorChar);
     }
@@ -454,7 +450,10 @@ public class zipimporter extends importer<PyObject> {
      * @param time in milliseconds, a long value
      * @return an int, dos style date value
      */
+    @SuppressWarnings("deprecation")
     private int epochToDosDate(long time) {
+        // This and the other conversion methods are cut and pasted from
+        // java.util.zip.ZipEntry: hence the use deprecated Date APIs
         Date d = new Date(time);
         int year = d.getYear() + 1900;
         if (year < 1980) {
@@ -469,6 +468,7 @@ public class zipimporter extends importer<PyObject> {
      * @param time in milliseconds, a long value
      * @return an int, dos style time value
      */
+    @SuppressWarnings("deprecation")
     private int epochToDosTime(long time) {
         Date d = new Date(time);
         return d.getHours() << 11 | d.getMinutes() << 5 | d.getSeconds() >> 1;
@@ -482,6 +482,7 @@ public class zipimporter extends importer<PyObject> {
      * @param dosdate a dos style date integer
      * @return a long time (in milliseconds) value
      */
+    @SuppressWarnings("deprecation")
     private long dosTimeToEpoch(int dosTime, int dosDate) {
         Date d = new Date(((dosDate >> 9) & 0x7f) + 80,
                           ((dosDate >> 5) & 0x0f) - 1,
@@ -492,6 +493,7 @@ public class zipimporter extends importer<PyObject> {
         return d.getTime();
     }
 
+    @Override
     public String toString() {
         return zipimporter_toString();
     }
@@ -523,11 +525,11 @@ public class zipimporter extends importer<PyObject> {
          *
          * Raises an IOError if a problem occurred.
          */
+        @Override
         public void close() {
             try {
                 zipFile.close();
-            }
-            catch (IOException ioe) {
+            } catch (IOException ioe) {
                 throw Py.IOError(ioe);
             }
         }

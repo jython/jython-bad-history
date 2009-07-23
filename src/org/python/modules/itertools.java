@@ -1,3 +1,4 @@
+/* Copyright (c) Jython Developers */
 package org.python.modules;
 
 import java.util.ArrayList;
@@ -55,7 +56,7 @@ public class itertools implements ClassDictInit {
             try {
                 element = pyIter.__iternext__();//next();
             } catch (PyException pyEx) {
-                if (Py.matchException(pyEx, Py.StopIteration)) {
+                if (pyEx.match(Py.StopIteration)) {
                     // store exception - will be used by PyIterator.next()
                     stopException = pyEx;
                 } else {
@@ -109,15 +110,14 @@ public class itertools implements ClassDictInit {
      */
     public static PyIterator cycle(final PyObject sequence) {
         return new ItertoolsIterator() {
-            List saved = new ArrayList();
+            List<PyObject> saved = new ArrayList<PyObject>();
             int counter = 0;
             PyObject iter = sequence.__iter__();
 
             boolean save = true;
 
             public PyObject __iternext__() {
-                
-                if(save) {
+                if (save) {
                     PyObject obj = nextElement(iter);
                     if (obj != null) {
                         saved.add(obj);
@@ -126,16 +126,16 @@ public class itertools implements ClassDictInit {
                         save = false;
                     }
                 }
-                if(saved.size() == 0) {
+                if (saved.size() == 0) {
                     return null;
                 }
                 
                 // pick element from saved List
-                if(counter >= saved.size()) {
+                if (counter >= saved.size()) {
                     // start over again
                     counter = 0;
                 }
-                return (PyObject) saved.get(counter++);
+                return saved.get(counter++);
             }
 
         };
@@ -293,7 +293,7 @@ public class itertools implements ClassDictInit {
                 value = Py.py2int(obj);
             }
             catch (PyException pyEx) {
-                if (Py.matchException(pyEx, Py.TypeError)) {
+                if (pyEx.match(Py.TypeError)) {
                     throw Py.ValueError(msg);
                 } else {
                     throw pyEx;

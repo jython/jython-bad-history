@@ -13,7 +13,7 @@ import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 
 import com.kenai.constantine.platform.Errno;
-import org.python.core.imp;
+import org.jruby.ext.posix.util.Platform;
 import org.python.core.Py;
 import org.python.core.util.FileUtil;
 import org.python.core.util.RelativeFile;
@@ -163,13 +163,18 @@ public class FileIO extends RawIOBase {
             try {
                 fileChannel.truncate(0);
             } catch (IOException ioe) {
-                // On Solaris and Linux, ftruncate(3C) returns EINVAL
-                // if not a regular file whereas, e.g.,
-                // open("/dev/null", "w") works fine.  Because we have
-                // to simulate the "w" mode in Java, we suppress the
-                // exception.
-                if (ioe.getMessage().equals("Invalid argument"))
+                // On Solaris and Linux, ftruncate(3C) returns EINVAL if not a regular
+                // file whereas, e.g., open(os.devnull, "w") works. Because we have to
+                // simulate the "w" mode in Java, we suppress the exception.
+                // Likewise Windows returns ERROR_INVALID_FUNCTION in that case and
+                // ERROR_INVALID_HANDLE on ttys. Identifying those by the IOException
+                // message is tedious as their messages are localized, so we suppress them
+                // all =[
+                if (Platform.IS_WINDOWS ||
+                    ((Platform.IS_SOLARIS || Platform.IS_LINUX)
+                     && Errno.EINVAL.description().equals(ioe.getMessage()))) {
                     return;
+                }
                 throw Py.IOError(ioe);
             }
         }

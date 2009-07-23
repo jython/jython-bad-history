@@ -2,19 +2,11 @@ package org.python.modules._collections;
 
 import org.python.core.PyIterator;
 import org.python.core.PyObject;
-import org.python.core.PySequenceIter;
 import org.python.core.PyTuple;
 import org.python.core.PyType;
 import org.python.core.Py;
 import org.python.core.PyException;
-import org.python.core.PyInteger;
-import org.python.core.PyLong;
-import org.python.core.PyNewWrapper;
-import org.python.core.PyMethodDescr;
 import org.python.core.PyBuiltinCallable;
-import org.python.core.PyBuiltinMethod;
-import org.python.core.PyBuiltinMethodNarrow;
-import org.python.core.PyString;
 import org.python.core.ThreadState;
 import org.python.expose.ExposedMethod;
 import org.python.expose.ExposedNew;
@@ -262,7 +254,7 @@ public class PyDeque extends PyObject {
         try {
             return deque___getitem__(key);
         } catch (PyException pe) {
-            if (Py.matchException(pe, Py.KeyError)) {
+            if (pe.match(Py.KeyError)) {
                 return null;
             }
             throw pe;
@@ -443,7 +435,7 @@ public class PyDeque extends PyObject {
             ol2 = o2.__len__();
         }
         for (int i = 0 ; i < ol1 && i < ol2; i++) {
-            if (!o1.__getitem__(i)._eq(o2.__getitem__(i)).__nonzero__()) {
+            if (!o1.__getitem__(i).equals(o2.__getitem__(i))) {
                 return i;
             }
         }

@@ -3,11 +3,13 @@ import unittest
 import subprocess
 import sys
 from test import test_support
-from java.lang import Byte, Class
-from java.util import ArrayList, Collections, HashMap, Observable, Observer 
+from java.lang import Byte, Class, Integer
+from java.util import ArrayList, Collections, HashMap, LinkedList, Observable, Observer 
 from org.python.tests import (Coercions, HiddenSuper, InterfaceCombination, Invisible, Matryoshka,
         OnlySubclassable, OtherSubVisible, SomePyMethods, SubVisible, Visible, VisibleOverride)
 from org.python.tests import VisibilityResults as Results
+from org.python.tests.RedundantInterfaceDeclarations import (Implementation, ExtraClass,
+        ExtraString, ExtraStringAndClass, ExtraClassAndString)
 
 class VisibilityTest(unittest.TestCase):
     def test_invisible(self):
@@ -154,6 +156,16 @@ class VisibilityTest(unittest.TestCase):
         synchList = Collections.synchronizedList(ArrayList())
         synchList.add("a string")
         self.assertEquals("a string", synchList.remove(0))
+
+    def test_interface_methods_merged(self):
+        '''Checks that declaring an interface redundantly doesn't hide merged methods.
+
+        Bug #1381'''
+        for impl in Implementation, ExtraString, ExtraClass, ExtraStringAndClass, ExtraClassAndString:
+            instance = impl()
+            self.assertEquals("String", instance.call("string argument"))
+            self.assertEquals("int", instance.call(7))
+            self.assertEquals("Class", instance.call(LinkedList))
 
 class JavaClassTest(unittest.TestCase):
     def test_class_methods_visible(self):

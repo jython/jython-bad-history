@@ -2,6 +2,8 @@
 AMAK: 20050515: This module is the test_socket.py from cpython 2.4, ported to jython.
 """
 
+import java
+
 import unittest
 from test import test_support
 
@@ -23,6 +25,7 @@ MSG = 'Michael Gilfix was here\n'
 EIGHT_BIT_MSG = 'Bh\xed Al\xe1in \xd3 Cinn\xe9ide anseo\n'
 os_name = platform.java_ver()[3][0]
 is_bsd = os_name == 'Mac OS X' or 'BSD' in os_name
+is_solaris = os_name == 'SunOS'
 
 try:
     True
@@ -307,22 +310,6 @@ class GeneralModuleTests(unittest.TestCase):
         if not fqhn in all_host_names:
             self.fail("Error testing host resolution mechanisms.")
 
-    def testGetAddrInfo(self):
-        try:
-            socket.getaddrinfo(HOST, PORT, 9999)
-        except socket.gaierror, gaix:
-            self.failUnlessEqual(gaix[0], errno.EIO)
-        except Exception, x:
-            self.fail("getaddrinfo with bad family raised wrong exception: %s" % x)
-        else:
-            self.fail("getaddrinfo with bad family should have raised exception")
-            
-        addrinfos = socket.getaddrinfo(HOST, PORT)
-        for addrinfo in addrinfos:
-            family, socktype, proto, canonname, sockaddr = addrinfo
-            self.assert_(isinstance(canonname, str))
-            self.assert_(isinstance(sockaddr[0], str))
-
     def testRefCountGetNameInfo(self):
         # Testing reference count for getnameinfo
         import sys
@@ -535,8 +522,11 @@ class TestSocketOptions(unittest.TestCase):
         for expected_value in values:
             sock.setsockopt(level, option, expected_value)
             retrieved_value = sock.getsockopt(level, option)
-            self.failUnlessEqual(retrieved_value, expected_value, \
-                "Retrieved option(%s, %s) value %s != %s(value set)" % (level, option, retrieved_value, expected_value))
+            msg = "Retrieved option(%s, %s) value %s != %s(value set)" % (level, option, retrieved_value, expected_value)
+            if is_solaris and option == socket.SO_RCVBUF:
+                self.assert_(retrieved_value >= expected_value, msg)
+            else:
+                self.failUnlessEqual(retrieved_value, expected_value, msg)
 
     def _testUDPOption(self, level, option, values):
         try:
@@ -565,8 +555,8 @@ class TestSocketOptions(unittest.TestCase):
             sock.bind( (HOST, PORT+1) )
             sock.connect( (HOST, PORT) )
             msg = "Option value '%s'='%s' did not propagate to implementation socket" % (option, values[-1])
-            if is_bsd and option in (socket.SO_RCVBUF, socket.SO_SNDBUF):
-                # XXX: there's no guarantee that bufsize will be the
+            if ((is_bsd or is_solaris) and option in (socket.SO_RCVBUF, socket.SO_SNDBUF)):
+                # NOTE: there's no guarantee that bufsize will be the
                 # exact setsockopt value, particularly after
                 # establishing a connection. seems it will be *at least*
                 # the values we test (which are rather small) on
@@ -587,8 +577,12 @@ class TestSocketOptions(unittest.TestCase):
             # now bind and listen on the socket i.e. cause the implementation socket to be created
             sock.bind( (HOST, PORT) )
             sock.listen(50)
-            self.failUnlessEqual(sock.getsockopt(level, option), values[-1], \
-                 "Option value '(%s,%s)'='%s' did not propagate to implementation socket" % (level, option, values[-1]))
+            msg = "Option value '(%s,%s)'='%s' did not propagate to implementation socket" % (level, option, values[-1])
+            if is_solaris and option == socket.SO_RCVBUF:
+                # NOTE: see similar bsd/solaris workaround above
+                self.assert_(sock.getsockopt(level, option) >= values[-1], msg)
+            else:
+                self.failUnlessEqual(sock.getsockopt(level, option), values[-1], msg)
             self._testSetAndGetOption(sock, level, option, values)
         finally:
             sock.close()
@@ -862,6 +856,28 @@ class BasicUDPTest(ThreadedUDPSocketTest):
     def _testSendtoAndRecvTimeoutMode(self):
         self.cli.settimeout(10)
         self.cli.sendto(MSG, 0, (self.HOST, self.PORT))
+
+    def testSendAndRecv(self):
+        # Testing send() and recv() over connect'ed UDP
+        msg = self.serv.recv(len(MSG))
+        self.assertEqual(msg, MSG)
+
+    def _testSendAndRecv(self):
+        self.cli.connect( (self.HOST, self.PORT) )
+        self.cli.send(MSG, 0)
+
+    def testSendAndRecvTimeoutMode(self):
+        # Need to test again in timeout mode, which follows
+        # a different code path
+        self.serv.settimeout(10)
+        # Testing send() and recv() over connect'ed UDP
+        msg = self.serv.recv(len(MSG))
+        self.assertEqual(msg, MSG)
+
+    def _testSendAndRecvTimeoutMode(self):
+        self.cli.connect( (self.HOST, self.PORT) )
+        self.cli.settimeout(10)
+        self.cli.send(MSG, 0)
 
     def testRecvFrom(self):
         # Testing recvfrom() over UDP
@@ -1429,6 +1445,49 @@ class UDPTimeoutTest(SocketUDPTest):
         if not ok:
             self.fail("recv() returned success when we did not expect it")
 
+class TestGetAddrInfo(unittest.TestCase):
+
+    def testBadFamily(self):
+        try:
+            socket.getaddrinfo(HOST, PORT, 9999)
+        except socket.gaierror, gaix:
+            self.failUnlessEqual(gaix[0], errno.EIO)
+        except Exception, x:
+            self.fail("getaddrinfo with bad family raised wrong exception: %s" % x)
+        else:
+            self.fail("getaddrinfo with bad family should have raised exception")
+
+    def testReturnsAreStrings(self):
+        addrinfos = socket.getaddrinfo(HOST, PORT)
+        for addrinfo in addrinfos:
+            family, socktype, proto, canonname, sockaddr = addrinfo
+            self.assert_(isinstance(canonname, str))
+            self.assert_(isinstance(sockaddr[0], str))
+
+    def testAI_PASSIVE(self):
+        IPV4_LOOPBACK = "127.0.0.1"
+        local_hostname = java.net.InetAddress.getLocalHost().getHostName()
+        local_ip_address = java.net.InetAddress.getLocalHost().getHostAddress()
+        for flags, host_param, expected_canonname, expected_sockaddr in [
+            # First passive flag
+            (socket.AI_PASSIVE, None, "", socket.INADDR_ANY),
+            (socket.AI_PASSIVE, "", "", local_ip_address),
+            (socket.AI_PASSIVE, "localhost", "", IPV4_LOOPBACK),
+            (socket.AI_PASSIVE, local_hostname, "", local_ip_address),
+            # Now passive flag AND canonname flag
+            # Commenting out all AI_CANONNAME tests, results too dependent on system config
+            #(socket.AI_PASSIVE|socket.AI_CANONNAME, None, "127.0.0.1", "127.0.0.1"),
+            #(socket.AI_PASSIVE|socket.AI_CANONNAME, "", local_hostname, local_ip_address),
+            # The following gives varying results across platforms and configurations: commenting out for now.
+            # Javadoc: http://java.sun.com/j2se/1.5.0/docs/api/java/net/InetAddress.html#getCanonicalHostName()
+            #(socket.AI_PASSIVE|socket.AI_CANONNAME, "localhost", local_hostname, IPV4_LOOPBACK),
+            #(socket.AI_PASSIVE|socket.AI_CANONNAME, local_hostname, local_hostname, local_ip_address),
+        ]:
+            addrinfos = socket.getaddrinfo(host_param, 0, socket.AF_INET, socket.SOCK_STREAM, 0, flags)
+            for family, socktype, proto, canonname, sockaddr in addrinfos:
+                self.failUnlessEqual(expected_canonname, canonname, "For hostname '%s' and flags %d, canonname '%s' != '%s'" % (host_param, flags, expected_canonname, canonname) )
+                self.failUnlessEqual(expected_sockaddr, sockaddr[0], "For hostname '%s' and flags %d, sockaddr '%s' != '%s'" % (host_param, flags, expected_sockaddr, sockaddr[0]) )
+
 class TestExceptions(unittest.TestCase):
 
     def testExceptionTree(self):
@@ -1632,6 +1691,7 @@ def test_main():
         TCPClientTimeoutTest,
         TestExceptions,
         TestInvalidUsage,
+        TestGetAddrInfo,
         TestTCPAddressParameters,
         TestUDPAddressParameters,
         UDPBindTest,

@@ -56,8 +56,10 @@ public class PyJavaType extends PyType {
         super(TYPE == null ? fromClass(PyType.class) : TYPE);
     }
 
+    @Override
     protected boolean useMetatypeFirst(PyObject attr) {
-        return !(attr instanceof PyReflectedField || attr instanceof PyReflectedFunction);
+        return !(attr instanceof PyReflectedField || attr instanceof PyReflectedFunction ||
+                attr instanceof PyBeanEventProperty);
     }
 
     // Java types are ok with things being added and removed from their dicts as long as there isn't
@@ -184,7 +186,7 @@ public class PyJavaType extends PyType {
             underlying_class = forClass;
             computeLinearMro(baseClass);
         } else {
-                needsInners.add(this);
+            needsInners.add(this);
             javaProxy = forClass;
             objtype = PyType.fromClassSkippingInners(Class.class, needsInners);
             // Wrapped Java types fill in their mro first using all of their interfaces then their
@@ -195,6 +197,12 @@ public class PyJavaType extends PyType {
                     // Don't show the interfaces added by proxy type construction; otherwise Python
                     // subclasses of proxy types and another Java interface can't make a consistent
                     // mro
+                    continue;
+                }
+                if (baseClass != null && iface.isAssignableFrom(baseClass)) {
+                    // Don't include redundant interfaces. If the redundant interface has methods
+                    // that were combined with methods of the same name from other interfaces higher
+                    // in the hierarchy, adding it here hides the forms from those interfaces.
                     continue;
                 }
                 visibleBases.add(PyType.fromClassSkippingInners(iface, needsInners));
@@ -420,10 +428,11 @@ public class PyJavaType extends PyType {
                 // up, it'll be rejected below
                 if (prop.setMethod == null) {
                     prop.setMethod = superProp.setMethod;
-                } else if (superProp.myType == prop.setMethod.getParameterTypes()[0]) {
-                    // Otherwise, we must not have a get method. Only take a get method if the type
-                    // on it agrees with the set method we already have. The bean on this type
-                    // overrides a conflicting one o the parent
+                } else if (prop.getMethod == null
+                           && superProp.myType == prop.setMethod.getParameterTypes()[0]) {
+                    // Only take a get method if the type on it agrees with the set method
+                    // we already have. The bean on this type overrides a conflicting one
+                    // of the parent
                     prop.getMethod = superProp.getMethod;
                     prop.myType = superProp.myType;
                 }
@@ -510,16 +519,16 @@ public class PyJavaType extends PyType {
                 @Override
                 public PyObject __call__(PyObject o) {
                     Object proxy = self.getJavaProxy();
-                    Object oAsJava = o.__tojava__(proxy.getClass());
-                    return proxy.equals(oAsJava) ? Py.True : Py.False;
+                    Object oProxy = o.getJavaProxy();
+                    return proxy.equals(oProxy) ? Py.True : Py.False;
                 }
             });
             addMethod(new PyBuiltinMethodNarrow("__ne__", 1) {
                 @Override
                 public PyObject __call__(PyObject o) {
                     Object proxy = self.getJavaProxy();
-                    Object oAsJava = o.__tojava__(proxy.getClass());
-                    return !proxy.equals(oAsJava) ? Py.True : Py.False;
+                    Object oProxy = o.getJavaProxy();
+                    return !proxy.equals(oProxy) ? Py.True : Py.False;
                 }
             });
             addMethod(new PyBuiltinMethodNarrow("__hash__") {
@@ -890,9 +899,6 @@ public class PyJavaType extends PyType {
 
         @Override
         public void setSlice(int start, int stop, int step, PyObject value) {
-            if (stop < start) {
-                stop = start;
-            }
             if (step == 0) {
                 return;
             }

@@ -103,8 +103,8 @@ public class PyFile extends PyObject {
      * method <code>file</code> doesn't expose this functionality (<code>open</code> does
      * albeit deprecated) as it isn't available to regular Python code. To wrap an
      * InputStream in a file from Python, use
-     * {@link FileUtil#wrap(InputStream, int)}
-     * {@link FileUtil#wrap(InputStream)}
+     * {@link util.FileUtil#wrap(InputStream, int)}
+     * {@link util.FileUtil#wrap(InputStream)}
      */
     public PyFile(InputStream istream, int bufsize) {
         this(istream, "<Java InputStream '" + istream + "' as file>", "r", bufsize, true);
@@ -124,8 +124,8 @@ public class PyFile extends PyObject {
      * method <code>file</code> doesn't expose this functionality (<code>open</code> does
      * albeit deprecated) as it isn't available to regular Python code. To wrap an
      * OutputStream in a file from Python, use
-     * {@link FileUtil#wrap(OutputStream, int)}
-     * {@link FileUtil#wrap(OutputStream)}
+     * {@link util.FileUtil#wrap(OutputStream, int)}
+     * {@link util.FileUtil#wrap(OutputStream)}
      */
     public PyFile(OutputStream ostream, int bufsize) {
         this(ostream, "<Java OutputStream '" + ostream + "' as file>", "w", bufsize, true);
@@ -493,20 +493,13 @@ public class PyFile extends PyObject {
 
     @ExposedMethod(names = {"__str__", "__repr__"}, doc = BuiltinDocs.file___str___doc)
     final String file_toString() {
-        StringBuilder s = new StringBuilder("<");
-        if (file.closed()) {
-            s.append("closed ");
-        } else {
-            s.append("open ");
+        String state = file.closed() ? "closed" : "open";
+        String id = Py.idstr(this);
+        if (name instanceof PyUnicode) {
+            String escapedName = PyString.encode_UnicodeEscape(name.toString(), false);
+            return String.format("<%s file u'%s', mode '%s' at %s>", state, escapedName, mode, id);
         }
-        s.append("file ");
-        s.append(name.__repr__());
-        s.append(", mode '");
-        s.append(mode);
-        s.append("' at ");
-        s.append(Py.idstr(this));
-        s.append(">");
-        return s.toString();
+        return String.format("<%s file '%s', mode '%s' at %s>", state, name, mode, id);
     }
 
     public String toString() {

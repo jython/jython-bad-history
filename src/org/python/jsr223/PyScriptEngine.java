@@ -132,7 +132,7 @@ public class PyScriptEngine extends AbstractScriptEngine implements Compilable, 
 
     private static Object throwInvokeException(PyException pye, String methodName)
             throws ScriptException, NoSuchMethodException {
-        if (Py.matchException(pye, Py.AttributeError)) {
+        if (pye.match(Py.AttributeError)) {
             throw new NoSuchMethodException(methodName);
         }
         throw scriptException(pye);
