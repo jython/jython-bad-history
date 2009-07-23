@@ -22,14 +22,14 @@ import java.util.regex.Pattern;
 
 import org.antlr.runtime.CharStream;
 import org.antlr.runtime.CommonTokenStream;
-
 import org.python.antlr.BaseParser;
-import org.python.antlr.ParseException;
 import org.python.antlr.NoCloseReaderStream;
-import org.python.antlr.PythonTree;
+import org.python.antlr.ParseException;
 import org.python.antlr.PythonLexer;
-import org.python.antlr.PythonPartial;
+import org.python.antlr.PythonPartialLexer;
+import org.python.antlr.PythonPartialParser;
 import org.python.antlr.PythonTokenSource;
+import org.python.antlr.PythonTree;
 import org.python.antlr.base.mod;
 import org.python.core.io.StreamIO;
 import org.python.core.io.TextIOInputStream;
@@ -228,16 +228,15 @@ public class ParserFacade {
     }
 
     private static boolean validPartialSentence(BufferedReader bufreader, CompileMode kind, String filename) {
-        PythonLexer lexer = null;
+        PythonPartialLexer lexer = null;
         try {
             bufreader.reset();
             CharStream cs = new NoCloseReaderStream(bufreader);
-            lexer = new BaseParser.PyLexer(cs);
-            lexer.partial = true;
+            lexer = new BaseParser.PyPartialLexer(cs);
             CommonTokenStream tokens = new CommonTokenStream(lexer);
             PythonTokenSource indentedSource = new PythonTokenSource(tokens, filename);
             tokens = new CommonTokenStream(indentedSource);
-            PythonPartial parser = new PythonPartial(tokens);
+            PythonPartialParser parser = new PythonPartialParser(tokens);
             switch (kind) {
             case single:
                 parser.single_input();
@@ -271,7 +270,16 @@ public class ParserFacade {
                                                                 CompilerFlags cflags,
                                                                 String filename)
         throws IOException {
-        return new ExpectedEncodingBufferedReader(new BufferedReader(reader), null);
+        cflags.source_is_utf8 = true;
+        cflags.encoding = "utf-8";
+        
+        BufferedReader bufferedReader = new BufferedReader(reader);
+        bufferedReader.mark(MARK_LIMIT);
+        if (findEncoding(bufferedReader) != null)
+            throw new ParseException("encoding declaration in Unicode string");
+        bufferedReader.reset();
+
+        return new ExpectedEncodingBufferedReader(bufferedReader, null);
     }
 
     private static ExpectedEncodingBufferedReader prepBufReader(InputStream input,

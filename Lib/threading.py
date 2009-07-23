@@ -5,6 +5,7 @@ from java.util.concurrent.locks import ReentrantLock
 from org.python.util import jython
 from thread import _newFunctionThread
 from thread import _local as local
+from _threading import Lock, RLock, Condition
 import java.lang.Thread
 import weakref
 
@@ -55,77 +56,6 @@ def settrace(func):
     global _trace_hook
     _trace_hook = func
 
-def RLock(*args, **kwargs):
-    return _RLock(*args, **kwargs)
-
-class _RLock(object):
-    def __init__(self):
-        self._lock = ReentrantLock()
-        self.__owner = None
-
-    def acquire(self, blocking=1):
-        if blocking:
-            self._lock.lock()
-            self.__owner = currentThread()
-            return True
-        else:
-            return self._lock.tryLock()
-
-    def __enter__(self):
-        self.acquire()
-        return self
-
-    def release(self):
-        assert self._lock.isHeldByCurrentThread(), \
-            "release() of un-acquire()d lock"
-        self.__owner = None
-        self._lock.unlock()
-
-    def __exit__(self, t, v, tb):
-        self.release()
-
-    def locked(self):
-        return self._lock.isLocked()
-
-    def _is_owned(self):
-        return self._lock.isHeldByCurrentThread()
-
-Lock = _RLock
-
-class Condition(object):
-    def __init__(self, lock=None):
-        if lock is None:
-            lock = RLock()
-        self._lock = lock
-        self._condition = lock._lock.newCondition()
-
-    def acquire(self):
-        return self._lock.acquire()
-
-    def __enter__(self):
-        self.acquire()
-        return self
-    
-    def release(self):
-        return self._lock.release()
-
-    def __exit__(self, t, v, tb):
-        self.release()
-
-    def wait(self, timeout=None):
-        if timeout:
-            return self._condition.awaitNanos(int(timeout * 1e9))
-        else:
-            return self._condition.await()
-
-    def notify(self):
-        return self._condition.signal()
-
-    def notifyAll(self):
-        return self._condition.signalAll()
-
-    def _is_owned(self):
-        return self._lock._lock.isHeldByCurrentThread()
 
 class Semaphore(object):
     def __init__(self, value=1):
@@ -200,7 +130,7 @@ class JavaThread(object):
         return self._thread.getName()
     
     def setName(self, name):
-        self._thread.setName(name)
+        self._thread.setName(str(name))
 
     def isAlive(self):
         return self._thread.isAlive()
@@ -218,6 +148,7 @@ _jthread_to_pythread = Collections.synchronizedMap(WeakHashMap())
 
 class Thread(JavaThread):
     def __init__(self, group=None, target=None, name=None, args=None, kwargs=None):
+        assert group is None, "group argument must be None for now"
         _thread = self._create_thread()
         JavaThread.__init__(self, _thread)
         if args is None:
@@ -228,7 +159,7 @@ class Thread(JavaThread):
         self._args = args
         self._kwargs = kwargs
         if name:
-            self._thread.setName(name)
+            self._thread.setName(str(name))
 
     def _create_thread(self):
         return _newFunctionThread(self.__bootstrap, ())
@@ -294,7 +225,7 @@ class Thread(JavaThread):
         pass
 
     def __delete(self):
-        pass
+        del _threads[self._thread.getId()]
 
 
 class _MainThread(Thread):

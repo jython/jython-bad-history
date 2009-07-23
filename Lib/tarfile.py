@@ -1210,6 +1210,7 @@ class TarFile(object):
         try:
             t = cls.taropen(name, mode, fileobj)
         except IOError:
+            fileobj.close()
             raise ReadError("not a gzip file")
         t._extfileobj = False
         return t
@@ -1229,12 +1230,16 @@ class TarFile(object):
 
         if fileobj is not None:
             fileobj = _BZ2Proxy(fileobj, mode)
+            extfileobj = True
         else:
             fileobj = bz2.BZ2File(name, mode, compresslevel=compresslevel)
+            extfileobj = False
 
         try:
             t = cls.taropen(name, mode, fileobj)
         except IOError:
+            if not extfileobj:
+                fileobj.close()
             raise ReadError("not a bzip2 file")
         t._extfileobj = False
         return t
@@ -1331,8 +1336,11 @@ class TarFile(object):
                 statres = os.lstat(name)
             else:
                 statres = os.stat(name)
-        else:
+        elif hasattr(os, 'fstat'):
             statres = os.fstat(fileobj.fileno())
+        else:
+            raise NotImplementedError('fileobj argument not supported on this '
+                                      'platform (no os.fstat)')
         linkname = ""
 
         stmd = statres.st_mode

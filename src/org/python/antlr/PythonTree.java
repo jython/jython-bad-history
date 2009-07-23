@@ -176,6 +176,7 @@ public class PythonTree extends AST {
 		node.setChildIndex(index);
 	}
 
+    @Override
     public String toString() {
         if (isNil()) {
             return "None";
@@ -245,7 +246,7 @@ public class PythonTree extends AST {
         throw new RuntimeException("Unexpected node: " + this);
     }
     
-    public void traverse(VisitorIF visitor) throws Exception {
+    public void traverse(VisitorIF<?> visitor) throws Exception {
         throw new RuntimeException("Cannot traverse node: " + this);
     }
  
@@ -295,7 +296,7 @@ public class PythonTree extends AST {
 		if ( t==null ) {
 			return; // do nothing upon addChild(null)
 		}
-		PythonTree childTree = (PythonTree)t;
+		PythonTree childTree = t;
 		if ( childTree.isNil() ) { // t is an empty node possibly with children
 			if ( this.children!=null && this.children == childTree.children ) {
 				throw new RuntimeException("attempt to add child list to itself");
@@ -443,7 +444,7 @@ public class PythonTree extends AST {
 	public void freshenParentAndChildIndexes(int offset) {
 		int n = getChildCount();
 		for (int c = offset; c < n; c++) {
-			PythonTree child = (PythonTree)getChild(c);
+			PythonTree child = getChild(c);
 			child.setChildIndex(c);
 			child.setParent(this);
 		}

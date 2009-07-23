@@ -151,7 +151,7 @@ public class PyType extends PyObject implements Serializable {
         }
 
         PyType type;
-        if (new_.for_type == metatype || metatype == PyType.fromClass(Class.class)) {
+        if (new_.for_type == metatype) {
             // XXX: set metatype
             type = new PyType();
         } else {
@@ -437,7 +437,7 @@ public class PyType extends PyObject implements Serializable {
             type_prepended[0] = type;
             newobj = new_.__get__(null, type).__call__(type_prepended, keywords);
         }
-        /* special case type(x) */
+        // special case type(x)
         if (type == TYPE && args.length == 1 && keywords.length == 0) {
             return newobj;
         }
@@ -579,11 +579,9 @@ public class PyType extends PyObject implements Serializable {
         if (module != null) {
             proxyName = module.toString() + "$" + proxyName;
         }
-        Class<?> proxyClass = MakeProxies.makeProxy(baseProxyClass, interfaces, name, proxyName,
-                                                    dict);
-        javaProxy = proxyClass;
+        javaProxy = MakeProxies.makeProxy(baseProxyClass, interfaces, name, proxyName, dict);
 
-        PyType proxyType = PyType.fromClass(proxyClass);
+        PyType proxyType = PyType.fromClass((Class<?>)javaProxy);
         List<PyObject> cleanedBases = Generic.list();
         boolean addedProxyType = false;
         for (PyObject base : bases) {
@@ -869,6 +867,7 @@ public class PyType extends PyObject implements Serializable {
     }
 
     PyObject[] computeMro(MROMergeState[] toMerge, List<PyObject> mro) {
+        boolean addedProxy = false;
         scan : for (int i = 0; i < toMerge.length; i++) {
             if (toMerge[i].isMerged()) {
                 continue scan;
@@ -880,7 +879,7 @@ public class PyType extends PyObject implements Serializable {
                     continue scan;
                 }
             }
-            if (!(this instanceof PyJavaType) && candidate instanceof PyJavaType
+            if (!addedProxy && !(this instanceof PyJavaType) && candidate instanceof PyJavaType
                     && candidate.javaProxy != null
                     && PyProxy.class.isAssignableFrom(((Class<?>)candidate.javaProxy))
                     && candidate.javaProxy != javaProxy) {
@@ -889,6 +888,7 @@ public class PyType extends PyObject implements Serializable {
                 // This exposes the methods from the proxy generated for this class in addition to
                 // those generated for the superclass while allowing methods from the superclass to
                 // remain visible from the proxies.
+                addedProxy = true;
                 mro.add(PyType.fromClass(((Class<?>)javaProxy)));
             }
             mro.add(candidate);
@@ -1051,8 +1051,9 @@ public class PyType extends PyObject implements Serializable {
             PyObject dict = element.fastGetDict();
             if (dict != null) {
                 PyObject obj = dict.__finditem__(name);
-                if (obj != null)
+                if (obj != null) {
                     return obj;
+                }
             }
         }
         return null;

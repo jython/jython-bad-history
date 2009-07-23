@@ -21,6 +21,7 @@ class BuiltinFunctions extends PyBuiltinFunctionSet {
         super(name, index, minargs, maxargs);
     }
 
+    @Override
     public PyObject __call__() {
         switch (this.index) {
             case 4:
@@ -42,6 +43,7 @@ class BuiltinFunctions extends PyBuiltinFunctionSet {
         }
     }
 
+    @Override
     public PyObject __call__(PyObject arg1) {
         switch (this.index) {
             case 0:
@@ -121,6 +123,7 @@ class BuiltinFunctions extends PyBuiltinFunctionSet {
         }
     }
 
+    @Override
     public PyObject __call__(PyObject arg1, PyObject arg2) {
         switch (this.index) {
             case 2:
@@ -176,6 +179,7 @@ class BuiltinFunctions extends PyBuiltinFunctionSet {
         }
     }
 
+    @Override
     public PyObject __call__(PyObject arg1, PyObject arg2, PyObject arg3) {
         switch (this.index) {
             case 2:
@@ -244,6 +248,7 @@ class BuiltinFunctions extends PyBuiltinFunctionSet {
         }
     }
 
+    @Override
     public PyObject __call__(PyObject arg1, PyObject arg2, PyObject arg3, PyObject arg4) {
         switch (this.index) {
             case 44:
@@ -261,6 +266,7 @@ class BuiltinFunctions extends PyBuiltinFunctionSet {
         }
     }
 
+    @Override
     public PyObject fancyCall(PyObject[] args) {
         switch (this.index) {
             case 29:
@@ -272,6 +278,7 @@ class BuiltinFunctions extends PyBuiltinFunctionSet {
         }
     }
 
+    @Override
     public PyObject getModule() {
         return module;
     }
@@ -465,10 +472,6 @@ public class __builtin__ {
         return x._divmod(y);
     }
 
-    public static PyEnumerate enumerate(PyObject seq) {
-        return new PyEnumerate(seq);
-    }
-
     private static boolean PyMapping_check(PyObject o, boolean rw) {
         return o == null ||
                o == Py.None ||
@@ -527,7 +530,7 @@ public class __builtin__ {
         PyCode code;
 
         try {
-            code = (PyCode)Py.compile_flags(file, name, CompileMode.exec, cflags);
+            code = Py.compile_flags(file, name, CompileMode.exec, cflags);
         } finally {
             try {
                 file.close();
@@ -548,13 +551,11 @@ public class __builtin__ {
 
     public static PyObject filter(PyObject func, PyObject seq) {
         if (seq instanceof PyString) {
-            if (seq instanceof PyUnicode) {
-                return filterunicode(func, (PyUnicode)seq);
-            }
-            return filterstring(func, (PyString)seq);
+            return filterBaseString(func, (PyString)seq,
+                                    seq instanceof PyUnicode ? PyUnicode.TYPE : PyString.TYPE);
         }
         if (seq instanceof PyTuple) {
-            return filtertuple(func, (PyTuple)seq);
+            return filterTuple(func, (PyTuple)seq);
         }
 
         PyList list = new PyList();
@@ -571,8 +572,8 @@ public class __builtin__ {
         return list;
     }
 
-    public static PyObject filterstring(PyObject func, PyString seq) {
-        if (func == Py.None && seq.getType() == PyString.TYPE) {
+    public static PyObject filterBaseString(PyObject func, PyBaseString seq, PyType stringType) {
+        if (func == Py.None && seq.getType() == stringType) {
             // If it's a real string we can return the original, as no character is ever
             // false and __getitem__ does return this character. If it's a subclass we
             // must go through the __getitem__ loop
@@ -580,82 +581,47 @@ public class __builtin__ {
         }
 
         StringBuilder builder = new StringBuilder();
-        boolean ok;
         for (PyObject item : seq.asIterable()) {
-            ok = false;
             if (func == Py.None) {
-                if (item.__nonzero__()) {
-                    ok = true;
+                if (!item.__nonzero__()) {
+                    continue;
                 }
-            } else if (func.__call__(item).__nonzero__()) {
-                ok = true;
+            } else if (!func.__call__(item).__nonzero__()) {
+                continue;
             }
-            if (ok) {
-                if (!(item instanceof PyString) || item instanceof PyUnicode) {
-                    throw Py.TypeError("can't filter str to str: __getitem__ returned different "
-                                       + "type");
-                }
-                builder.append(item.toString());
+            if (!Py.isInstance(item, stringType)) {
+                String name = stringType.fastGetName();
+                throw Py.TypeError(String.format("can't filter %s to %s: __getitem__ returned "
+                                                 + "different type", name, name));
             }
+            builder.append(item.toString());
         }
-        return new PyString(builder.toString());
+
+        String result = builder.toString();
+        return stringType == PyString.TYPE ? new PyString(result) : new PyUnicode(result);
     }
 
-    public static PyObject filterunicode(PyObject func, PyUnicode seq) {
-        if (func == Py.None && seq.getType() == PyUnicode.TYPE) {
-            // If it's a real string we can return the original, as no character is ever
-            // false and __getitem__ does return this character. If it's a subclass we
-            // must go through the __getitem__ loop
-            return seq;
-        }
-
-        StringBuilder builder = new StringBuilder();
-        boolean ok;
-        for (PyObject item : seq.asIterable()) {
-            ok = false;
-            if (func == Py.None) {
-                if (item.__nonzero__()) {
-                    ok = true;
-                }
-            } else if (func.__call__(item).__nonzero__()) {
-                ok = true;
-            }
-            if (ok) {
-                if (!(item instanceof PyUnicode)) {
-                    throw Py.TypeError("can't filter unicode to unicode: __getitem__ returned "
-                                       + "different type");
-                }
-                builder.append(item.toString());
-            }
-        }
-        return new PyUnicode(builder.toString());
-    }
-
-    public static PyObject filtertuple(PyObject func, PyTuple seq) {
-        int len = seq.__len__();
+    public static PyObject filterTuple(PyObject func, PyTuple seq) {
+        int len = seq.size();
         if (len == 0) {
             if (seq.getType() != PyTuple.TYPE) {
-                seq = new PyTuple();
+                return Py.EmptyTuple;
             }
             return seq;
         }
 
         PyList list = new PyList();
         PyObject item;
-        boolean ok;
         for (int i = 0; i < len; i++) {
-            ok = false;
             item = seq.__finditem__(i);
             if (func == Py.None) {
-                if (item.__nonzero__()) {
-                    ok = true;
+                if (!item.__nonzero__()) {
+                    continue;
                 }
-            } else if (func.__call__(item).__nonzero__()) {
-                ok = true;
+            } else if (!func.__call__(item).__nonzero__()) {
+                continue;
             }
-            if (ok) {
-                list.append(item);
-            }
+            list.append(item);
         }
         return PyTuple.fromIterable(list);
     }
@@ -678,7 +644,7 @@ public class __builtin__ {
         try {
             result = obj.__getattr__(nameStr.intern());
         } catch (PyException pye) {
-            if (Py.matchException(pye, Py.AttributeError) && def != null) {
+            if (pye.match(Py.AttributeError) && def != null) {
                 result = def;
             } else {
                 throw pye;
@@ -1151,7 +1117,7 @@ public class __builtin__ {
         try {
             return o.__getattr__("__dict__");
         } catch (PyException e) {
-            if (Py.matchException(e, Py.AttributeError)) {
+            if (e.match(Py.AttributeError)) {
                 throw Py.TypeError("vars() argument must have __dict__ attribute");
             }
             throw e;
@@ -1189,7 +1155,7 @@ public class __builtin__ {
                 try {
                     item = iters[j].__iternext__();
                 } catch (PyException e) {
-                    if (Py.matchException(e, Py.StopIteration)) {
+                    if (e.match(Py.StopIteration)) {
                         return ret;
                     }
                     throw e;
@@ -1254,6 +1220,7 @@ class ImportFunction extends PyBuiltinFunction {
               "is the number of parent directories to search relative to the current module.");
     }
 
+    @Override
     public PyObject __call__(PyObject args[], String keywords[]) {
         ArgParser ap = new ArgParser("__import__", args, keywords,
                                      new String[]{"name", "globals", "locals", "fromlist", "level"},
@@ -1469,6 +1436,7 @@ class RoundFunction extends PyBuiltinFunction {
               "This always returns a floating point number.  Precision may be negative.");
     }
 
+    @Override
     public PyObject __call__(PyObject args[], String kwds[]) {
         ArgParser ap = new ArgParser("round", args, kwds, new String[] {"number", "ndigits"}, 0);
         PyObject number = ap.getPyObject(0);
@@ -1507,6 +1475,7 @@ class CompileFunction extends PyBuiltinFunction {
               + "in addition to any features explicitly specified.");
     }
 
+    @Override
     public PyObject __call__(PyObject args[], String kwds[]) {
         ArgParser ap = new ArgParser("compile", args, kwds,
                                      new String[] {"source", "filename", "mode", "flags",
@@ -1589,6 +1558,7 @@ class OpenFunction extends PyBuiltinFunction {
             "Passing an Input/OutputStream to open is deprecated, use "
             + "org.python.core.util.FileUtil.wrap(stream[, bufsize]) instead.";
 
+    @Override
     public PyObject __call__(PyObject args[], String kwds[]) {
         ArgParser ap = new ArgParser("file", args, kwds, new String[] {"name", "mode", "bufsize"},
                                      1);

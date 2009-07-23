@@ -1,6 +1,53 @@
 Jython NEWS
 
-Jython 2.5.0 rc 1
+Jython 2.5.1
+  New Features
+    - Upgraded to ANTLR 3.1.3
+    - [ 1859477 ] Dynamically loaded ServletFilters like PyServlet
+    - Setting __javaname__ in classes subclassing Java classes or implementing Java interfaces sets
+      the name of the produced proxy class.
+  Bugs Fixed
+    - [ 645615 ] cannot import through symbolic links
+    - [ 1366 ] parsing of lamda expression fails
+    - [ 1365 ] continuation lines fail in interactive interpreter
+    - [ 1377 ] Event names shadowed by a field name on Java types leads to a NPE
+    - [ 1381 ] Redundant declarations of interface implementation hides overriden methods
+    - [ 1189 ] MD5 hash is incorrectly calculated when string contains non-latin chars and using python md5 lib
+    - [ 1802339 ] Problem printing unicode when stdout intercepted
+
+Jython 2.5.0
+  The same as rc4.
+
+Jython 2.5.0 rc4
+  Bugs fixed
+    - [ 1354 ] core language failures in interactive interpreter
+    - [ 1358 ] Simple program fails to parse in Jython 2.5rc3, but parses OK with CPython
+    - [ 1357 ] no sys.executable when script runner is a relative link
+    - [ 1338 ] Comparing Java objects to each other fails when classes of values do not match
+    - [ 1363 ] Deep inheritance from a Java class causes MRO problems
+    - [ 1333 ] attribute wrongly deemed 'write-only' if setter comes from an interface
+    - [ 1364 ] SimpleHTTPServer.py contains call to missing os.fstat
+    - [ 1367 ] PIpes (popen2) do not flush their buffer
+    - [ 1368 ] '\xe4'.decode('utf-8') does not raise UnicodeDecodeError but returns u''
+    - [ 1372 ] No default drive in Windows file paths
+    - Fix file's repr with Windows paths
+    - Fix urllib and urllib2 path handling on Windows
+    - Fix r'\Jython25' not considered an abspath on Windows
+    - Fix handling of raw unicode escapes
+    - Fix mishandling of the bytecode's tagged mtime in zipimport and when
+    recompiling due to stale bytecode
+    - Fixed minor short term memory leaks in functions on some lists allocated
+    inline
+    - Updated imp.APIVersion to 23 as some compiler changes occured since the
+    last update.
+
+Jython 2.5.0 rc3
+  Bugs fixed
+    - [ 1344 ] setName semantics of threading.Thread different to CPython
+    - Fixed JLine console on cygwin
+    - [ 1348 ] muti-threaded issue, maybe threads cannot exit
+
+Jython 2.5.0 a0 - rc2
   Bugs fixed (new numbering due to move to Roundup)
     - [ 1188 ] Patch against trunk to handle SecurityExceptions
     - [ 1271 ] Bean property accessors in derived class overide methods in base class
@@ -9,9 +56,6 @@ Jython 2.5.0 rc 1
     - [ 1272 ] ASTList ClassCastException
     - [ 1261 ] jython -c "import sys; sys.exit(1)" not giving correct exit code.
     - [ 1215 ] extra spaces in import statement break importing
-
-Jython 2.5.0 a0 - b3
-  Bugs fixed (new numbering due to move to Roundup)
     - [ 1126 ] ImportError raised for Java subpackages import
     - [ 1111 ] keyword arguments not supported on __import__
     - [ 1567212 ] Jython $py.class bytecode doesn't include the .py's mtime
@@ -314,10 +358,18 @@ Jython 2.5.0 a0 - b3
   New Features
     - PyDictionary now implements Map so it may be passed to any Java function expecting a Map.
     - modjy integrated into core 
+    - The interactive interpreter now uses JLine by default
   Ported Modules
+    - _ast
+    - cmath
     - collections
+    - csv
     - filecmp
+    - functools
+    - hashlib
+    - itertools
     - threading.local
+    - zipimport
 
 Jython 2.2.2 rc1
   Bugs fixed (new numbering due to move to Roundup)

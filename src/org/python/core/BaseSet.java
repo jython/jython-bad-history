@@ -1,3 +1,4 @@
+/* Copyright (c) Jython Developers */
 package org.python.core;
 
 import java.lang.reflect.Array;
@@ -48,8 +49,7 @@ public abstract class BaseSet extends PyObject implements Set {
      * The union of <code>this</code> with <code>other</code>. <p/> <br/> (I.e. all elements
      * that are in either set)
      *
-     * @param other
-     *            A <code>BaseSet</code> instance.
+     * @param other A <code>BaseSet</code> instance.
      * @return The union of the two sets as a new set.
      */
     public PyObject __or__(PyObject other) {
@@ -58,7 +58,7 @@ public abstract class BaseSet extends PyObject implements Set {
 
     final PyObject baseset___or__(PyObject other) {
         if (!(other instanceof BaseSet)) {
-            throw Py.TypeError("Not Implemented");
+            return null;
         }
         return baseset_union(other);
     }
@@ -78,7 +78,7 @@ public abstract class BaseSet extends PyObject implements Set {
 
     final PyObject baseset___and__(PyObject other) {
         if (!(other instanceof BaseSet)) {
-            throw Py.TypeError("Not Implemented");
+            return null;
         }
         return baseset_intersection(other);
     }
@@ -98,9 +98,9 @@ public abstract class BaseSet extends PyObject implements Set {
 
     final PyObject baseset___sub__(PyObject other) {
         if (!(other instanceof BaseSet)) {
-            throw Py.TypeError("Not Implemented");
+            return null;
         }
-        return difference(other);
+        return baseset_difference(other);
     }
 
     public PyObject difference(PyObject other) {
@@ -108,15 +108,15 @@ public abstract class BaseSet extends PyObject implements Set {
     }
 
     final PyObject baseset_difference(PyObject other) {
-        BaseSet bs = (other instanceof BaseSet) ? (BaseSet)other : new PySet(other);
+        BaseSet bs = other instanceof BaseSet ? (BaseSet)other : new PySet(other);
         Set<PyObject> set = bs._set;
         BaseSet o = BaseSet.makeNewSet(getType());
+
         for (PyObject p : _set) {
             if (!set.contains(p)) {
                 o._set.add(p);
             }
         }
-
         return o;
     }
 
@@ -135,9 +135,9 @@ public abstract class BaseSet extends PyObject implements Set {
 
     final PyObject baseset___xor__(PyObject other) {
         if (!(other instanceof BaseSet)) {
-            throw Py.TypeError("Not Implemented");
+            return null;
         }
-        return symmetric_difference(other);
+        return baseset_symmetric_difference(other);
     }
 
     public PyObject symmetric_difference(PyObject other) {
@@ -145,7 +145,7 @@ public abstract class BaseSet extends PyObject implements Set {
     }
 
     final PyObject baseset_symmetric_difference(PyObject other) {
-        BaseSet bs = (other instanceof BaseSet) ? (BaseSet)other : new PySet(other);
+        BaseSet bs = other instanceof BaseSet ? (BaseSet)other : new PySet(other);
         BaseSet o = BaseSet.makeNewSet(getType());
         for (PyObject p : _set) {
             if (!bs._set.contains(p)) {
@@ -201,13 +201,13 @@ public abstract class BaseSet extends PyObject implements Set {
 
     final PyObject baseset___iter__() {
         return new PyIterator() {
-            private int size = _set.size();
+            private int size = size();
 
             private Iterator<PyObject> iterator = _set.iterator();
 
             @Override
             public PyObject __iternext__() {
-                if (_set.size() != size) {
+                if (size != size()) {
                     throw Py.RuntimeError("set changed size during iteration");
                 }
                 if (iterator.hasNext()) {
@@ -255,7 +255,7 @@ public abstract class BaseSet extends PyObject implements Set {
     }
 
     final PyObject baseset___ne__(PyObject other) {
-        if(other instanceof BaseSet) {
+        if (other instanceof BaseSet) {
             return Py.newBoolean(!_set.equals(((BaseSet)other)._set));
         }
         return Py.True;
@@ -266,8 +266,7 @@ public abstract class BaseSet extends PyObject implements Set {
     }
 
     final PyObject baseset___le__(PyObject other) {
-        _binary_sanity_check(other);
-        return baseset_issubset(other);
+        return baseset_issubset(asBaseSet(other));
     }
 
     public PyObject __ge__(PyObject other) {
@@ -275,8 +274,7 @@ public abstract class BaseSet extends PyObject implements Set {
     }
 
     final PyObject baseset___ge__(PyObject other) {
-        _binary_sanity_check(other);
-        return baseset_issuperset(other);
+        return baseset_issuperset(asBaseSet(other));
     }
 
     public PyObject __lt__(PyObject other) {
@@ -284,9 +282,8 @@ public abstract class BaseSet extends PyObject implements Set {
     }
 
     final PyObject baseset___lt__(PyObject other) {
-        BaseSet bs = _binary_sanity_check(other);
-        return Py.newBoolean(__len__() < bs.__len__()
-          && baseset_issubset(other).__nonzero__());
+        BaseSet bs = asBaseSet(other);
+        return Py.newBoolean(size() < bs.size() && baseset_issubset(other).__nonzero__());
     }
 
     public PyObject __gt__(PyObject other) {
@@ -294,9 +291,8 @@ public abstract class BaseSet extends PyObject implements Set {
     }
 
     final PyObject baseset___gt__(PyObject other) {
-        BaseSet bs = _binary_sanity_check(other);
-        return Py.newBoolean(__len__() > bs.__len__()
-          && baseset_issuperset(other).__nonzero__());
+        BaseSet bs = asBaseSet(other);
+        return Py.newBoolean(size() > bs.size() && baseset_issuperset(other).__nonzero__());
     }
 
     /**
@@ -326,11 +322,11 @@ public abstract class BaseSet extends PyObject implements Set {
 
     final PyObject baseset_intersection(PyObject other) {
         PyObject little, big;
-        if(!(other instanceof BaseSet)) {
+        if (!(other instanceof BaseSet)) {
             other = new PySet(other);
         }
 
-        if (__len__() <= __builtin__.len(other)) {
+        if (size() <= __builtin__.len(other)) {
             little = this;
             big = other;
         } else {
@@ -348,8 +344,8 @@ public abstract class BaseSet extends PyObject implements Set {
     }
 
     final PyObject baseset_issubset(PyObject other) {
-        BaseSet bs = (other instanceof BaseSet) ? (BaseSet)other : new PySet(other);
-        if (__len__() > bs.__len__()) {
+        BaseSet bs = other instanceof BaseSet ? (BaseSet)other : new PySet(other);
+        if (size() > bs.size()) {
             return Py.False;
         }
         for (Object p : _set) {
@@ -361,16 +357,8 @@ public abstract class BaseSet extends PyObject implements Set {
     }
 
     final PyObject baseset_issuperset(PyObject other) {
-        BaseSet bs = (other instanceof BaseSet) ? (BaseSet)other : new PySet(other);
-        if (__len__() < bs.__len__()) {
-            return Py.False;
-        }
-        for (Object p : bs._set) {
-            if (!_set.contains(p)) {
-                return Py.False;
-            }
-        }
-        return Py.True;
+        BaseSet bs = other instanceof BaseSet ? (BaseSet)other : new PySet(other);
+        return bs.baseset_issubset(this);
     }
 
     public String toString() {
@@ -395,12 +383,18 @@ public abstract class BaseSet extends PyObject implements Set {
         return buf.toString();
     }
 
-    protected final BaseSet _binary_sanity_check(PyObject other) throws PyIgnoreMethodTag {
-        try {
+    /**
+     * Casts other as BaseSet, throwing a TypeError tailored for the rich comparison
+     * methods when not applicable.
+     *
+     * @param other a PyObject
+     * @return a BaseSet
+     */
+    protected final BaseSet asBaseSet(PyObject other) {
+        if (other instanceof BaseSet) {
             return (BaseSet)other;
-        } catch (ClassCastException e) {
-            throw Py.TypeError("Binary operation only permitted between sets");
         }
+        throw Py.TypeError("can only compare to a set");
     }
 
     /**
@@ -414,14 +408,12 @@ public abstract class BaseSet extends PyObject implements Set {
      * can override, say, __hash__ and all of a sudden you can't assume that a non-PyFrozenSet is
      * unhashable anymore.
      *
-     * @param pye
-     *            The exception thrown from a hashable operation.
-     * @param value
-     *            The object which was unhashable.
+     * @param pye The exception thrown from a hashable operation.
+     * @param value The object which was unhashable.
      * @return A PyFrozenSet if appropriate, otherwise the pye is rethrown
      */
     protected final PyFrozenSet asFrozen(PyException pye, PyObject value) {
-        if (!(value instanceof BaseSet) || !Py.matchException(pye, Py.TypeError)) {
+        if (!(value instanceof BaseSet) || !pye.match(Py.TypeError)) {
             throw pye;
         }
         PyFrozenSet tmp = new PyFrozenSet();

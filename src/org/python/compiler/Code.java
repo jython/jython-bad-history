@@ -21,12 +21,12 @@ class Code implements MethodVisitor, Opcodes {
     //XXX: I'd really like to get sig and access out of here since MethodVistitor
     //     should already have this information.
     public Code(MethodVisitor mv, String sig, int access) {
-	this.mv = mv;
-	this.sig = sig;
-	nlocals = -sigSize(sig, false);
-	if ((access & ACC_STATIC) != ACC_STATIC) nlocals = nlocals+1;
-	argcount = nlocals;
-	locals = new String[nlocals+128];
+        this.mv = mv;
+        this.sig = sig;
+        nlocals = -sigSize(sig, false);
+        if ((access & ACC_STATIC) != ACC_STATIC) nlocals = nlocals+1;
+        argcount = nlocals;
+        locals = new String[nlocals+128];
     }
     
     public int getLocal(String type) {
@@ -179,6 +179,7 @@ class Code implements MethodVisitor, Opcodes {
         mv.visitVarInsn(arg0, arg1);
     }
 
+    @SuppressWarnings("fallthrough")
     private int sigSize(String sig, boolean includeReturn) {
         int stack = 0;
         int i = 0;

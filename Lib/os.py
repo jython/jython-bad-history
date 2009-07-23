@@ -30,9 +30,9 @@ __all__.extend(['EX_OK', 'F_OK', 'O_APPEND', 'O_CREAT', 'O_EXCL', 'O_RDONLY',
                 'O_RDWR', 'O_SYNC', 'O_TRUNC', 'O_WRONLY', 'R_OK', 'SEEK_CUR',
                 'SEEK_END', 'SEEK_SET', 'W_OK', 'X_OK', '_exit', 'access',
                 'altsep', 'chdir', 'chmod', 'close', 'curdir', 'defpath',
-                'environ', 'error', 'fdopen', 'getcwd', 'getcwdu', 'getenv',
-                'getpid', 'isatty', 'linesep', 'listdir', 'lseek', 'lstat',
-                'makedirs', 'mkdir', 'name', 'open', 'pardir', 'path',
+                'environ', 'error', 'fdopen', 'fsync', 'getcwd', 'getcwdu',
+                'getenv', 'getpid', 'isatty', 'linesep', 'listdir', 'lseek',
+                'lstat', 'makedirs', 'mkdir', 'name', 'open', 'pardir', 'path',
                 'pathsep', 'popen', 'popen2', 'popen3', 'popen4', 'putenv',
                 'read', 'remove', 'removedirs', 'rename', 'renames', 'rmdir',
                 'sep', 'stat', 'stat_result', 'strerror', 'system', 'unlink',
@@ -904,9 +904,22 @@ if _name in ('os2', 'nt'):  # Where Env Var Names Must Be UPPERCASE
             return key.upper() in self.data
         def get(self, key, failobj=None):
             return self.data.get(key.upper(), failobj)
-        def update(self, dict):
-            for k, v in dict.items():
-                self[k] = v
+        def update(self, dict=None, **kwargs):
+            if dict:
+                try:
+                    keys = dict.keys()
+                except AttributeError:
+                    # List of (key, value)
+                    for k, v in dict:
+                        self[k] = v
+                else:
+                    # got keys
+                    # cannot use items(), since mappings
+                    # may not have them.
+                    for k in keys:
+                        self[k] = dict[k]
+            if kwargs:
+                self.update(kwargs)
         def copy(self):
             return dict(self)
 
@@ -1048,9 +1061,40 @@ if _name == 'posix':
             raise OSError(status[0], strerror(status[0]))
         return res_pid, status[0]
 
+    def fdatasync(fd):
+        """fdatasync(fildes)
+        
+        force write of file with filedescriptor to disk.
+        does not force update of metadata.
+        """
+        _fsync(fd, False)
+
     __all__.extend(['link', 'symlink', 'readlink', 'getegid', 'geteuid',
                     'getgid', 'getlogin', 'getpgrp', 'getppid', 'getuid',
-                    'setpgrp', 'setsid', 'kill', 'wait', 'waitpid'])
+                    'setpgrp', 'setsid', 'kill', 'wait', 'waitpid',
+                    'fdatasync'])
+
+def fsync(fd):
+    """fsync(fildes)
+    
+    force write of file with filedescriptor to disk.
+    """
+    _fsync(fd, True)
+
+def _fsync(fd, metadata):
+    """Internal fsync impl"""
+    rawio = FileDescriptors.get(fd)
+    rawio.checkClosed()
+    
+    from java.nio.channels import FileChannel
+    channel = rawio.getChannel()
+    if not isinstance(channel, FileChannel):
+        raise OSError(errno.EINVAL, strerror(errno.EINVAL))
+
+    try:
+        channel.force(metadata)
+    except java.io.IOException, ioe:
+        raise OSError(ioe)
 
 def getpid():
     """getpid() -> pid

@@ -16,7 +16,8 @@ cygwin=false
 
 # ----- Identify OS we are running under --------------------------------------
 case "`uname`" in
-  CYGWIN*) cygwin=true
+  CYGWIN*) cygwin=true;;
+  Darwin) darwin=true;;
 esac
 
 # ----- Verify and set required environment variables -------------------------
@@ -28,7 +29,11 @@ while [ -h "$PRG" ] ; do
   ls=`ls -ld "$PRG"`
   link=`expr "$ls" : '.*-> \(.*\)$'`
   if expr "$link" : '.*/.*' > /dev/null; then
-    PRG="$link"
+    if expr "$link" : '^/' > /dev/null; then
+      PRG="$link"
+    else
+      PRG="`dirname ${PRG}`/${link}"
+    fi
   else
     PRG="`dirname $PRG`/$link"
   fi
@@ -90,7 +95,9 @@ else
 fi
 
 if $cygwin; then
-  CP=`cygpath -wp "$CP"`
+  # switch delimiter only after building a Unix style $CP
+  CP_DELIMITER=";"
+  CP=`cygpath -p -w "$CP"`
   PRG=`cygpath -w "$PRG"`
 fi
 
@@ -106,6 +113,8 @@ if [ -z "$JAVA_STACK" ]; then
    # default of 1024k
   JAVA_STACK=-Xss1024k
 fi
+
+JAVA_ENCODING=""
 
 # Split out any -J argument for passing to the JVM.
 # Scanning for args is aborted by '--'.
@@ -127,7 +136,10 @@ while [ $# -gt 0 ] ; do
           echo "(Prepend -J in front of these options when using 'jython' command)" 
           exit
       else
-	java_args=("${java_args[@]}" "${1:2}")
+          if [ "${val:0:16}" = "-Dfile.encoding=" ]; then
+              JAVA_ENCODING=$val
+          fi
+	  java_args=("${java_args[@]}" "${1:2}")
       fi
       ;;
     # Match switches that take an argument
@@ -195,6 +207,11 @@ while [ $# -gt 0 ] ; do
   shift
 done
 
+# Force file.encoding to UTF-8 when on Mac, since Apple JDK defaults to MacRoman (JRUBY-3576)
+if [[ $darwin && -z "$JAVA_ENCODING" ]]; then
+  java_args=("${java_args[@]}" "-Dfile.encoding=UTF-8")
+fi
+
 # Append the rest of the arguments
 python_args=("${python_args[@]}" "$@")
 
@@ -212,6 +229,12 @@ if $cygwin; then
     shift
     win_args=("$win_arg" "$@")
     set -- "${win_args[@]}"
+  fi
+
+  # fix JLine to use UnixTerminal
+  stty -icanon min 1 -echo > /dev/null 2>&1
+  if [ $? = 0 ]; then
+    JAVA_OPTS="$JAVA_OPTS -Djline.terminal=jline.UnixTerminal"
   fi
 fi
 
@@ -249,6 +272,10 @@ elif [ -n "$help_requested" ] ; then
   echo "JAVA_HOME  : Java installation directory" >&2
   echo "JYTHON_HOME: Jython installation directory" >&2
   echo "JYTHON_OPTS: default command line arguments" >&2
+fi
+
+if $cygwin; then
+  stty icanon echo > /dev/null 2>&1
 fi
 
 exit $JYTHON_STATUS

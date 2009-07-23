@@ -1,15 +1,12 @@
-Welcome to Jython 2.5b4
+Welcome to Jython 2.5.0
 =======================
 
-This is the fifth beta of the 2.5 version of Jython.  It contains a new
-implementation of List and Tuple, as well as a patch which helps Jython run in
-an envrironment without file write access (specifically for use on Google App
-Engine) There are also a number of smaller bug fixes.  This beta contains all
-of the new features for the eventual 2.5 release continues the feature freeze.
-We are very close, once this beta has been tested in the wild for a bit and we
-close a few more high priority bugs, we will start release candidates.
+This is the final release of the 2.5.0 version of Jython and brings us up to
+language level compatibility with the 2.5 version of CPython.  This release has
+had a strong focus on CPython compatibility, and so this release of Jython can
+run more pure Python apps then any previous release.  Please see the NEWS file
+for detailed release notes.
 
 The release was compiled on Mac OS X with JDK 5 and requires JDK 5 to run.
 
-As a beta release, this release is incomplete and contains bugs.  Do not
-use in a production environment.
+Please try this out and report any bugs at http://bugs.jython.org.

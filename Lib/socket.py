@@ -74,7 +74,14 @@ import java.nio.channels.NotYetConnectedException
 import java.nio.channels.UnresolvedAddressException
 import java.nio.channels.UnsupportedAddressTypeException
 
+# Javax.net.ssl classes
 import javax.net.ssl.SSLSocketFactory
+# Javax.net.ssl exceptions
+javax.net.ssl.SSLException
+javax.net.ssl.SSLHandshakeException
+javax.net.ssl.SSLKeyException
+javax.net.ssl.SSLPeerUnverifiedException
+javax.net.ssl.SSLProtocolException
 
 import org.python.core.io.DatagramSocketIO
 import org.python.core.io.ServerSocketIO
@@ -85,6 +92,7 @@ class error(Exception): pass
 class herror(error): pass
 class gaierror(error): pass
 class timeout(error): pass
+class sslerror(error): pass
 
 ALL = None
 
@@ -121,6 +129,15 @@ _exception_map = {
 (java.nio.channels.UnresolvedAddressException, ALL)      : lambda: gaierror(errno.EGETADDRINFOFAILED, 'getaddrinfo failed'),
 (java.nio.channels.UnsupportedAddressTypeException, ALL) : None,
 
+# These error codes are currently wrong: getting them correct is going to require
+# some investigation. Cpython 2.6 introduced extensive SSL support.
+
+(javax.net.ssl.SSLException, ALL)                        : lambda: sslerror(-1, 'SSL exception'),
+(javax.net.ssl.SSLHandshakeException, ALL)               : lambda: sslerror(-1, 'SSL handshake exception'),
+(javax.net.ssl.SSLKeyException, ALL)                     : lambda: sslerror(-1, 'SSL key exception'),
+(javax.net.ssl.SSLPeerUnverifiedException, ALL)          : lambda: sslerror(-1, 'SSL peer unverified exception'),
+(javax.net.ssl.SSLProtocolException, ALL)                : lambda: sslerror(-1, 'SSL protocol exception'),
+
 }
 
 def would_block_error(exc=None):
@@ -151,6 +168,13 @@ AF_INET = 2
 AF_INET6 = 23
 
 AI_PASSIVE=1
+AI_CANONNAME=2
+
+# For some reason, probably historical, SOCK_DGRAM and SOCK_STREAM are opposite values of what they are on cpython.
+# I.E. The following is the way they are on cpython
+# SOCK_STREAM    = 1
+# SOCK_DGRAM     = 2
+# At some point, we should probably switch them around, which *should* not affect anybody
 
 SOCK_DGRAM     = 1
 SOCK_STREAM    = 2
@@ -205,6 +229,16 @@ __all__ = ['AF_UNSPEC', 'AF_INET', 'AF_INET6', 'AI_PASSIVE', 'SOCK_DGRAM',
         'SHUT_RD', 'SHUT_WR', 'SHUT_RDWR',
         ]
 
+def _constant_to_name(const_value):
+    sock_module = sys.modules['socket']
+    try:
+        for name in dir(sock_module):
+            if getattr(sock_module, name) is const_value:
+                return name
+        return "Unknown"
+    finally:
+        sock_module = None
+
 class _nio_impl:
 
     timeout = None
@@ -235,7 +269,7 @@ class _nio_impl:
                 return struct.pack('ii', enabled, linger_time)
             return result
         else:
-            raise error(errno.ENOPROTOOPT, "Level %d option not supported on socket(%s): %d" % (level, str(self.jsocket), option))
+            raise error(errno.ENOPROTOOPT, "Socket option '%s' (level '%s') not supported on socket(%s)" % (_constant_to_name(option), _constant_to_name(level), str(self.jsocket)))
 
     def setsockopt(self, level, option, value):
         if self.options.has_key( (level, option) ):
@@ -245,7 +279,7 @@ class _nio_impl:
             else:
                 getattr(self.jsocket, "set%s" % self.options[ (level, option) ])(value)
         else:
-            raise error(errno.ENOPROTOOPT, "Level %d option not supported on socket(%s): %d" % (level, str(self.jsocket), option))
+            raise error(errno.ENOPROTOOPT, "Socket option '%s' (level '%s') not supported on socket(%s)" % (_constant_to_name(option), _constant_to_name(level), str(self.jsocket)))
 
     def close(self):
         self.jsocket.close()
@@ -395,9 +429,6 @@ class _datagram_socket_impl(_nio_impl):
     def connect(self, host, port):
         self.jchannel.connect(java.net.InetSocketAddress(host, port))
 
-    def finish_connect(self):
-        return self.jchannel.finishConnect()
-
     def disconnect(self):
         """
             Disconnect the datagram socket.
@@ -415,16 +446,19 @@ class _datagram_socket_impl(_nio_impl):
     def _do_send_net(self, byte_array, socket_address, flags):
         # Need two separate implementations because the java.nio APIs do not support timeouts
         num_bytes = len(byte_array)
-        if socket_address:
-            packet = java.net.DatagramPacket(byte_array, num_bytes, socket_address)
-        else:
+        if self.jsocket.isConnected() and socket_address is None:
             packet = java.net.DatagramPacket(byte_array, num_bytes)
+        else:
+            packet = java.net.DatagramPacket(byte_array, num_bytes, socket_address)
         self.jsocket.send(packet)
         return num_bytes
 
     def _do_send_nio(self, byte_array, socket_address, flags):
         byte_buf = java.nio.ByteBuffer.wrap(byte_array)
-        bytes_sent = self.jchannel.send(byte_buf, socket_address)
+        if self.jchannel.isConnected() and socket_address is None:
+            bytes_sent = self.jchannel.write(byte_buf)
+        else:
+            bytes_sent = self.jchannel.send(byte_buf, socket_address)
         return bytes_sent
 
     def sendto(self, byte_array, host, port, flags):
@@ -567,16 +601,23 @@ def getaddrinfo(host, port, family=AF_INET, socktype=None, proto=0, flags=None):
             AF_INET6:  lambda x: isinstance(x, java.net.Inet6Address),
             AF_UNSPEC: lambda x: isinstance(x, java.net.InetAddress),
         }[family])
-        # Cant see a way to support AI_PASSIVE right now.
-        # if flags and flags & AI_PASSIVE:
-        #     pass
+        if host == "":
+            host = java.net.InetAddress.getLocalHost().getHostName()
+        passive_mode = flags is not None and flags & AI_PASSIVE
+        canonname_mode = flags is not None and flags & AI_CANONNAME
         results = []
         for a in java.net.InetAddress.getAllByName(host):
             if len([f for f in filter_fns if f(a)]):
                 family = {java.net.Inet4Address: AF_INET, java.net.Inet6Address: AF_INET6}[a.getClass()]
+                if passive_mode and not canonname_mode:
+                    canonname = ""
+                else:
+                    canonname = asPyString(a.getCanonicalHostName())
+                if host is None and passive_mode and not canonname_mode:
+                    sockname = INADDR_ANY
+                else:
+                    sockname = asPyString(a.getHostAddress())
                 # TODO: Include flowinfo and scopeid in a 4-tuple for IPv6 addresses
-                canonname = asPyString(a.getCanonicalHostName())
-                sockname = asPyString(a.getHostAddress())
                 results.append((family, socktype, proto, canonname, (sockname, port)))
         return results
     except java.lang.Exception, jlx:
@@ -952,11 +993,7 @@ class _udpsocket(_nonblocking_api_mixin):
     def connect_ex(self, addr):
         if not self.sock_impl:
             self._do_connect(addr)
-        if self.sock_impl.finish_connect():
-            if self.mode == MODE_NONBLOCKING:
-                return errno.EISCONN
-            return 0
-        return errno.EINPROGRESS
+        return 0
 
     def sendto(self, data, p1, p2=None):
         try:
@@ -1383,11 +1420,14 @@ class _fileobject(object):
 class ssl:
 
     def __init__(self, plain_sock, keyfile=None, certfile=None):
-        self.ssl_sock = self.make_ssl_socket(plain_sock)
-        self._in_buf = java.io.BufferedInputStream(self.ssl_sock.getInputStream())
-        self._out_buf = java.io.BufferedOutputStream(self.ssl_sock.getOutputStream())
+        try:
+            self.ssl_sock = self._make_ssl_socket(plain_sock)
+            self._in_buf = java.io.BufferedInputStream(self.ssl_sock.getInputStream())
+            self._out_buf = java.io.BufferedOutputStream(self.ssl_sock.getOutputStream())
+        except java.lang.Exception, jlx:
+            raise _map_exception(jlx)
 
-    def make_ssl_socket(self, plain_socket, auto_close=0):
+    def _make_ssl_socket(self, plain_socket, auto_close=0):
         java_net_socket = plain_socket._get_jsocket()
         assert isinstance(java_net_socket, java.net.Socket)
         host = java_net_socket.getInetAddress().getHostAddress()
@@ -1399,21 +1439,30 @@ class ssl:
         return ssl_socket
 
     def read(self, n=4096):
-        data = jarray.zeros(n, 'b')
-        m = self._in_buf.read(data, 0, n)
-        if m <= 0:
-            return ""
-        if m < n:
-            data = data[:m]
-        return data.tostring()
+        try:
+            data = jarray.zeros(n, 'b')
+            m = self._in_buf.read(data, 0, n)
+            if m <= 0:
+                return ""
+            if m < n:
+                data = data[:m]
+            return data.tostring()
+        except java.lang.Exception, jlx:
+            raise _map_exception(jlx)
 
     def write(self, s):
-        self._out_buf.write(s)
-        self._out_buf.flush()
-        return len(s)
+        try:
+            self._out_buf.write(s)
+            self._out_buf.flush()
+            return len(s)
+        except java.lang.Exception, jlx:
+            raise _map_exception(jlx)
 
     def _get_server_cert(self):
-        return self.ssl_sock.getSession().getPeerCertificates()[0]
+        try:
+            return self.ssl_sock.getSession().getPeerCertificates()[0]
+        except java.lang.Exception, jlx:
+            raise _map_exception(jlx)
 
     def server(self):
         cert = self._get_server_cert()

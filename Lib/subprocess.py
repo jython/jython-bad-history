@@ -544,46 +544,105 @@ def list2cmdline(seq):
 
 
 if jython:
-    # Escape the command line arguments with list2cmdline on Windows
-    escape_args_oses = ['nt']
+    # Parse command line arguments for Windows
+    _win_oses = ['nt']
 
-    escape_args = None
-    shell_command = None
+    _cmdline2listimpl = None
+    _escape_args = None
+    _shell_command = None
 
-    def setup_platform():
+    def _cmdline2list(cmdline):
+        """Build an argv list from a Microsoft shell style cmdline str
+
+        The reverse of list2cmdline that follows the same MS C runtime
+        rules.
+
+        Java's ProcessBuilder takes a List<String> cmdline that's joined
+        with a list2cmdline-like routine for Windows CreateProcess
+        (which takes a String cmdline). This process ruins String
+        cmdlines from the user with escapes or quotes. To avoid this we
+        first parse these cmdlines into an argv.
+        
+        Runtime.exec(String) is too naive and useless for this case.
+        """
+        whitespace = ' \t'
+        # count of preceding '\'
+        bs_count = 0
+        in_quotes = False
+        arg = []
+        argv = []
+
+        for ch in cmdline:
+            if ch in whitespace and not in_quotes:
+                if arg:
+                    # finalize arg and reset
+                    argv.append(''.join(arg))
+                    arg = []
+                bs_count = 0
+            elif ch == '\\':
+                arg.append(ch)
+                bs_count += 1
+            elif ch == '"':
+                if not bs_count % 2:
+                    # Even number of '\' followed by a '"'. Place one
+                    # '\' for every pair and treat '"' as a delimiter
+                    if bs_count:
+                        del arg[-(bs_count / 2):]
+                    in_quotes = not in_quotes
+                else:
+                    # Odd number of '\' followed by a '"'. Place one '\'
+                    # for every pair and treat '"' as an escape sequence
+                    # by the remaining '\'
+                    del arg[-(bs_count / 2 + 1):]
+                    arg.append(ch)
+                bs_count = 0
+            else:
+                # regular char
+                arg.append(ch)
+                bs_count = 0
+
+        # A single trailing '"' delimiter yields an empty arg
+        if arg or in_quotes:
+            argv.append(''.join(arg))
+
+        return argv
+
+    def _setup_platform():
         """Setup the shell command and the command line argument escape
         function depending on the underlying platform
         """
-        global escape_args, shell_command
+        global _cmdline2listimpl, _escape_args, _shell_command
 
-        if os._name in escape_args_oses:
-            escape_args = lambda args: [list2cmdline([arg]) for arg in args]
+        if os._name in _win_oses:
+            _cmdline2listimpl = _cmdline2list
+            _escape_args = lambda args: [list2cmdline([arg]) for arg in args]
         else:
-            escape_args = lambda args: args
+            _cmdline2listimpl = lambda args: [args]
+            _escape_args = lambda args: args
 
         os_info = os._os_map.get(os._name)
         if os_info is None:
             os_info = os._os_map.get('posix')
             
-        for _shell_command in os_info[1]:
-            executable = _shell_command[0]
+        for shell_command in os_info[1]:
+            executable = shell_command[0]
             if not os.path.isabs(executable):
                 import distutils.spawn
                 executable = distutils.spawn.find_executable(executable)
             if not executable or not os.path.exists(executable):
                 continue
-            _shell_command[0] = executable
-            shell_command = _shell_command
+            shell_command[0] = executable
+            _shell_command = shell_command
             return
 
-        if not shell_command:
+        if not _shell_command:
             import warnings
-            warnings.warn('Unable to determine shell_command for '
+            warnings.warn('Unable to determine _shell_command for '
                           'underlying os: %s' % os._name, RuntimeWarning, 3)
-    setup_platform()
+    _setup_platform()
 
 
-    class CouplerThread(java.lang.Thread):
+    class _CouplerThread(java.lang.Thread):
 
         """Couples a reader and writer RawIOBase.
 
@@ -603,7 +662,8 @@ if jython:
             self.read_func = read_func
             self.write_func = write_func
             self.close_func = close_func
-            self.setName('CouplerThread-%s (%s)' % (id(self), name))
+            self.setName('%s-%s (%s)' % (self.__class__.__name__, id(self),
+                                         name))
             self.setDaemon(True)
 
         def run(self):
@@ -720,7 +780,7 @@ class Popen(object):
             self._stdout_thread = None
             self._stderr_thread = None
 
-            # 'ct' is for CouplerThread
+            # 'ct' is for _CouplerThread
             proc = self._process
             ct2cwrite = org.python.core.io.StreamIO(proc.getOutputStream(),
                                                     True)
@@ -737,8 +797,9 @@ class Popen(object):
                 if p2cread is None:
                     # Coupling stdin is not supported: there's no way to
                     # cleanly interrupt it if it blocks the
-                    # CouplerThread forever (we can Thread.interrupt()
-                    # its CouplerThread but that closes stdin's Channel)
+                    # _CouplerThread forever (we can Thread.interrupt()
+                    # its _CouplerThread but that closes stdin's
+                    # Channel)
                     pass
                 else:
                     self._stdin_thread = self._coupler_thread('stdin',
@@ -1107,8 +1168,8 @@ class Popen(object):
                 pass
             elif stderr == PIPE:
                 errread = PIPE
-            elif stderr == STDOUT or \
-                    isinstance(stderr, org.python.core.io.RawIOBase):
+            elif (stderr == STDOUT or
+                  isinstance(stderr, org.python.core.io.RawIOBase)):
                 errwrite = stderr
             else:
                 # Assuming file-like object
@@ -1123,13 +1184,37 @@ class Popen(object):
             """Determine if the subprocess' stderr should be redirected
             to stdout
             """
-            return errwrite == STDOUT or c2pwrite not in (None, PIPE) and \
-                c2pwrite is errwrite
+            return (errwrite == STDOUT or c2pwrite not in (None, PIPE) and 
+                    c2pwrite is errwrite)
 
 
         def _coupler_thread(self, *args, **kwargs):
-            """Return a CouplerThread"""
-            return CouplerThread(*args, **kwargs)
+            """Return a _CouplerThread"""
+            return _CouplerThread(*args, **kwargs)
+
+
+        def _setup_env(self, env, builder_env):
+            """Carefully merge env with ProcessBuilder's only
+            overwriting key/values that differ
+            
+            System.getenv (Map<String, String>) may be backed by
+            <byte[], byte[]> on UNIX platforms where these are really
+            bytes. ProcessBuilder's env inherits its contents and will
+            maintain those byte values (which may be butchered as
+            Strings) for the subprocess if they haven't been modified.
+            """
+            # Determine what's safe to merge
+            merge_env = dict((key, value) for key, value in env.iteritems()
+                             if key not in builder_env or
+                             builder_env.get(key) != value)
+
+            # Prune anything not in env
+            entries = builder_env.entrySet().iterator()
+            for entry in entries:
+                if entry.getKey() not in env:
+                    entries.remove()
+
+            builder_env.putAll(merge_env)
 
 
         def _execute_child(self, args, executable, preexec_fn, close_fds,
@@ -1141,37 +1226,26 @@ class Popen(object):
             """Execute program (Java version)"""
 
             if isinstance(args, types.StringTypes):
-                args = [args]
+                args = _cmdline2listimpl(args)
             else:
                 args = list(args)
-                for arg in args:
-                    # XXX: CPython posix (execv) will str() any unicode
-                    # args first, maybe we should do the same on
-                    # posix. Windows passes unicode through however
-                    if not isinstance(arg, (str, unicode)):
-                        raise TypeError('args must contain only strings')
-                args = escape_args(args)
+                # NOTE: CPython posix (execv) will str() any unicode
+                # args first, maybe we should do the same on
+                # posix. Windows passes unicode through, however
+                if any(not isinstance(arg, (str, unicode)) for arg in args):
+                    raise TypeError('args must contain only strings')
+            args = _escape_args(args)
 
             if shell:
-                args = shell_command + args
+                args = _shell_command + args
 
             if executable is not None:
                 args[0] = executable
 
-            try:
-                builder = java.lang.ProcessBuilder(args)
-            except java.lang.IllegalArgumentException, iae:
-                raise OSError(iae.getMessage() or iae)
-
-            if env is None:
-                # This is for compatibility with the CPython implementation,
-                # that ends up calling os.execvp(). So os.environ is "inherited"
-                # there if env is not explicitly set.
-                env = os.environ
-
-            builder_env = builder.environment()
-            builder_env.clear()
-            builder_env.putAll(dict(env))
+            builder = java.lang.ProcessBuilder(args)
+            # os.environ may be inherited for compatibility with CPython
+            self._setup_env(dict(os.environ if env is None else env),
+                            builder.environment())
 
             if cwd is None:
                 cwd = os.getcwd()
@@ -1182,16 +1256,17 @@ class Popen(object):
             builder.directory(java.io.File(cwd))
 
             # Let Java manage redirection of stderr to stdout (it's more
-            # accurate at doing so than CouplerThreads). We redirect not
-            # only when stderr is marked as STDOUT, but also when
+            # accurate at doing so than _CouplerThreads). We redirect
+            # not only when stderr is marked as STDOUT, but also when
             # c2pwrite is errwrite
             if self._stderr_is_stdout(errwrite, c2pwrite):
                 builder.redirectErrorStream(True)
 
             try:
                 self._process = builder.start()
-            except java.io.IOException, ioe:
-                raise OSError(ioe.getMessage() or ioe)
+            except (java.io.IOException,
+                    java.lang.IllegalArgumentException), e:
+                raise OSError(e.getMessage() or e)
             self._child_created = True
 
 
@@ -1200,7 +1275,7 @@ class Popen(object):
             attribute."""
             if self.returncode is None:
                 try:
-                    return self._process.exitValue()
+                    self.returncode = self._process.exitValue()
                 except java.lang.IllegalThreadStateException:
                     pass
             return self.returncode
@@ -1563,9 +1638,9 @@ def _demo_jython():
     #
     print "Running a jython subprocess to return the number of processors..."
     p = Popen([sys.executable, "-c",
-               'import sys;' \
-               'from java.lang import Runtime;' \
-               'sys.exit(Runtime.getRuntime().availableProcessors())'])
+               ('import sys;'
+                'from java.lang import Runtime;'
+                'sys.exit(Runtime.getRuntime().availableProcessors())')])
     print p.wait()
 
     #
@@ -1573,15 +1648,15 @@ def _demo_jython():
     #
     print "Connecting two jython subprocesses..."
     p1 = Popen([sys.executable, "-c",
-                'import os;' \
-                'print os.environ["foo"]'], env=dict(foo='bar'),
+                ('import os;'
+                 'print os.environ["foo"]')], env=dict(foo='bar'),
                stdout=PIPE)
     p2 = Popen([sys.executable, "-c",
-                'import os, sys;' \
-                'their_foo = sys.stdin.read().strip();' \
-                'my_foo = os.environ["foo"];' \
-                'msg = "Their env\'s foo: %r, My env\'s foo: %r";' \
-                'print msg % (their_foo, my_foo)'],
+                ('import os, sys;'
+                 'their_foo = sys.stdin.read().strip();'
+                 'my_foo = os.environ["foo"];'
+                 'msg = "Their env\'s foo: %r, My env\'s foo: %r";'
+                 'print msg % (their_foo, my_foo)')],
                env=dict(foo='baz'), stdin=p1.stdout, stdout=PIPE)
     print p2.communicate()[0]
 

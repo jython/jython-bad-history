@@ -18,7 +18,6 @@ public class PyString extends PyBaseString
 {
     public static final PyType TYPE = PyType.fromClass(PyString.class);
     protected String string;
-    private transient int cached_hashcode=0;
     protected transient boolean interned=false;
 
     // for PyJavaClass.init()
@@ -117,12 +116,6 @@ public class PyString extends PyBaseString
         return string;
     }
 
-    //XXX: need doc
-    @ExposedMethod
-    final String str_toString() {
-        return toString();
-    }
-    
     public String internedString() {
         if (interned)
             return string;
@@ -579,9 +572,7 @@ public class PyString extends PyBaseString
 
     @ExposedMethod(doc = BuiltinDocs.str___hash___doc)
     final int str___hash__() {
-        if (cached_hashcode == 0)
-            cached_hashcode = string.hashCode();
-        return cached_hashcode;
+        return string.hashCode();
     }
 
     /**
@@ -593,7 +584,7 @@ public class PyString extends PyBaseString
         return StringUtil.toBytes(string);
     }
 
-    public Object __tojava__(Class c) {
+    public Object __tojava__(Class<?> c) {
         if (c.isAssignableFrom(String.class)) {
             return string;
         }
@@ -741,7 +732,7 @@ public class PyString extends PyBaseString
         {
             return Py.newInteger(atoi(10));
         } catch (PyException e) {
-            if (Py.matchException(e, Py.OverflowError)) {
+            if (e.match(Py.OverflowError)) {
                 return atol(10);
             }
             throw e;
@@ -768,6 +759,7 @@ public class PyString extends PyBaseString
       throw Py.TypeError("bad operand type for unary ~");
     }
 
+    @SuppressWarnings("fallthrough")
     public PyComplex __complex__() {
         boolean got_re = false;
         boolean got_im = false;
@@ -2408,9 +2400,9 @@ public class PyString extends PyBaseString
         return str_isunicode();
     }
 
-    //XXX: need doc
-    @ExposedMethod/*(doc = BuiltinDocs.unicode_isunicode_doc)*/
+    @ExposedMethod(doc = "isunicode is deprecated.")
     final boolean str_isunicode() {
+        Py.warning(Py.DeprecationWarning, "isunicode is deprecated.");
         int n = string.length();
         for (int i = 0; i < n; i++) {
             char ch = string.charAt(i);
@@ -2674,7 +2666,7 @@ final class StringFormatter
                 } catch (PyException e) {
                     // XXX: Swallow customs AttributeError throws from __float__ methods
                     // No better alternative for the moment
-                    if (Py.matchException(e, Py.AttributeError)) {
+                    if (e.match(Py.AttributeError)) {
             throw Py.TypeError("int argument required");
         }
                     throw e;
@@ -2727,7 +2719,7 @@ final class StringFormatter
                 } catch (PyException e) {
                     // XXX: Swallow customs AttributeError throws from __float__ methods
                     // No better alternative for the moment
-                    if (Py.matchException(e, Py.AttributeError)) {
+                    if (e.match(Py.AttributeError)) {
             throw Py.TypeError("float argument required");
         }
                     throw e;
@@ -2798,6 +2790,7 @@ final class StringFormatter
         return buf.toString();
     }
 
+    @SuppressWarnings("fallthrough")
     public PyString format(PyObject args) {
         PyObject dict = null;
         this.args = args;
@@ -3022,7 +3015,7 @@ final class StringFormatter
                     // less invasive to mask than a TypeError)
                     val = arg.__int__().asInt();
                 } catch (PyException e){
-                    if (Py.matchException(e, Py.AttributeError)) {
+                    if (e.match(Py.AttributeError)) {
                         throw Py.TypeError("%c requires int or char");
                     }
                     throw e;

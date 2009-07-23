@@ -20,7 +20,7 @@ from java.awt.event import ComponentEvent
 from javax.swing.tree import TreePath
 
 from org.python.core.util import FileUtil
-from org.python.tests import BeanImplementation, Child, Listenable, CustomizableMapHolder
+from org.python.tests import BeanImplementation, Child, Child2, Listenable, CustomizableMapHolder
 from org.python.tests.mro import (ConfusedOnGetitemAdd, FirstPredefinedGetitem, GetitemAdder)
 
 class InstantiationTest(unittest.TestCase):
@@ -74,6 +74,13 @@ class BeanTest(unittest.TestCase):
         self.assertEquals(7, c.id)
         c.id = 16
         self.assertEquals(16, c.id)
+
+    def test_inheriting_half_bean_issue1333(self):
+        # http://bugs.jython.org/issue1333
+        c = Child2()
+        self.assertEquals("blah", c.value)
+        c.value = "bleh"
+        self.assertEquals("Child2 bleh", c.value)
 
     def test_awt_hack(self):
         # We ignore several deprecated methods in java.awt.* in favor of bean properties that were
@@ -381,11 +388,36 @@ class JavaDelegationTest(unittest.TestCase):
         self.assertTrue(first_file <= first_date)
         self.assertTrue(first_date > first_file)
         self.assertTrue(first_date >= first_file)
+
+    def test_equals(self):
+        # Test for bug #1338
+        a = range(5)
+
+        x = ArrayList()
+        x.addAll(a)
+
+        y = Vector()
+        y.addAll(a)
+
+        z = ArrayList()
+        z.addAll(range(1, 6))
+
+        self.assertTrue(x.equals(y))
+        self.assertEquals(x, y)
+        self.assertTrue(not (x != y))
+
+        self.assertTrue(not x.equals(z))
+        self.assertNotEquals(x, z)
+        self.assertTrue(not (x == z))
        
 class SecurityManagerTest(unittest.TestCase):
     def test_nonexistent_import_with_security(self):
-        policy = test_support.findfile("python_home.policy")
         script = test_support.findfile("import_nonexistent.py")
+        home = os.path.realpath(sys.prefix)
+        if not os.path.commonprefix((home, os.path.realpath(script))) == home:
+            # script must lie within python.home for this test to work
+            return
+        policy = test_support.findfile("python_home.policy")
         self.assertEquals(subprocess.call([sys.executable,  "-J-Dpython.cachedir.skip=true",
             "-J-Djava.security.manager", "-J-Djava.security.policy=%s" % policy, script]),
             0)

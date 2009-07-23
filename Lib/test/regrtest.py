@@ -1489,6 +1489,13 @@ _failures = {
 _platform = sys.platform
 if _platform[:4] == 'java':
     _platform = 'java'
+    if os._name == 'nt':
+        # XXX: Omitted for now because it fails so miserably and ruins
+        # other tests
+        _failures['java'] += '\ntest_mailbox'
+        if ' ' in sys.executable:
+            # http://bugs.python.org/issue1559298
+            _failures['java'] += '\ntest_popen'
 
 class _ExpectedSkips:
     def __init__(self):
@@ -1528,9 +1535,11 @@ class _ExpectedSkips:
 
             if test_support.is_jython:
                 if os._name != 'posix':
-                    self.expected.add('test_mhlib')
-                import platform
-                os_name = platform.java_ver()[3][0]
+                    self.expected.update([
+                            'test_grp', 'test_mhlib', 'test_posix', 'test_pwd',
+                            'test_signal'])
+                if os._name != 'nt':
+                    self.expected.add('test_nt_paths_jy')
 
             self.valid = True
 

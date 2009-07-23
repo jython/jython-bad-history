@@ -21,7 +21,7 @@ import java.util.ListIterator;
 public class PyList extends PySequenceList implements List {
 
     public static final PyType TYPE = PyType.fromClass(PyList.class);
-    protected final List<PyObject> list;
+    private final List<PyObject> list;
     public volatile int gListAllocatedStatus = -1;
 
     public PyList() {
@@ -75,6 +75,10 @@ public class PyList extends PySequenceList implements List {
 
     public static PyList fromList(List<PyObject> list) {
         return new PyList(list, false);
+    }
+
+    List<PyObject> getList() {
+        return Collections.unmodifiableList(list);
     }
 
     private static List<PyObject> listify(Iterator<PyObject> iter) {
@@ -215,11 +219,12 @@ public class PyList extends PySequenceList implements List {
             throw Py.MemoryError("");
         }
 
-        PyList newList = new PyList();
+        PyObject[] elements = list.toArray(new PyObject[size]);
+        PyObject[] newList = new PyObject[newSize];
         for (int i = 0; i < count; i++) {
-            newList.addAll(list);
+            System.arraycopy(elements, 0, newList, i * size, size);
         }
-        return newList;
+        return new PyList(newList);
     }
 
     @ExposedMethod(type = MethodType.BINARY, doc = BuiltinDocs.list___ne___doc)
@@ -678,7 +683,7 @@ public class PyList extends PySequenceList implements List {
         try {
             it = o.__iter__();
         } catch (PyException pye) {
-            if (!Py.matchException(pye, Py.TypeError)) {
+            if (!pye.match(Py.TypeError)) {
                 throw pye;
             }
             return null;
@@ -946,12 +951,15 @@ public class PyList extends PySequenceList implements List {
     }
 
     @Override
-    public synchronized boolean equals(Object o) {
-        if (o instanceof PyList) {
-            return (((PyList) o).list.equals(list));
-        } else if (o instanceof List && !(o instanceof PyTuple)) {
-            List oList = (List) o;
-            return oList.equals(list);
+    public synchronized boolean equals(Object other) {
+        if (this == other) {
+            return true;
+        }
+        if (other instanceof PyList) {
+            return _eq((PyList)other).__nonzero__();
+        } else if (other instanceof List && !(other instanceof PyTuple)) {
+            List otherList = (List)other;
+            return list.equals(otherList);
         }
         return false;
     }
