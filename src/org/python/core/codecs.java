@@ -7,10 +7,12 @@
  */
 package org.python.core;
 
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+
 import java.util.ArrayList;
 import java.util.Iterator;
+
+import org.python.core.util.StringUtil;
 
 /**
  * Contains the implementation of the builtin codecs.
@@ -71,42 +73,34 @@ public class codecs {
     public static PyTuple lookup(String encoding) {
         registry_init();
         PyString v = new PyString(normalizestring(encoding));
-        PyObject result = searchCache.__finditem__(v);
-        if (result != null) {
-            return (PyTuple) result;
+        PyObject cached = searchCache.__finditem__(v);
+        if (cached != null) {
+            return (PyTuple)cached;
         }
 
         if (searchPath.__len__() == 0) {
             throw new PyException(Py.LookupError,
-                    "no codec search functions registered: " +
-                    "can't find encoding '" + encoding + "'");
+                "no codec search functions registered: can't find encoding '" + encoding + "'");
         }
 
-        PyObject iter = searchPath.__iter__();
-        PyObject func = null;
-        while ((func = iter.__iternext__()) != null) {
-            result = func.__call__(v);
-            if (result == Py.None) {
+        for (PyObject func : searchPath.asIterable()) {
+            PyObject created = func.__call__(v);
+            if (created == Py.None) {
                 continue;
             }
-            if (!(result instanceof PyTuple) || result.__len__() != 4) {
-                throw Py.TypeError("codec search functions must " +
-                        "return 4-tuples");
+            if (!(created instanceof PyTuple) || created.__len__() != 4) {
+                throw Py.TypeError("codec search functions must return 4-tuples");
             }
-            break;
+            searchCache.__setitem__(v, created);
+            return (PyTuple)created;
         }
-        if (func == null) {
-            throw new PyException(Py.LookupError, "unknown encoding '" +
-                    encoding + "'");
-        }
-        searchCache.__setitem__(v, result);
-        return (PyTuple) result;
+        throw new PyException(Py.LookupError, "unknown encoding '" + encoding + "'");
     }
 
     private static String normalizestring(String string) {
         return string.toLowerCase().replace(' ', '-');
     }
-    private static boolean import_encodings_called = false;
+    private static boolean import_encodings_called;
 
     private static void import_encodings() {
         if (!import_encodings_called) {
@@ -121,8 +115,7 @@ public class codecs {
         }
     }
 
-    public static PyObject decode(PyString v, String encoding,
-            String errors) {
+    public static PyObject decode(PyString v, String encoding, String errors) {
         if (encoding == null) {
             encoding = getDefaultEncoding();
         } else {
@@ -135,14 +128,28 @@ public class codecs {
 
         /* Shortcut for ascii encoding */
         if (encoding.equals("ascii")) {
-            return new PyUnicode(
-                    PyUnicode_DecodeASCII(v.toString(), v.__len__(), errors),
-                    true);
+            return wrapDecodeResult(PyUnicode_DecodeASCII(v.toString(), v.__len__(), errors));
         }
 
         /* Decode via the codec registry */
-        PyObject decoder = getDecoder(encoding);
-        PyObject result = null;
+        PyObject decoder;
+        try {
+            decoder = lookup(encoding).__getitem__(1);
+        } catch (PyException ex) {
+            if (ex.match(Py.LookupError)) {
+                // If we couldn't find an encoding, see if we have a builtin
+                if (encoding.equals("utf-8")) {
+                    return wrapDecodeResult(PyUnicode_DecodeUTF8(v.toString(), errors));
+                } else if(encoding.equals("utf-7")) {
+                    return wrapDecodeResult(PyUnicode_DecodeUTF7(v.toString(), errors));
+                } else if(encoding.equals("latin-1")) {
+                    return wrapDecodeResult(PyUnicode_DecodeLatin1(v.toString(), v.__len__(),
+                        errors));
+                }
+            }
+            throw ex;
+        }
+        PyObject result;
         if (errors != null) {
             result = decoder.__call__(v, new PyString(errors));
         } else {
@@ -150,15 +157,13 @@ public class codecs {
         }
 
         if (!(result instanceof PyTuple) || result.__len__() != 2) {
-            throw Py.TypeError("decoder must return a tuple " +
-                    "(object,integer)");
+            throw Py.TypeError("decoder must return a tuple (object,integer)");
         }
         return result.__getitem__(0);
     }
 
-    private static PyObject getDecoder(String encoding) {
-        PyObject codecs = lookup(encoding);
-        return codecs.__getitem__(1);
+    private static PyUnicode wrapDecodeResult(String result) {
+        return new PyUnicode(result, true);
     }
 
     public static String encode(PyString v, String encoding,
@@ -174,18 +179,29 @@ public class codecs {
         }
 
         /* Shortcuts for common default encodings.  latin-1 must not use the
-         * lookup registry for the encodigs module to work correctly */
+         * lookup registry for the encodings module to work correctly */
         if (encoding.equals("latin-1")) {
             return PyUnicode_EncodeLatin1(v.toString(), v.__len__(), errors);
-
         } else if (encoding.equals("ascii")) {
-            return PyUnicode_EncodeASCII(v.toString(),
-                    v.__len__(), errors);
+            return PyUnicode_EncodeASCII(v.toString(), v.__len__(), errors);
         }
 
-        /* Decode via the codec registry */
-        PyObject encoder = getEncoder(encoding);
-        PyObject result = null;
+        /* Encode via the codec registry */
+        PyObject encoder;
+        try {
+            encoder = lookup(encoding).__getitem__(0);
+        } catch (PyException ex) {
+            if (ex.match(Py.LookupError)) {
+                // If we couldn't find an encoding, see if we have a builtin
+                if (encoding.equals("utf-8")) {
+                    return PyUnicode_EncodeUTF8(v.toString(), errors);
+                } else if(encoding.equals("utf-7")) {
+                    return codecs.PyUnicode_EncodeUTF7(v.toString(), false, false, errors);
+                }
+            }
+            throw ex;
+        }
+        PyObject result;
         if (errors != null) {
             result = encoder.__call__(v, new PyString(errors));
         } else {
@@ -193,21 +209,15 @@ public class codecs {
         }
 
         if (!(result instanceof PyTuple) || result.__len__() != 2) {
-            throw Py.TypeError("encoder must return a tuple " +
-                    "(object,integer)");
+            throw Py.TypeError("encoder must return a tuple (object,integer)");
         }
         PyObject encoded = result.__getitem__(0);
         if (encoded instanceof PyString) {
             return encoded.toString();
         } else {
-            throw Py.TypeError("decoder did not return a string/unicode object (type=" +
-                    encoded.getType().fastGetName() + ")");
+            throw Py.TypeError("encoder did not return a string/unicode object (type="
+                    + encoded.getType().fastGetName() + ")");
         }
-    }
-
-    private static PyObject getEncoder(String encoding) {
-        PyObject codecs = lookup(encoding);
-        return codecs.__getitem__(0);
     }
 
     public static PyObject strict_errors(PyObject[] args, String[] kws) {
@@ -439,8 +449,7 @@ public class codecs {
     // note that we follow CPython 2.5 exactly here - it does not support surrogates,
     // but has to process as-if they are there for replacement purposes
     // fortunately no one really cares about utf-7
-    public static String PyUnicode_DecodeUTF7(String str,
-            String errors) {
+    public static String PyUnicode_DecodeUTF7(String str, String errors) {
         int s = 0;
         int e = str.length();
         boolean inShift = false;
@@ -575,9 +584,9 @@ public class codecs {
     }
 
     public static String PyUnicode_EncodeUTF7(String str,
-            boolean encodeSetO,
-            boolean encodeWhiteSpace,
-            String errors) {
+                                              boolean encodeSetO,
+                                              boolean encodeWhiteSpace,
+                                              String errors) {
         int size = str.length();
 
         if (size == 0) {
@@ -797,26 +806,14 @@ public class codecs {
     }
 
     public static String PyUnicode_EncodeUTF8(String str, String errors) {
-        final Charset utf8 = Charset.forName("UTF-8");
-        final ByteBuffer bbuf = utf8.encode(str);
-        final StringBuilder v = new StringBuilder(bbuf.limit());
-        while (bbuf.remaining() > 0) {
-            int val = bbuf.get();
-            if (val < 0) {
-                val = 256 + val;
-            }
-            v.appendCodePoint(val);
-        }
-        return v.toString();
+        return StringUtil.fromBytes(Charset.forName("UTF-8").encode(str));
     }
 
-    public static String PyUnicode_DecodeASCII(String str, int size,
-            String errors) {
+    public static String PyUnicode_DecodeASCII(String str, int size, String errors) {
         return PyUnicode_DecodeIntLimited(str, size, errors, "ascii", 128);
     }
 
-    public static String PyUnicode_DecodeLatin1(String str, int size,
-            String errors) {
+    public static String PyUnicode_DecodeLatin1(String str, int size, String errors) {
         return PyUnicode_DecodeIntLimited(str, size, errors, "latin-1", 256);
     }
 

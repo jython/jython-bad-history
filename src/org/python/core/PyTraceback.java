@@ -23,9 +23,10 @@ public class PyTraceback extends PyObject {
     public int tb_lineno;
 
     public PyTraceback(PyTraceback next, PyFrame frame) {
+        super(TYPE);
         tb_next = next;
         tb_frame = frame;
-        tb_lineno = frame.getline();
+        tb_lineno = frame.f_code.getline(frame);
     }
 
     private String tracebackInfo() {

@@ -259,7 +259,7 @@ class _nio_impl:
             self.jsocket.setSoTimeout(self._timeout_millis)
 
     def getsockopt(self, level, option):
-        if self.options.has_key( (level, option) ):
+        if (level, option) in self.options:
             result = getattr(self.jsocket, "get%s" % self.options[ (level, option) ])()
             if option == SO_LINGER:
                 if result == -1:
@@ -272,7 +272,7 @@ class _nio_impl:
             raise error(errno.ENOPROTOOPT, "Socket option '%s' (level '%s') not supported on socket(%s)" % (_constant_to_name(option), _constant_to_name(level), str(self.jsocket)))
 
     def setsockopt(self, level, option, value):
-        if self.options.has_key( (level, option) ):
+        if (level, option) in self.options:
             if option == SO_LINGER:
                 values = struct.unpack('ii', value)
                 self.jsocket.setSoLinger(*values)
@@ -388,7 +388,7 @@ class _server_socket_impl(_nio_impl):
     def accept(self):
         if self.mode in (MODE_BLOCKING, MODE_NONBLOCKING):
             new_cli_chan = self.jchannel.accept()
-            if new_cli_chan != None:
+            if new_cli_chan is not None:
                 return _client_socket_impl(new_cli_chan.socket())
             else:
                 return None

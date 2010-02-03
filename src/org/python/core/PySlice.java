@@ -9,30 +9,26 @@ import org.python.expose.ExposedType;
 /**
  * The Python slice object.
  */
-@ExposedType(name = "slice", isBaseType = false)
+@ExposedType(name = "slice", isBaseType = false, doc = BuiltinDocs.slice_doc)
 public class PySlice extends PyObject {
 
     public static final PyType TYPE = PyType.fromClass(PySlice.class);
 
-    @ExposedGet
+    @ExposedGet(doc = BuiltinDocs.slice_start_doc)
     public PyObject start = Py.None;
 
-    @ExposedGet
+    @ExposedGet(doc = BuiltinDocs.slice_stop_doc)
     public PyObject stop = Py.None;
 
-    @ExposedGet
+    @ExposedGet(doc = BuiltinDocs.slice_step_doc)
     public PyObject step = Py.None;
 
     public PySlice() {
-        this(TYPE);
-    }
-
-    public PySlice(PyType type) {
-        super(type);
+        super(TYPE);
     }
 
     public PySlice(PyObject start, PyObject stop, PyObject step) {
-        this(TYPE);
+        super(TYPE);
         if (start != null) {
             this.start = start;
         }
@@ -45,24 +41,26 @@ public class PySlice extends PyObject {
     }
 
     @ExposedNew
-    @ExposedMethod
-    final void slice___init__(PyObject[] args, String[] keywords) {
+    static PyObject slice_new(PyNewWrapper new_, boolean init, PyType subtype, PyObject[] args,
+                              String[] keywords) {
         if (args.length == 0) {
             throw Py.TypeError("slice expected at least 1 arguments, got " + args.length);
         } else if (args.length > 3) {
             throw Py.TypeError("slice expected at most 3 arguments, got " + args.length);
         }
         ArgParser ap = new ArgParser("slice", args, keywords, "start", "stop", "step");
+        PySlice slice = new PySlice();
         if (args.length == 1) {
-            stop = ap.getPyObject(0);
+            slice.stop = ap.getPyObject(0);
         } else if (args.length == 2) {
-            start = ap.getPyObject(0);
-            stop = ap.getPyObject(1);
+            slice.start = ap.getPyObject(0);
+            slice.stop = ap.getPyObject(1);
         } else if (args.length == 3) {
-            start = ap.getPyObject(0);
-            stop = ap.getPyObject(1);
-            step = ap.getPyObject(2);
+            slice.start = ap.getPyObject(0);
+            slice.stop = ap.getPyObject(1);
+            slice.step = ap.getPyObject(2);
         }
+        return slice;
     }
 
     @Override
@@ -194,7 +192,7 @@ public class PySlice extends PyObject {
                     istop += len;
                 }
             } catch (PyException pye) {
-                if (!pye.match(Py.AttributeError)) {
+                if (!pye.match(Py.TypeError)) {
                     throw pye;
                 }
             }

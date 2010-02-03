@@ -173,6 +173,10 @@ public class ModjyTestBase extends BasicServletTestCaseAdapter {
         setInitParameter("app_callable_name", app_name);
     }
 
+    public void setCallableQueryName(String query_name) {
+        setInitParameter("callable_query_name", query_name);
+    }
+
     public void setAppImportable(String app_path) {
         setAppDir("");
         setAppFile("");
@@ -195,13 +199,12 @@ public class ModjyTestBase extends BasicServletTestCaseAdapter {
         String jythonHome = System.getProperty("JYTHON_HOME");
         setRealPath(jythonHome, jythonHome);
         setRealPath("/WEB-INF/" + LIB_PYTHON_DIR, LIB_PYTHON_TEST_PATH);
-        setRealPath("/WEB-INF/lib/modjy.jar", "../modjy.jar");
         setPythonHome(jythonHome);
         setAppDir(DEFAULT_APP_DIR);
         setAppFile(DEFAULT_APP_FILE);
         setAppName(DEFAULT_APP_NAME);
         setInitParameter("exc_handler", "testing");
-// dumpContextRealPaths();
+//      dumpContextRealPaths();
     }
 
     protected PyObject evalPythonString(String pyString) {
@@ -238,6 +241,7 @@ public class ModjyTestBase extends BasicServletTestCaseAdapter {
         suite.addTestSuite(ModjyTestHeaders.class);
         suite.addTestSuite(ModjyTestContentHeaders.class);
         suite.addTestSuite(ModjyTestReturnIterable.class);
+        suite.addTestSuite(ModjyTestInterpreterLifecycle.class);
         suite.addTestSuite(ModjyTestWebInf.class);
         suite.addTestSuite(ModjyTestWSGIStreams.class);
         suite.addTestSuite(PyServletTest.class);

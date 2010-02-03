@@ -17,6 +17,7 @@ import java.util.Set;
 import org.python.core.ClassDictInit;
 import org.python.core.Py;
 import org.python.core.PyBuiltinMethodSet;
+import org.python.core.PyException;
 import org.python.core.PyInteger;
 import org.python.core.PyList;
 import org.python.core.PyObject;
@@ -24,6 +25,9 @@ import org.python.core.PyString;
 import org.python.core.PyUnicode;
 
 import com.ziclix.python.sql.util.PyArgParser;
+import org.python.core.ContextManager;
+import org.python.core.ThreadState;
+
 
 /**
  * A connection to the database.
@@ -32,13 +36,16 @@ import com.ziclix.python.sql.util.PyArgParser;
  * @author last revised by $Author$
  * @version $Revision$
  */
-public class PyConnection extends PyObject implements ClassDictInit {
+public class PyConnection extends PyObject implements ClassDictInit, ContextManager {
 
     /** True if closed. */
     protected boolean closed;
 
     /** Whether transactions are supported. */
     protected boolean supportsTransactions;
+
+    /** Whether multiple ResultSets are supported. */
+    protected boolean supportsMultipleResultSets;
 
     /** The underlying java.sql.Connection. */
     protected Connection connection;
@@ -90,6 +97,8 @@ public class PyConnection extends PyObject implements ClassDictInit {
         this.connection = connection;
         this.statements = new HashSet<PyStatement>();
         this.supportsTransactions = this.connection.getMetaData().supportsTransactions();
+        this.supportsMultipleResultSets =
+                this.connection.getMetaData().supportsMultipleResultSets();
 
         if (this.supportsTransactions) {
             this.connection.setAutoCommit(false);
@@ -132,6 +141,8 @@ public class PyConnection extends PyObject implements ClassDictInit {
                                                         zxJDBC.getString("rollback")));
         dict.__setitem__("nativesql", new ConnectionFunc("nativesql", 4, 1, 1,
                                                          zxJDBC.getString("nativesql")));
+        dict.__setitem__("__enter__", new ConnectionFunc("__enter__", 5, 0, 0, "__enter__"));
+        dict.__setitem__("__exit__", new ConnectionFunc("__exit__", 6, 3, 3, "__exit__"));
 
         // hide from python
         dict.__setitem__("initModule", null);
@@ -416,6 +427,33 @@ public class PyConnection extends PyObject implements ClassDictInit {
         }
         return this.statements.contains(statement);
     }
+
+    public PyObject __enter__(ThreadState ts) {
+        return this;
+    }
+
+    public PyObject __enter__() {
+        return this;
+    }
+
+    public boolean __exit__(ThreadState ts, PyException exception) {
+        if (exception == null) {
+            commit();
+        } else {
+            rollback();
+        }
+        return false;
+    }
+
+    public boolean __exit__(PyObject type, PyObject value, PyObject traceback) {
+        if (type == null || type == Py.None) {
+            commit();
+        } else {
+            rollback();
+        }
+        return false;
+    }
+
 }
 
 class ConnectionFunc extends PyBuiltinMethodSet {
@@ -439,6 +477,8 @@ class ConnectionFunc extends PyBuiltinMethodSet {
             case 3:
                 c.rollback();
                 return Py.None;
+            case 5:
+                return c.__enter__();
             default:
                 throw info.unexpectedCall(0, false);
         }
@@ -463,6 +503,8 @@ class ConnectionFunc extends PyBuiltinMethodSet {
         switch (index) {
             case 2:
                 return c.cursor(arg1.__nonzero__(), arg2, arg3);
+            case 6:
+                return Py.newBoolean(c.__exit__(arg1, arg2, arg3));
             default:
                 throw info.unexpectedCall(3, false);
         }

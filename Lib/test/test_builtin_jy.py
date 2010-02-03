@@ -18,12 +18,29 @@ class BuiltinTest(unittest.TestCase):
                 raise TypeError()
         self.assert_(not hasattr(Foo(), 'bar'))
 
+    def test_getattr_custom_AttributeError(self):
+        class Foo(object):
+            def __getattr__(self, name):
+                raise AttributeError('baz')
+        try:
+            getattr(Foo(), 'bar')
+        except AttributeError, ae:
+            self.assertEqual(str(ae), 'baz')
+        else:
+            self.assertTrue(False)
+
     def test_dir(self):
         # for http://bugs.jython.org/issue1196
         class Foo(object):
             def __getattribute__(self, name):
                 return name
         self.assertEqual(dir(Foo()), [])
+
+    def test_numeric_cmp(self):
+        # http://bugs.jython.org/issue1449
+        for numeric in 1, 2L, 3.0, 4j:
+            self.assertTrue(numeric < Ellipsis)
+            self.assertTrue(Ellipsis > numeric)
 
 class LoopTest(unittest.TestCase):
 
@@ -130,6 +147,8 @@ class ConversionTest(unittest.TestCase):
 
     def test_round_non_float(self):
         self.assertEqual(round(self.Foo(), 1), 3.1)
+        # 2.5/2.5.1 regression
+        self.assertRaises(TypeError, round, '1.5')
 
 class ExecEvalTest(unittest.TestCase):
 

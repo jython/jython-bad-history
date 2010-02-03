@@ -21,7 +21,7 @@ public class imp {
 
     private static final String UNKNOWN_SOURCEFILE = "<unknown>";
 
-    private static final int APIVersion = 24;
+    private static final int APIVersion = 26;
 
     public static final int NO_MTIME = -1;
 
@@ -41,13 +41,70 @@ public class imp {
     public static ClassLoader getSyspathJavaLoader() {
         synchronized (syspathJavaLoaderLock) {
             if (syspathJavaLoader == null) {
-                syspathJavaLoader = new SyspathJavaLoader();
-            }
+        		syspathJavaLoader = new SyspathJavaLoader(getParentClassLoader());
+	        }            	
         }
         return syspathJavaLoader;
     }
+    
+    /**
+     * <p>
+     * Selects the parent class loader for Jython, used for dinamically load classes and resources 
+     * 
+     * <p>
+     * The current implementation chooses between the current and context 
+     * classloader based on the following criteria:<ul>
+     * 
+     * <li>If both are the same, that one is returned.
+     * <li>If either is null, the non-null one is selected.
+     * <li>If both are not null, and a parent/child relationship can be determined, 
+     * the child is selected. 
+     * <li>If both are not null and not on a parent/child relationship, the
+     * current class loader is returned (since it is likely for the
+     * context class loader to <b>not</b> see the Jython classes)
+     * 
+     * @return the parent class loader for Jython or null if both the current and context classloaders are null;
+     */
+    public static ClassLoader getParentClassLoader() {
+    	ClassLoader current = imp.class.getClassLoader();
+    	ClassLoader context = Thread.currentThread().getContextClassLoader();
+    	if (context == current) {
+    		return current;
+    	}
+    	if (context == null) {
+    		return current;
+    	}
+    	if (current == null) {
+    		return context;
+    	}
+    	if (isParentClassLoader(context, current)) {
+    		return current;
+    	}
+    	if (isParentClassLoader(current, context)) {
+    		return context;
+    	}
+    	return current;
+    }    
 
-    private imp() {
+    private static boolean isParentClassLoader(
+    		ClassLoader suspectedParent, ClassLoader child) {
+    	try { 
+	    	ClassLoader parent = child.getParent();
+	    	if (suspectedParent == parent) {
+	    		return true;
+	    	}
+	    	if (parent == null || parent == child) {
+	    		// We reached the boot class loader
+	    		return false;
+	    	}
+	    	return isParentClassLoader(suspectedParent, parent);
+	    	
+    	} catch (SecurityException e) {
+    		return false;
+    	}
+	}
+
+	private imp() {
     }
 
     /**
@@ -619,7 +676,7 @@ public class imp {
      */
     private static PyObject import_next(PyObject mod,
             StringBuilder parentNameBuffer, String name, String outerFullName, PyObject fromlist) {
-        if (parentNameBuffer.length() > 0) {
+        if (parentNameBuffer.length() > 0 && name != null && name.length() > 0) {
             parentNameBuffer.append('.');
         }
         parentNameBuffer.append(name);

@@ -4,8 +4,8 @@ import org.python.core.Py;
 import org.python.core.PyInteger;
 import org.python.core.PyNewWrapper;
 import org.python.core.PyObject;
-import org.python.core.PyString;
 import org.python.core.PyType;
+import org.python.core.ThreadState;
 import org.python.expose.ExposedClassMethod;
 import org.python.expose.ExposedDelete;
 import org.python.expose.ExposedGet;
@@ -15,7 +15,7 @@ import org.python.expose.ExposedSet;
 import org.python.expose.ExposedType;
 import org.python.expose.MethodType;
 
-@ExposedType(name = "simpleexposed", isBaseType = false)
+@ExposedType(name = "simpleexposed", isBaseType = false, doc = "Docstring")
 public class SimpleExposed extends PyObject {
 
     public void method() {}
@@ -146,8 +146,36 @@ public class SimpleExposed extends PyObject {
         }
     }
 
-    @ExposedGet(name = "tostring")
+    @ExposedGet(name = "tostring", doc = "tostring docs")
     public String toStringVal = TO_STRING_RETURN;
 
     public static final String TO_STRING_RETURN = "A simple test class";
+
+    @ExposedMethod
+    public String needsThreadState(ThreadState state, String s) {
+        return needsThreadStateClass(state, null, s, null);
+    }
+
+    @ExposedMethod
+    public int needsThreadStateWide(ThreadState state, PyObject[] args, String[] kws) {
+        if (state == null) {
+            return -1;
+        }
+        return args.length + kws.length;
+    }
+
+    @ExposedClassMethod(defaults = {"null"})
+    public static String needsThreadStateClass(ThreadState state, PyType onType, String s,
+                                               String possiblyNull) {
+        if (state != null) {
+            s += " got state " + state.hashCode();
+        }
+        if (onType != null) {
+            s += " got type";
+        }
+        if (possiblyNull != null) {
+            s += possiblyNull;
+        }
+        return s;
+    }
 }

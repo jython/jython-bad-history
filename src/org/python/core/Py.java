@@ -21,11 +21,13 @@ import java.util.Calendar;
 import java.util.Set;
 
 import org.python.antlr.base.mod;
+import com.kenai.constantine.Constant;
 import com.kenai.constantine.platform.Errno;
 import java.util.ArrayList;
 import java.util.List;
 import org.python.core.adapter.ClassicPyObjectAdapter;
 import org.python.core.adapter.ExtensiblePyObjectAdapter;
+import org.python.modules.posix.PosixModule;
 import org.python.util.Generic;
 
 public final class Py {
@@ -102,6 +104,25 @@ public final class Py {
         return new PyException(Py.OSError, message);
     }
 
+    public static PyException OSError(IOException ioe) {
+        return fromIOException(ioe, Py.OSError);
+    }
+
+    public static PyException OSError(Constant errno) {
+        int value = errno.value();
+        PyObject args = new PyTuple(Py.newInteger(value), PosixModule.strerror(value));
+        return new PyException(Py.OSError, args);
+    }
+
+    public static PyException OSError(Constant errno, String filename) {
+        int value = errno.value();
+        // Pass to strerror because constantine currently lacks Errno descriptions on
+        // Windows, and strerror falls back to Linux's
+        PyObject args = new PyTuple(Py.newInteger(value), PosixModule.strerror(value),
+                                    Py.newString(filename));
+        return new PyException(Py.OSError, args);
+    }
+
     public static PyObject NotImplementedError;
     public static PyException NotImplementedError(String message) {
         return new PyException(Py.NotImplementedError, message);
@@ -147,6 +168,27 @@ public final class Py {
     public static PyObject IOError;
 
     public static PyException IOError(IOException ioe) {
+        return fromIOException(ioe, Py.IOError);
+    }
+
+    public static PyException IOError(String message) {
+        return new PyException(Py.IOError, message);
+    }
+
+    public static PyException IOError(Constant errno) {
+        int value = errno.value();
+        PyObject args = new PyTuple(Py.newInteger(value), PosixModule.strerror(value));
+        return new PyException(Py.IOError, args);
+    }
+
+    public static PyException IOError(Constant errno, String filename) {
+        int value = errno.value();
+        PyObject args = new PyTuple(Py.newInteger(value), PosixModule.strerror(value),
+                                    Py.newString(filename));
+        return new PyException(Py.IOError, args);
+    }
+
+    private static PyException fromIOException(IOException ioe, PyObject err) {
         String message = ioe.getMessage();
         if (message == null) {
             message = ioe.getClass().getName();
@@ -154,25 +196,9 @@ public final class Py {
         if (ioe instanceof FileNotFoundException) {
             PyTuple args = new PyTuple(Py.newInteger(Errno.ENOENT.value()),
                                        Py.newString("File not found - " + message));
-            return new PyException(Py.IOError, args);
+            return new PyException(err, args);
         }
-        return new PyException(Py.IOError, message);
-    }
-
-    public static PyException IOError(String message) {
-        return new PyException(Py.IOError, message);
-    }
-
-    public static PyException IOError(Errno errno) {
-        PyObject args = new PyTuple(Py.newInteger(errno.value()),
-                                    Py.newString(errno.description()));
-        return new PyException(Py.IOError, args);
-    }
-
-    public static PyException IOError(Errno errno, String filename) {
-        PyObject args = new PyTuple(Py.newInteger(errno.value()),
-                                    Py.newString(errno.description()), Py.newString(filename));
-        return new PyException(Py.IOError, args);
+        return new PyException(err, message);
     }
 
     public static PyObject KeyError;
@@ -754,35 +780,71 @@ public final class Py {
         return true;
     }
 
-    private static boolean secEnv = false;
+    private static boolean syspathJavaLoaderRestricted = false;
 
+    /**
+     * Common code for findClass and findClassEx
+     * @param name Name of the Java class to load and initialize
+     * @param reason Reason for loading it, used for debugging. No debug output
+     *               is generated if it is null
+     * @return the loaded class
+     * @throws ClassNotFoundException if the class wasn't found by the class loader
+     */
+    private static Class<?> findClassInternal(String name, String reason) throws ClassNotFoundException {
+    	ClassLoader classLoader = Py.getSystemState().getClassLoader();
+        if (classLoader != null) {
+        	if (reason != null) {
+        		writeDebug("import", "trying " + name + " as " + reason +
+        		          " in sys.classLoader");
+        	}
+            return loadAndInitClass(name, classLoader);
+        } 
+        if (!syspathJavaLoaderRestricted) {
+            try {
+                classLoader = imp.getSyspathJavaLoader();
+                if (classLoader != null && reason != null) {
+	                writeDebug("import", "trying " + name + " as " + reason +
+	                        " in SysPathJavaLoader");
+                }                
+            } catch (SecurityException e) {
+                syspathJavaLoaderRestricted = true;
+            }
+        }        
+        if (syspathJavaLoaderRestricted) {
+        	classLoader = imp.getParentClassLoader();
+            if (classLoader != null && reason != null) {
+                writeDebug("import", "trying " + name + " as " + reason +
+                        " in Jython's parent class loader");     
+            }
+        } 
+        if (classLoader != null) {
+            try {
+            	return loadAndInitClass(name, classLoader);
+            } catch (ClassNotFoundException cnfe) {
+                // let the default classloader try
+            	// XXX: by trying another classloader that may not be on a
+            	//      parent/child relationship with the Jython's parent 
+            	//      classsloader we are risking some nasty class loading
+            	//      problems (such as having two incompatible copies for 
+            	//      the same class that is itself a dependency of two 
+            	//      classes loaded from these two different class loaders) 
+            }
+        }
+        if (reason != null) {
+	        writeDebug("import", "trying " + name + " as " + reason +
+	                   " in context class loader, for backwards compatibility");
+        }
+        return loadAndInitClass(name, Thread.currentThread().getContextClassLoader());
+    }
+    
+    /**
+     * Tries to find a Java class.
+     * @param name Name of the Java class.
+     * @return The class, or null if it wasn't found
+     */
     public static Class<?> findClass(String name) {
         try {
-            ClassLoader classLoader = Py.getSystemState().getClassLoader();
-            if (classLoader != null) {
-                return classLoader.loadClass(name);
-            }
-
-            if (!secEnv) {
-                try {
-                    classLoader = imp.getSyspathJavaLoader();
-                } catch (SecurityException e) {
-                    secEnv = true;
-                }
-                if (classLoader != null) {
-                    try {
-                        return classLoader.loadClass(name);
-                    } catch (ClassNotFoundException cnfe) {
-                        // let the context classloader try
-                    }
-                }
-            }
-
-            classLoader = Thread.currentThread().getContextClassLoader();
-            if (classLoader != null) {
-                return classLoader.loadClass(name);
-            }
-            return null;
+        	return findClassInternal(name, null);
         } catch (ClassNotFoundException e) {
             //             e.printStackTrace();
             return null;
@@ -795,39 +857,20 @@ public final class Py {
         }
     }
 
+    /**
+     * Tries to find a Java class. 
+     * 
+     * Unless {@link #findClass(String)}, it raises a JavaError 
+     * if the class was found but there were problems loading it.
+     * @param name Name of the Java class.
+     * @param reason Reason for finding the class. Used for debugging messages.
+     * @return The class, or null if it wasn't found
+     * @throws JavaError wrapping LinkageErrors/IllegalArgumentExceptions 
+     * occurred when the class is found but can't be loaded.
+     */
     public static Class<?> findClassEx(String name, String reason) {
-        try {
-            ClassLoader classLoader = Py.getSystemState().getClassLoader();
-            if (classLoader != null) {
-                writeDebug("import", "trying " + name + " as " + reason +
-                        " in classLoader");
-                return classLoader.loadClass(name);
-            }
-
-            if (!secEnv) {
-                try {
-                    classLoader = imp.getSyspathJavaLoader();
-                } catch (SecurityException e) {
-                    secEnv = true;
-                }
-                if (classLoader != null) {
-                    writeDebug("import", "trying " + name + " as " + reason +
-                            " in syspath loader");
-                    try {
-                        return classLoader.loadClass(name);
-                    } catch (ClassNotFoundException cnfe) {
-                        // let the context classloader try
-                    }
-                }
-            }
-
-            writeDebug("import", "trying " + name + " as " + reason +
-                    " in Class.forName");
-            classLoader = Thread.currentThread().getContextClassLoader();
-            if (classLoader != null) {
-                return classLoader.loadClass(name);
-            }
-            return null;
+        try {            
+            return findClassInternal(name, reason);
         } catch (ClassNotFoundException e) {
             return null;
         } catch (IllegalArgumentException e) {
@@ -837,11 +880,18 @@ public final class Py {
         }
     }
 
+    // An alias to express intent (since boolean flags aren't exactly obvious).
+    // We *need* to initialize classes on findClass/findClassEx, so that import 
+    // statements can trigger static initializers
+    private static Class<?> loadAndInitClass(String name, ClassLoader loader) throws ClassNotFoundException {
+    	return Class.forName(name, true, loader);
+    } 
+ 
+    
     public static void initProxy(PyProxy proxy, String module, String pyclass, Object[] args)
     {
-        if (proxy._getPyInstance() != null) {
+        if (proxy._getPyInstance() != null)
             return;
-        }
         ThreadState ts = getThreadState();
         PyObject instance = ts.getInitializingProxy();
         if (instance != null) {
@@ -1179,8 +1229,7 @@ public final class Py {
         return makeException(null);
     }
 
-    public static PyObject runCode(PyCode code, PyObject locals,
-            PyObject globals) {
+    public static PyObject runCode(PyCode code, PyObject locals, PyObject globals) {
         PyFrame f;
         ThreadState ts = getThreadState();
         if (locals == null || locals == Py.None) {
@@ -1195,13 +1244,12 @@ public final class Py {
             globals = ts.frame.f_globals;
         }
 
-        PyTableCode tc = null;
-        if (code instanceof PyTableCode) {
-            tc = (PyTableCode) code;
+        PyBaseCode baseCode = null;
+        if (code instanceof PyBaseCode) {
+            baseCode = (PyBaseCode) code;
         }
 
-        f = new PyFrame(tc, locals, globals,
-                Py.getSystemState().getBuiltins());
+        f = new PyFrame(baseCode, locals, globals, Py.getSystemState().getBuiltins());
         return code.call(ts, f);
     }
 
@@ -1532,20 +1580,15 @@ public final class Py {
 
     // XXX: The following two makeClass overrides are *only* for the
     // old compiler, they should be removed when the newcompiler hits
-    public static PyObject makeClass(String name, PyObject[] bases,
-                                     PyCode code, PyObject doc) {
-        return makeClass(name, bases, code, doc, null);
+    public static PyObject makeClass(String name, PyObject[] bases, PyCode code) {
+        return makeClass(name, bases, code, null);
     }
 
-    public static PyObject makeClass(String name, PyObject[] bases,
-                                     PyCode code, PyObject doc,
+    public static PyObject makeClass(String name, PyObject[] bases, PyCode code,
                                      PyObject[] closure_cells) {
         ThreadState state = getThreadState();
         PyObject dict = code.call(state, Py.EmptyObjects, Py.NoKeywords,
                 state.frame.f_globals, Py.EmptyObjects, new PyTuple(closure_cells));
-        if (doc != null && dict.__finditem__("__doc__") == null) {
-            dict.__setitem__("__doc__", doc);
-        }
         return makeClass(name, bases, dict);
     }
 
@@ -1781,17 +1824,12 @@ public final class Py {
     }
 
     public static void saveClassFile(String name, ByteArrayOutputStream bytestream) {
-        saveClassFile(name, bytestream, Options.proxyDebugDirectory);
-    }
-
-    public static void saveClassFile(String name, ByteArrayOutputStream baos, String dirname) {
+        String dirname = Options.proxyDebugDirectory;
         if (dirname == null) {
             return;
         }
-        saveClassFile(name, baos.toByteArray(), dirname);
-    }
 
-    public static void saveClassFile(String name, byte[] bytes, String dirname) {
+        byte[] bytes = bytestream.toByteArray();
         File dir = new File(dirname);
         File file = makeFilename(name, dir);
         new File(file.getParent()).mkdirs();
@@ -1912,23 +1950,29 @@ public final class Py {
         }
     }
 
-    static PyObject[] make_array(PyObject o) {
-        if (o instanceof PyTuple) {
-            return ((PyTuple) o).getArray();
+    static PyObject[] make_array(PyObject iterable) {
+        // Special-case the common tuple and list cases, for efficiency
+        if (iterable instanceof PySequenceList) {
+            return ((PySequenceList) iterable).getArray();
         }
-        // Guess result size and allocate space.
+
+        // Guess result size and allocate space. The typical make_array arg supports
+        // __len__, with one exception being generators, so avoid the overhead of an
+        // exception from __len__ in their case
         int n = 10;
-        try {
-            n = o.__len__();
-        } catch (PyException exc) {
+        if (!(iterable instanceof PyGenerator)) {
+            try {
+                n = iterable.__len__();
+            } catch (PyException pye) {
+                // ok
+            }
         }
 
         List<PyObject> objs = new ArrayList<PyObject>(n);
-        for (PyObject item : o.asIterable()) {
+        for (PyObject item : iterable.asIterable()) {
             objs.add(item);
         }
-        PyObject dest[] = new PyObject[0];
-        return (objs.toArray(dest));
+        return objs.toArray(Py.EmptyObjects);
     }
 }
 

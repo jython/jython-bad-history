@@ -21,12 +21,10 @@ public class PyScriptEngine extends AbstractScriptEngine implements Compilable, 
 
     private final PythonInterpreter interp;
     private final ScriptEngineFactory factory;
-    private final PyModule module;
 
     PyScriptEngine(ScriptEngineFactory factory) {
         this.factory = factory;
-        interp = new PythonInterpreter(new PyScriptEngineScope(this, context));
-        module = (PyModule)Py.getSystemState().modules.__finditem__("__main__");
+        interp = PythonInterpreter.threadLocalStateInterpreter(new PyScriptEngineScope(this, context));
     }
 
     public Object eval(String script, ScriptContext context) throws ScriptException {
@@ -38,6 +36,7 @@ public class PyScriptEngine extends AbstractScriptEngine implements Compilable, 
             interp.setIn(context.getReader());
             interp.setOut(context.getWriter());
             interp.setErr(context.getErrorWriter());
+            interp.setLocals(new PyScriptEngineScope(this, context));
             return interp.eval(code).__tojava__(Object.class);
         } catch (PyException pye) {
             throw scriptException(pye);
@@ -93,30 +92,36 @@ public class PyScriptEngine extends AbstractScriptEngine implements Compilable, 
     public Object invokeMethod(Object thiz, String name, Object... args) throws ScriptException,
             NoSuchMethodException {
         try {
+            interp.setLocals(new PyScriptEngineScope(this, context));
             if (!(thiz instanceof PyObject)) {
                 thiz = Py.java2py(thiz);
             }
-            return ((PyObject) thiz).invoke(name, Py.javas2pys(args)).__tojava__(Object.class);
+            PyObject method = ((PyObject) thiz).__findattr__(name);
+            if (method == null) {
+                throw new NoSuchMethodException(name);
+            }
+            return method.__call__(Py.javas2pys(args)).__tojava__(Object.class);
         } catch (PyException pye) {
-            return throwInvokeException(pye, name);
+            throw scriptException(pye);
         }
     }
 
     public Object invokeFunction(String name, Object... args) throws ScriptException,
             NoSuchMethodException {
         try {
+            interp.setLocals(new PyScriptEngineScope(this, context));
             PyObject function = interp.get(name);
             if (function == null) {
                 throw new NoSuchMethodException(name);
             }
             return function.__call__(Py.javas2pys(args)).__tojava__(Object.class);
         } catch (PyException pye) {
-            return throwInvokeException(pye, name);
+            throw scriptException(pye);
         }
     }
 
     public <T> T getInterface(Class<T> clazz) {
-        return getInterface(module, clazz);
+        return getInterface(new PyModule("__jsr223__", interp.getLocals()), clazz);
     }
 
     public <T> T getInterface(Object obj, Class<T> clazz) {
@@ -126,6 +131,7 @@ public class PyScriptEngine extends AbstractScriptEngine implements Compilable, 
         if (clazz == null || !clazz.isInterface()) {
             throw new IllegalArgumentException("interface expected");
         }
+        interp.setLocals(new PyScriptEngineScope(this, context));
         final PyObject thiz = Py.java2py(obj);
         @SuppressWarnings("unchecked")
         T proxy = (T) Proxy.newProxyInstance(
@@ -134,22 +140,18 @@ public class PyScriptEngine extends AbstractScriptEngine implements Compilable, 
             new InvocationHandler() {
                 public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
                     try {
-                        PyObject result = thiz.invoke(method.getName(), Py.javas2pys(args));
+                        interp.setLocals(new PyScriptEngineScope(PyScriptEngine.this, context));
+                        PyObject pyMethod = thiz.__findattr__(method.getName());
+                        if (pyMethod == null)
+                            throw new NoSuchMethodException(method.getName());
+                        PyObject result = pyMethod.__call__(Py.javas2pys(args));
                         return result.__tojava__(Object.class);
                     } catch (PyException pye) {
-                        return throwInvokeException(pye, method.getName());
+                        throw scriptException(pye);
                     }
                 }
             });
         return proxy;
-    }
-
-    private static Object throwInvokeException(PyException pye, String methodName)
-            throws ScriptException, NoSuchMethodException {
-        if (pye.match(Py.AttributeError)) {
-            throw new NoSuchMethodException(methodName);
-        }
-        throw scriptException(pye);
     }
 
     private static ScriptException scriptException(PyException pye) {

@@ -3,6 +3,7 @@ package org.python.core.io;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -15,8 +16,8 @@ import java.nio.channels.FileChannel;
 import com.kenai.constantine.platform.Errno;
 import org.jruby.ext.posix.util.Platform;
 import org.python.core.Py;
-import org.python.core.util.FileUtil;
 import org.python.core.util.RelativeFile;
+import org.python.modules.posix.PosixModule;
 
 /**
  * Raw I/O implementation for OS files.
@@ -28,20 +29,26 @@ public class FileIO extends RawIOBase {
     /** The underlying file channel */
     private FileChannel fileChannel;
 
-    /** The underlying file (if known) */
+    /** The underlying RandomAccessFile, if known. May be null */
     private RandomAccessFile file;
 
+    /** The underlying FileOutputStream, if known. May be null */
+    private FileOutputStream fileOutputStream;
+
     /** true if the file is opened for reading ('r') */
-    private boolean reading = false;
+    private boolean reading;
 
     /** true if the file is opened for writing ('w', 'a', or '+') */
-    private boolean writing = false;
+    private boolean writing;
 
     /** true if the file is in appending mode ('a') */
-    private boolean appending = false;
+    private boolean appending;
 
     /** true if the file is opened for reading and writing ('+') */
-    private boolean plus = false;
+    private boolean plus;
+
+    /** true if write will emulate O_APPEND mode */
+    private boolean emulateAppend;
 
     /**
      * Construct a FileIO instance for the specified file name.
@@ -55,21 +62,21 @@ public class FileIO extends RawIOBase {
      */
     public FileIO(String name, String mode) {
         parseMode(mode);
+        File absPath = new RelativeFile(name);
 
-        File fullPath = new RelativeFile(name);
-        String rafMode = "r" + (writing ? "w" : "");
         try {
-            if (plus && reading && !fullPath.isFile()) {
-                writing = false; // suppress "permission denied"
-                throw new FileNotFoundException("");
+            if (appending && !reading) {
+                // Take advantage of FileOutputStream's append mode
+                fromFileOutputStream(absPath);
+            } else {
+                fromRandomAccessFile(absPath);
+                emulateAppend = appending;
             }
-            file = new RandomAccessFile(fullPath, rafMode);
-            fileChannel = file.getChannel();
         } catch (FileNotFoundException fnfe) {
-            if (fullPath.isDirectory()) {
+            if (absPath.isDirectory()) {
                 throw Py.IOError(Errno.EISDIR, name);
             }
-            if ((writing && !fullPath.canWrite())
+            if ((writing && !absPath.canWrite())
                 || fnfe.getMessage().endsWith("(Permission denied)")) {
                 throw Py.IOError(Errno.EACCES, name);
             }
@@ -144,6 +151,34 @@ public class FileIO extends RawIOBase {
     }
 
     /**
+     * Open the underlying FileChannel from a RandomAccessFile.
+     *
+     * @param absPath The absolute path File to open
+     */
+    private void fromRandomAccessFile(File absPath) throws FileNotFoundException {
+        String rafMode = "r" + (writing ? "w" : "");
+        if (plus && reading && !absPath.isFile()) {
+            // suppress "permission denied"
+            writing = false;
+            throw new FileNotFoundException("");
+        }
+        file = new RandomAccessFile(absPath, rafMode);
+        fileChannel = file.getChannel();
+    }
+
+    /**
+     * Open the underlying FileChannel from a FileOutputStream in append mode, as opposed
+     * to a RandomAccessFile, for the use of the OS's underlying O_APPEND mode. This can
+     * only be used by 'a' (not 'a+') mode.
+     *
+     * @param absPath The absolute path File to open
+     */
+    private void fromFileOutputStream(File absPath) throws FileNotFoundException {
+        fileOutputStream = new FileOutputStream(absPath, true);
+        fileChannel = fileOutputStream.getChannel();
+    }
+
+    /**
      * Raise a value error due to a mode string not containing exactly
      * one r/w/a/+ character.
      *
@@ -180,20 +215,21 @@ public class FileIO extends RawIOBase {
         }
     }
 
-    /** {@inheritDoc} */
+    @Override
     public boolean isatty() {
         checkClosed();
-        if (file == null) {
+        if (file == null || fileOutputStream == null) {
             return false;
         }
         try {
-            return FileUtil.isatty(file.getFD());
+            return PosixModule.getPOSIX().isatty(file != null
+                                                 ? file.getFD() : fileOutputStream.getFD());
         } catch (IOException e) {
             return false;
         }
     }
 
-    /** {@inheritDoc} */
+    @Override
     public int readinto(ByteBuffer buf) {
         checkClosed();
         checkReadable();
@@ -211,6 +247,7 @@ public class FileIO extends RawIOBase {
      * @param bufs {@inheritDoc}
      * @return {@inheritDoc}
      */
+    @Override
     public long readinto(ByteBuffer[] bufs) {
         checkClosed();
         checkReadable();
@@ -229,6 +266,7 @@ public class FileIO extends RawIOBase {
      *
      * @return {@inheritDoc}
      */
+    @Override
     public ByteBuffer readall() {
         checkClosed();
         checkReadable();
@@ -252,12 +290,13 @@ public class FileIO extends RawIOBase {
         return all;
     }
 
-    /** {@inheritDoc} */
+    @Override
     public int write(ByteBuffer buf) {
         checkClosed();
         checkWritable();
         try {
-            return fileChannel.write(buf);
+            return !emulateAppend ? fileChannel.write(buf) :
+                    fileChannel.write(buf, fileChannel.position());
         } catch (IOException ioe) {
             throw Py.IOError(ioe);
         }
@@ -270,17 +309,39 @@ public class FileIO extends RawIOBase {
      * @param bufs {@inheritDoc}
      * @return {@inheritDoc}
      */
+    @Override
     public long write(ByteBuffer[] bufs) {
         checkClosed();
         checkWritable();
         try {
-            return fileChannel.write(bufs);
+            return !emulateAppend ? fileChannel.write(bufs) : writeAppend(bufs);
         } catch (IOException ioe) {
             throw Py.IOError(ioe);
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Write multiple ByteBuffers while emulating O_APPEND mode.
+     *
+     * @param bufs an array of ByteBuffers
+     * @return the number of bytes written as a long
+     */
+    private long writeAppend(ByteBuffer[] bufs) throws IOException {
+        long count = 0;
+        int bufCount;
+        for (ByteBuffer buf : bufs) {
+            if (!buf.hasRemaining()) {
+                continue;
+            }
+            if ((bufCount = fileChannel.write(buf, fileChannel.position())) == 0) {
+                break;
+            }
+            count += bufCount;
+        }
+        return count;
+    }
+
+    @Override
     public long seek(long pos, int whence) {
         checkClosed();
         try {
@@ -303,7 +364,7 @@ public class FileIO extends RawIOBase {
         }
     }
 
-    /** {@inheritDoc} */
+    @Override
     public long tell() {
         checkClosed();
         try {
@@ -313,7 +374,7 @@ public class FileIO extends RawIOBase {
         }
     }
 
-    /** {@inheritDoc} */
+    @Override
     public long truncate(long size) {
         checkClosed();
         checkWritable();
@@ -328,7 +389,7 @@ public class FileIO extends RawIOBase {
         return size;
     }
 
-    /** {@inheritDoc} */
+    @Override
     public void close() {
         if (closed()) {
             return;
@@ -351,17 +412,17 @@ public class FileIO extends RawIOBase {
         return readable() ? Channels.newInputStream(fileChannel) : super.asInputStream();
     }
 
-    /** {@inheritDoc} */
+    @Override
     public boolean readable() {
         return reading || plus;
     }
 
-    /** {@inheritDoc} */
+    @Override
     public boolean writable() {
         return writing;
     }
 
-    /** {@inheritDoc} */
+    @Override
     public Channel getChannel() {
         return fileChannel;
     }

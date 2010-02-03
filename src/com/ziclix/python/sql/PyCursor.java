@@ -26,6 +26,9 @@ import org.python.core.PyTuple;
 import org.python.core.PyUnicode;
 
 import com.ziclix.python.sql.util.PyArgParser;
+import org.python.core.ContextManager;
+import org.python.core.ThreadState;
+
 
 /**
  * These objects represent a database cursor, which is used to manage the
@@ -35,7 +38,7 @@ import com.ziclix.python.sql.util.PyArgParser;
  * @author last revised by $Author$
  * @version $Revision$
  */
-public class PyCursor extends PyObject implements ClassDictInit, WarningListener {
+public class PyCursor extends PyObject implements ClassDictInit, WarningListener, ContextManager {
 
     /** Field fetch */
     protected Fetch fetch;
@@ -260,6 +263,8 @@ public class PyCursor extends PyObject implements ClassDictInit, WarningListener
         dict.__setitem__("scroll", new CursorFunc("scroll", 10, 1, 2, "scroll the cursor in the result set to a new position according to mode"));
         dict.__setitem__("write", new CursorFunc("write", 11, 1, "execute the sql written to this file-like object"));
         dict.__setitem__("prepare", new CursorFunc("prepare", 12, 1, "prepare the sql statement for later execution"));
+        dict.__setitem__("__enter__", new CursorFunc("__enter__", 13, 0, 0, "__enter__"));
+        dict.__setitem__("__exit__", new CursorFunc("__exit__", 14, 3, 3, "__exit__"));
 
         // hide from python
         dict.__setitem__("classDictInit", null);
@@ -482,15 +487,11 @@ public class PyCursor extends PyObject implements ClassDictInit, WarningListener
                 throw zxJDBC.makeException(zxJDBC.NotSupportedError,
                                            zxJDBC.getString("noStoredProc"));
             }
-        } catch (PyException e) {
-            throw e;
-        } catch (Throwable e) {
-            throw zxJDBC.makeException(e);
-        } finally {
-            if (this.statement != null) {
-                // close what we opened
-                this.statement.close();
+        } catch (Throwable t) {
+            if (statement != null) {
+                statement.close();
             }
+            throw zxJDBC.makeException(t);
         }
     }
 
@@ -584,17 +585,12 @@ public class PyCursor extends PyObject implements ClassDictInit, WarningListener
                     this.execute(Py.None, Py.None);
                 }
             }
-        } catch (PyException e) {
-            throw e;
-        } catch (Throwable e) {
-            throw zxJDBC.makeException(zxJDBC.Error, e, rowIndex);
-        } finally {
-            if (this.statement != null) {
+        } catch (Throwable t) {
+            if (statement != null && !(sql instanceof PyStatement)) {
                 // only close static, single-use statements
-                if (!(sql instanceof PyStatement) && !this.dynamicFetch) {
-                    this.statement.close();
-                }
+                statement.close();
             }
+            throw zxJDBC.makeException(zxJDBC.Error, t, rowIndex);
         }
     }
 
@@ -605,18 +601,12 @@ public class PyCursor extends PyObject implements ClassDictInit, WarningListener
     protected void execute(PyObject params, PyObject bindings) {
         try {
             Statement stmt = this.statement.statement;
-
             this.datahandler.preExecute(stmt);
 
             // this performs the SQL execution and fetch per the Statement type
             this.statement.execute(this, params, bindings);
 
-            this.lastrowid = this.datahandler.getRowId(stmt);
-
-            int uc = stmt.getUpdateCount();
-
-            this.updatecount = uc < 0 ? Py.None : Py.newInteger(uc);
-
+            this.updateAttributes(stmt.getUpdateCount());
             warning(new WarningEvent(this, stmt.getWarnings()));
             this.datahandler.postExecute(stmt);
         } catch (PyException e) {
@@ -624,6 +614,17 @@ public class PyCursor extends PyObject implements ClassDictInit, WarningListener
         } catch (Throwable e) {
             throw zxJDBC.makeException(e);
         }
+    }
+
+    /**
+     * Update the cursor's lastrowid and updatecount.
+     *
+     * @param updateCount The int value of updatecount
+     * @throws SQLException
+     */
+    private void updateAttributes(int updateCount) throws SQLException {
+        lastrowid = datahandler.getRowId(statement.statement);
+        updatecount = updateCount < 0 ? Py.None : Py.newInteger(updateCount);
     }
 
     /**
@@ -691,7 +692,28 @@ public class PyCursor extends PyObject implements ClassDictInit, WarningListener
      */
     public PyObject nextset() {
         ensureOpen();
-        return this.fetch.nextset();
+        PyObject nextset = fetch.nextset();
+
+        // If the fetch is exhausted and multiple ResultSets are supported, try addding a
+        // next ResultSet. XXX: DynamicFetch currently isn't so tailored for this
+        if (!nextset.__nonzero__() && connection.supportsMultipleResultSets && !dynamicFetch) {
+            Statement stmt = statement.statement;
+            try {
+                boolean hasMoreResults;
+                int updateCount = -1;
+                if ((hasMoreResults = stmt.getMoreResults())
+                    || (updateCount = stmt.getUpdateCount()) != -1) {
+                    // Only call getUpdateCount once, per its docs
+                    updateAttributes(!hasMoreResults ? updateCount : stmt.getUpdateCount());
+                    fetch.add(stmt.getResultSet());
+                    nextset = Py.One;
+                }
+            } catch (SQLException sqle) {
+                throw zxJDBC.makeException(sqle);
+            }
+        }
+
+        return nextset;
     }
 
     /**
@@ -784,12 +806,9 @@ public class PyCursor extends PyObject implements ClassDictInit, WarningListener
         }
 
         if (this.statement != null) {
-            // we can't close a dynamic fetch statement until everything has been
-            // consumed so the only time we can clean up is now
-            // but if this is a previously prepared statement we don't want to close
-            // it underneath someone; we can check this by looking in the set
+            // Finally done with the Statement: only close it if we created it 
             try {
-                if (this.dynamicFetch && !this.connection.contains(this.statement)) {
+                if (!this.connection.contains(this.statement)) {
                     this.statement.close();
                 }
             } finally {
@@ -870,6 +889,24 @@ public class PyCursor extends PyObject implements ClassDictInit, WarningListener
             throw zxJDBC.makeException(zxJDBC.ProgrammingError, "cursor is closed");
         }
     }
+
+    public PyObject __enter__(ThreadState ts) {
+        return this;
+    }
+
+    public PyObject __enter__() {
+        return this;
+    }
+
+    public boolean __exit__(ThreadState ts, PyException exception) {
+        close();
+        return false;
+    }
+
+    public boolean __exit__(PyObject type, PyObject value, PyObject traceback) {
+        close();
+        return false;
+    }
 }
 
 class CursorFunc extends PyBuiltinMethodSet {
@@ -897,6 +934,8 @@ class CursorFunc extends PyBuiltinMethodSet {
             return cursor.fetchone();
         case 4 :
             return cursor.nextset();
+        case 13 :
+            return cursor.__enter__();
         default :
             throw info.unexpectedCall(0, false);
         }
@@ -969,6 +1008,8 @@ class CursorFunc extends PyBuiltinMethodSet {
         case 9 :
             cursor.executemany(arga, argb, argc, Py.None);
             return Py.None;
+        case 14 :
+            return Py.newBoolean(cursor.__exit__(arga, argc, argc));
         default :
             throw info.unexpectedCall(3, false);
         }

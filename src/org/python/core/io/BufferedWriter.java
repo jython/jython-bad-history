@@ -26,7 +26,7 @@ public class BufferedWriter extends BufferedIOMixin {
         buffer = ByteBuffer.allocate(this.bufferSize);
     }
 
-    /** {@inheritDoc} */
+    @Override
     public int write(ByteBuffer bytes) {
         if (bufferSize == 0) {
             return rawIO.write(bytes);
@@ -70,37 +70,35 @@ public class BufferedWriter extends BufferedIOMixin {
         return totalToWrite;
     }
 
-    /** {@inheritDoc} */
+    @Override
     public void flush() {
-        if (buffer.position() == 0) {
-            // Empty buffer
-            return;
+        if (buffer.position() > 0) {
+            buffer.flip();
+            while (buffer.hasRemaining()) {
+                rawIO.write(buffer);
+            }
+            buffer.clear();
         }
-
-        buffer.flip();
-        while (buffer.hasRemaining()) {
-            rawIO.write(buffer);
-        }
-        buffer.clear();
+        super.flush();
     }
 
-    /** {@inheritDoc} */
+    @Override
     public long tell() {
         return rawIO.tell() + buffer.position();
     }
 
-    /** {@inheritDoc} */
+    @Override
     public long seek(long pos, int whence) {
         flush();
         return rawIO.seek(pos, whence);
     }
 
-    /** {@inheritDoc} */
+    @Override
     public boolean buffered() {
         return buffer.position() > 0;
     }
 
-    /** {@inheritDoc} */
+    @Override
     public ByteBuffer readall() {
         // Never readable; just raise the appropriate exception
         checkClosed();
@@ -108,7 +106,7 @@ public class BufferedWriter extends BufferedIOMixin {
         return null;
     }
 
-    /** {@inheritDoc} */
+    @Override
     public int readinto(ByteBuffer bytes) {
         // Never readable; just raise the appropriate exception
         checkClosed();
@@ -116,7 +114,7 @@ public class BufferedWriter extends BufferedIOMixin {
         return -1;
     }
 
-    /** {@inheritDoc} */
+    @Override
     public int read1(ByteBuffer bytes) {
         // Never readable; just raise the appropriate exception
         checkClosed();
@@ -124,7 +122,7 @@ public class BufferedWriter extends BufferedIOMixin {
         return -1;
     }
 
-    /** {@inheritDoc} */
+    @Override
     public boolean readable() {
         return false;
     }

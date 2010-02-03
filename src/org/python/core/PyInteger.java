@@ -12,7 +12,7 @@ import org.python.expose.MethodType;
 /**
  * A builtin python int.
  */
-@ExposedType(name = "int")
+@ExposedType(name = "int", doc = BuiltinDocs.int_doc)
 public class PyInteger extends PyObject {
     
     public static final PyType TYPE = PyType.fromClass(PyInteger.class);
@@ -825,6 +825,11 @@ public class PyInteger extends PyObject {
     }
 
     @Override
+    public boolean isNumberType() {
+        return true;
+    }
+
+    @Override
     public boolean isIndex() {
         return true;
     }
@@ -847,6 +852,11 @@ public class PyInteger extends PyObject {
 
     @Override
     public int asInt() {
+        return getValue();
+    }
+
+    @Override
+    public long asLong() {
         return getValue();
     }
 }

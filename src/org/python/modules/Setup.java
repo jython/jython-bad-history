@@ -1,6 +1,8 @@
 // Copyright (c) Corporation for National Research Initiatives
 package org.python.modules;
 
+import org.python.modules.posix.PosixModule;
+
 // This is sort of analogous to CPython's Modules/Setup file.  Use this to
 // specify additional builtin modules.
 
@@ -57,6 +59,7 @@ public class Setup
         "_ast:org.python.antlr.ast.AstModule",
         "_marshal",
         "_threading:org.python.modules._threading._threading",
+        PosixModule.getOSName() + ":org.python.modules.posix.PosixModule",
         "jffi:org.python.modules.jffi.jffi"
     };
 }

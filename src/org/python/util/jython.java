@@ -25,9 +25,9 @@ import org.python.core.PyString;
 import org.python.core.PyStringMap;
 import org.python.core.PySystemState;
 import org.python.core.imp;
-import org.python.core.util.FileUtil;
 import org.python.core.util.RelativeFile;
 import org.python.modules._systemrestart;
+import org.python.modules.posix.PosixModule;
 import org.python.modules.thread.thread;
 
 public class jython {
@@ -221,15 +221,15 @@ public class jython {
             	}
             } else if (opts.filename.equals("-")) {
                 try {
-                    interp.locals.__setitem__(new PyString("__file__"), new PyString("<stdin>"));
+                    interp.globals.__setitem__(new PyString("__file__"), new PyString("<stdin>"));
                     interp.execfile(System.in, "<stdin>");
                 } catch (Throwable t) {
                     Py.printException(t);
                 }
             } else {
                 try {
-                   interp.locals.__setitem__(new PyString("__file__"),
-                                             new PyString(opts.filename));
+                   interp.globals.__setitem__(new PyString("__file__"),
+                                              new PyString(opts.filename));
 
                    FileInputStream file;
                    try {
@@ -238,7 +238,7 @@ public class jython {
                        throw Py.IOError(e);
                    }
                    try {
-                       if (FileUtil.isatty(file.getFD())) {
+                       if (PosixModule.getPOSIX().isatty(file.getFD())) {
                            opts.interactive = true;
                            interp.interact(null, new PyFile(file));
                            System.exit(0);
@@ -254,9 +254,11 @@ public class jython {
                         // Shutdown this instance...
                         shouldRestart = true;
                         shutdownInterpreter();
+                        interp.cleanup();
                         // ..reset the state...
                         Py.setSystemState(new PySystemState());
                         // ...and start again
+                        return;
                     } else {
                         Py.printException(t);
                         if (!opts.interactive) {
@@ -353,8 +355,9 @@ public class jython {
      * Run any finalizations on the current interpreter in preparation for a SytemRestart.
      */
     public static void shutdownInterpreter() {
-        // Stop all the active threads
+        // Stop all the active threads and signal the SystemRestart
         thread.interruptAllThreads();
+        Py.getSystemState()._systemRestart = true;
         // Close all sockets -- not all of their operations are stopped by
         // Thread.interrupt (in particular pre-nio sockets)
         try {

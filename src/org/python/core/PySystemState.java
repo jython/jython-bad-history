@@ -40,7 +40,6 @@ public class PySystemState extends PyObject
     public static final String PYTHON_CACHEDIR_SKIP = "python.cachedir.skip";
     public static final String PYTHON_CONSOLE_ENCODING = "python.console.encoding";
     protected static final String CACHEDIR_DEFAULT_NAME = "cachedir";
-    public static final String PYTHON_JAVAPROXYDIR = "python.javaproxydir";
 
     public static final String JYTHON_JAR = "jython.jar";
     public static final String JYTHON_DEV_JAR = "jython-dev.jar";
@@ -126,8 +125,6 @@ public class PySystemState extends PyObject
 
     private String currentWorkingDir;
 
-    private PyObject environ;
-
     private ClassLoader classLoader = null;
 
     public PyObject stdout, stderr, stdin;
@@ -139,18 +136,14 @@ public class PySystemState extends PyObject
     public PyObject last_type = Py.None;
     public PyObject last_traceback = Py.None;
 
-    private static String defaultJavaProxyDir;
-
-    /**
-     * The directory where named Java proxies are written.
-     */
-    public String javaproxy_dir;
-
     public PyObject __name__ = new PyString("sys");
 
     public PyObject __dict__;
 
     private int recursionlimit = 1000;
+
+    /** true when a SystemRestart is triggered. */
+    public boolean _systemRestart = false;
 
     public PySystemState() {
         initialize();
@@ -170,7 +163,6 @@ public class PySystemState extends PyObject
         path_importer_cache = new PyDictionary();
 
         currentWorkingDir = new File("").getAbsolutePath();
-        initEnviron();
 
         // Set up the initial standard ins and outs
         String mode = Options.unbuffered ? "b" : "";
@@ -197,8 +189,6 @@ public class PySystemState extends PyObject
         __dict__.invoke("update", getType().fastGetDict());
         __dict__.__setitem__("displayhook", __displayhook__);
         __dict__.__setitem__("excepthook", __excepthook__);
-
-        javaproxy_dir = defaultJavaProxyDir;
     }
 
     void reload() throws PyIgnoreMethodTag {
@@ -441,27 +431,6 @@ public class PySystemState extends PyObject
 
     public PyObject getfilesystemencoding() {
         return Py.None;
-    }
-
-    /**
-     * Initialize the environ dict from System.getenv. environ may be empty when the
-     * security policy doesn't grant us access.
-     */
-    public void initEnviron() {
-        environ = new PyDictionary();
-        Map<String, String> env;
-        try {
-            env = System.getenv();
-        } catch (SecurityException se) {
-            return;
-        }
-        for (Map.Entry<String, String> entry : env.entrySet()) {
-            environ.__setitem__(Py.newString(entry.getKey()), Py.newString(entry.getValue()));
-        }
-    }
-
-    public PyObject getEnviron() {
-        return environ;
     }
 
     /**
@@ -867,8 +836,6 @@ public class PySystemState extends PyObject
         // other initializations
         initBuiltins(registry);
         initStaticFields();
-        defaultJavaProxyDir = registry.getProperty(PYTHON_JAVAPROXYDIR);
-
         // Initialize the path (and add system defaults)
         defaultPath = initPath(registry, standalone, jarFileName);
         defaultArgv = initArgv(argv);

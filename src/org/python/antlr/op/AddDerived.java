@@ -768,7 +768,7 @@ public class AddDerived extends Add implements Slotted {
 
     public int __cmp__(PyObject other) {
         PyType self_type=getType();
-        PyType[]where_type=new PyType[1];
+        PyObject[]where_type=new PyObject[1];
         PyObject impl=self_type.lookup_where("__cmp__",where_type);
         // Full Compatibility with CPython __cmp__:
         // If the derived type don't override __cmp__, the
@@ -981,43 +981,7 @@ public class AddDerived extends Add implements Slotted {
     }
 
     public PyObject __findattr_ex__(String name) {
-        PyType self_type=getType();
-        // TODO: We should speed this up. As the __getattribute__ slot almost never
-        //       changes, it is a good candidate for caching, as PyClass does with
-        //       __getattr__. See #1102.
-        PyObject getattribute=self_type.lookup("__getattribute__");
-        PyString py_name=null;
-        PyException firstAttributeError=null;
-        try {
-            if (getattribute!=null) {
-                py_name=PyString.fromInterned(name);
-                return getattribute.__get__(this,self_type).__call__(py_name);
-            } else {
-                Py.Warning(String.format("__getattribute__ not found on type %s",self_type.getName()));
-                PyObject ret=super.__findattr_ex__(name);
-                if (ret!=null) {
-                    return ret;
-                } // else: pass through to __getitem__ invocation
-            }
-        } catch (PyException e) {
-            if (!e.match(Py.AttributeError)) {
-                throw e;
-            } else {
-                firstAttributeError=e; // saved to avoid swallowing custom AttributeErrors
-            // and pass through to __getattr__ invocation.
-            }
-        }
-        PyObject getattr=self_type.lookup("__getattr__");
-        if (getattr!=null) {
-            if (py_name==null) {
-                py_name=PyString.fromInterned(name);
-            }
-            return getattr.__get__(this,self_type).__call__(py_name);
-        }
-        if (firstAttributeError!=null) {
-            throw firstAttributeError;
-        }
-        return null;
+        return Deriveds.__findattr_ex__(this,name);
     }
 
     public void __setattr__(String name,PyObject value) {
@@ -1090,18 +1054,8 @@ public class AddDerived extends Add implements Slotted {
         return super.__pow__(other,modulo);
     }
 
-    public void dispatch__init__(PyType type,PyObject[]args,String[]keywords) {
-        PyType self_type=getType();
-        if (self_type.isSubType(type)) {
-            PyObject impl=self_type.lookup("__init__");
-            if (impl!=null) {
-                PyObject res=impl.__get__(this,self_type).__call__(args,keywords);
-                if (res!=Py.None) {
-                    throw Py.TypeError(String.format("__init__() should return None, not '%.200s'",res.getType().fastGetName()));
-                }
-                proxyInit();
-            }
-        }
+    public void dispatch__init__(PyObject[]args,String[]keywords) {
+        Deriveds.dispatch__init__(this,args,keywords);
     }
 
     public PyObject __index__() {
