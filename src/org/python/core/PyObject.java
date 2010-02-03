@@ -20,7 +20,7 @@ import org.python.util.Generic;
  * All objects known to the Jython runtime system are represented by an instance
  * of the class <code>PyObject</code> or one of its subclasses.
  */
-@ExposedType(name = "object")
+@ExposedType(name = "object", doc = BuiltinDocs.object_doc)
 public class PyObject implements Serializable {
 
     public static final PyType TYPE = PyType.fromClass(PyObject.class);
@@ -51,7 +51,6 @@ public class PyObject implements Serializable {
         if (Py.BOOTSTRAP_TYPES.size() > 0) {
             Py.writeWarning("init", "Bootstrap types weren't encountered in bootstrapping: "
                             + Py.BOOTSTRAP_TYPES);
-
         }
     }
 
@@ -112,29 +111,17 @@ public class PyObject implements Serializable {
         return objtype;
     }
 
-    //XXX: needs doc
-    @ExposedGet(name = "__doc__")
-    public PyObject getDoc() {
-        PyObject d = fastGetDict();
-        if (d != null) {
-            PyObject doc = d.__finditem__("__doc__");
-            if(doc != null) {
-                return doc;
-            }
-        }
-        return Py.None;
-    }
-
     /**
      * Dispatch __init__ behavior
      */
-    public void dispatch__init__(PyType type, PyObject[] args, String[] keywords) {}
+    public void dispatch__init__(PyObject[] args, String[] keywords) {
+    }
 
     /**
      * Attempts to automatically initialize our Java proxy if we have one and it wasn't initialized
      * by our __init__.
      */
-    protected void proxyInit() {
+    void proxyInit() {
         Class<?> c = getType().getProxyType();
         if (javaProxy != null || c == null) {
             return;
@@ -537,20 +524,23 @@ public class PyObject implements Serializable {
         return __call__(args, keywords);
     }
 
-    /* xxx fix these around */
-
     public boolean isCallable() {
         return getType().lookup("__call__") != null;
     }
 
-    public boolean isMappingType() {
-        return true;
-    }
     public boolean isNumberType() {
-        return true;
+        PyType type = getType();
+        return type.lookup("__int__") != null || type.lookup("__float__") != null;
     }
+
+    public boolean isMappingType() {
+        PyType type = getType();
+        return type.lookup("__getitem__") != null
+                && !(isSequenceType() && type.lookup("__getslice__") != null);
+    }
+
     public boolean isSequenceType() {
-        return true;
+        return getType().lookup("__getitem__") != null;
     }
 
     /**
@@ -571,7 +561,8 @@ public class PyObject implements Serializable {
      * @return the length of the object
      **/
     public int __len__() {
-        throw Py.AttributeError("__len__");
+        throw Py.TypeError(String.format("object of type '%.200s' has no len()",
+                                         getType().fastGetName()));
     }
 
     /**
@@ -1310,25 +1301,33 @@ public class PyObject implements Serializable {
 
     private final int _default_cmp(PyObject other) {
         int result;
-        if (this._is(other).__nonzero__())
+        if (_is(other).__nonzero__())
             return 0;
 
         /* None is smaller than anything */
-        if (this == Py.None)
+        if (this == Py.None) {
             return -1;
-        if (other == Py.None)
+        }
+        if (other == Py.None) {
             return 1;
+        }
 
         // No rational way to compare these, so ask their classes to compare
-        PyType this_type = this.getType();
-        PyType other_type = other.getType();
-        if (this_type == other_type) {
-            return Py.id(this) < Py.id(other)? -1: 1;
+        PyType type = getType();
+        PyType otherType = other.getType();
+        if (type == otherType) {
+            return Py.id(this) < Py.id(other) ? -1 : 1;
         }
-        result = this_type.fastGetName().compareTo(other_type.fastGetName());
-        if (result == 0)
-            return Py.id(this_type)<Py.id(other_type)? -1: 1;
-        return result < 0? -1: 1;
+
+        // different type: compare type names; numbers are smaller
+        String typeName = isNumberType() ? "" : type.fastGetName();
+        String otherTypeName = other.isNumberType() ? "" : otherType.fastGetName();
+        result = typeName.compareTo(otherTypeName);
+        if (result == 0) {
+            // Same type name, or (more likely) incomparable numeric types
+            return Py.id(type) < Py.id(otherType) ? -1 : 1;
+        }
+        return result < 0 ? -1 : 1;
     }
 
     private final int _cmp_unsafe(PyObject other) {
@@ -3693,7 +3692,6 @@ public class PyObject implements Serializable {
 
     // name must be interned
     final PyObject object___findattr__(String name) {
-
         PyObject descr = objtype.lookup(name);
         PyObject res;
 
@@ -3727,7 +3725,6 @@ public class PyObject implements Serializable {
 
     final void object___setattr__(String name, PyObject value) {
         PyObject descr = objtype.lookup(name);
-
         boolean set = false;
 
         if (descr != null) {
@@ -3771,7 +3768,6 @@ public class PyObject implements Serializable {
 
     final void object___delattr__(String name) {
         PyObject descr = objtype.lookup(name);
-
         boolean delete = false;
 
         if (descr != null) {
@@ -4010,6 +4006,11 @@ public class PyObject implements Serializable {
         throw new ConversionException(index);
     }
 
+    /**
+     * Convert this object into an int. Throws a PyException on failure.
+     *
+     * @return an int value
+     */
     public int asInt() {
         PyObject intObj;
         try {
@@ -4020,7 +4021,7 @@ public class PyObject implements Serializable {
             }
             throw pye;
         }
-        if (!(intObj instanceof PyInteger) && !(intObj instanceof PyLong)) {
+        if (!(intObj instanceof PyInteger || intObj instanceof PyLong)) {
             // Shouldn't happen except with buggy builtin types
             throw Py.TypeError("nb_int should return int object");
         }
@@ -4029,6 +4030,28 @@ public class PyObject implements Serializable {
 
     public long asLong(int index) throws ConversionException {
         throw new ConversionException(index);
+    }
+
+    /**
+     * Convert this object longo an long. Throws a PyException on failure.
+     *
+     * @return an long value
+     */
+    public long asLong() {
+        PyObject longObj;
+        try {
+            longObj = __long__();
+        } catch (PyException pye) {
+            if (pye.match(Py.AttributeError)) {
+                throw Py.TypeError("an integer is required");
+            }
+            throw pye;
+        }
+        if (!(longObj instanceof PyLong)) {
+            // Shouldn't happen except with buggy builtin types
+            throw Py.TypeError("integer conversion failed");
+        }
+        return longObj.asLong();
     }
 
     /**

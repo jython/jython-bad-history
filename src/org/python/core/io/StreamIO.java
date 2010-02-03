@@ -17,7 +17,7 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 
 import org.python.core.Py;
-import org.python.core.util.FileUtil;
+import org.python.modules.posix.PosixModule;
 
 /**
  * Raw I/O implementation for simple streams.
@@ -111,7 +111,7 @@ public class StreamIO extends RawIOBase {
         this.outputStream = outputStream;
     }
 
-    /** {@inheritDoc} */
+    @Override
     public int readinto(ByteBuffer buf) {
         checkClosed();
         checkReadable();
@@ -122,7 +122,7 @@ public class StreamIO extends RawIOBase {
         }
     }
 
-    /** {@inheritDoc} */
+    @Override
     public int write(ByteBuffer buf) {
         checkClosed();
         checkWritable();
@@ -133,7 +133,7 @@ public class StreamIO extends RawIOBase {
         }
     }
 
-    /** {@inheritDoc} */
+    @Override
     public void flush() {
         if (outputStream == null) {
             return;
@@ -145,7 +145,7 @@ public class StreamIO extends RawIOBase {
         }
     }
 
-    /** {@inheritDoc} */
+    @Override
     public void close() {
         if (closed()) {
             return;
@@ -217,7 +217,7 @@ public class StreamIO extends RawIOBase {
         return null;
     }
 
-    /** {@inheritDoc} */
+    @Override
     public boolean isatty() {
         checkClosed();
 
@@ -231,15 +231,15 @@ public class StreamIO extends RawIOBase {
             return false;
         }
 
-        return FileUtil.isatty(fd);
+        return PosixModule.getPOSIX().isatty(fd);
     }
 
-    /** {@inheritDoc} */
+    @Override
     public boolean readable() {
         return readChannel != null;
     }
 
-    /** {@inheritDoc} */
+    @Override
     public boolean writable() {
         return writeChannel != null;
     }
@@ -266,7 +266,7 @@ public class StreamIO extends RawIOBase {
         return super.asInputStream();
     }
 
-    /** {@inheritDoc} */
+    @Override
     public Channel getChannel() {
         return readable() ? readChannel : writeChannel;
     }

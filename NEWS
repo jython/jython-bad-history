@@ -1,11 +1,46 @@
 Jython NEWS
 
-Jython 2.5.1
+Jython 2.5.2a1
+  Bugs Fixed
+    - [ 1532 ] Cannot use docstring when defining class
+    - [ 1530 ] BoolOp in multiple assign causes VerifyError
+    - [ 1478 ] defaultdict & weakref.WeakKeyDictionary [TypeError: first argument must be callable]
+    - [ 1487 ] Import of module with latin-1 chars fails on utf-8 file encoding
+    - [ 1449 ] Ellipsis comparison different from Python 2.5 to Jython 2.5
+    - [ 1493 ] tarfile.extractall() throws "AttributeError: 'module' object has no attribute 'chown'" when called by root
+    - [ 1470 ] os.mkdir Errno difference from cpython
+    - [ 1496 ] fix os.listdir errno for non-existing dirs
+    - [ 1499 ] PostgreSQL datahandler should return Decimals instead of floats for NUMERIC/DECIMAL columns
+    - [ 1477 ] os.setpgrp and posix.setpgrp fail with TypeError
+    - [ 1396 ] Assigning os module funcs as class attributes incompatible with CPython
+    - [ 1504 ] Inheriting twice from the same Java interface causes MRO problems
+    - [ 1511 ] PySet doesn't support Java serialization
+    - [ 1426 ] JSR 223 Bindings changes not taking effect and leaking between threads; unnecessary synchronization
+    - [ 1548 ] Parentheses in CLASSPATH cause errors in jython.bat
+    - Fix runtime issues during exitfuncs triggered via SystemRestart (such as
+      during Django or Pylons development mode reloading)
+
+Jython 2.5.1rc3
+  Bugs Fixed
+    - [ 1466 ] wrong handling of append only files
+
+Jython 2.5.1rc2
+  New Features
+    - zxJDBC supports the with-statement: connections are committed or rollbacked; cursors are closed 
+  Bugs Fixed
+    - [ 1079 ] fixed regression on issue: twisted.python.threadable module: missing attribute '_RLock'
+    - [ 1461 ] assert statement should lookup AssertionError using getglobal
+    - [ 1425 ] distutils/util.py assumes too much posix
+    - [ 1457 ] Cannot write an array in a file opened in r+b mode.
+    - [ 1382 ] __cmp__ on certain types raises ArrayStoreException
+    - [ 1443 ] Can't update() hashlib.sha1() with array.array('c')
+    - [ 1444 ] Can't zlib.compress() with array.array('c')
+    - [ 1458 ] Builtin codecs aren't available without standard lib
+
+Jython 2.5.1rc1
   New Features
     - Upgraded to ANTLR 3.1.3
     - [ 1859477 ] Dynamically loaded ServletFilters like PyServlet
-    - Setting __javaname__ in classes subclassing Java classes or implementing Java interfaces sets
-      the name of the produced proxy class.
     - Built in JSR 223 scripting engine, with LiveTribe JSR 223 implementation for JDK 5
     - Jython "-J-classpath cp_args_here" now works as expected for unix shell.
   Bugs Fixed
@@ -31,6 +66,7 @@ Jython 2.5.1
     - [ 1430 ] Oracle JDBC Connection close
     - [ 1406 ] Parsing a simple PEP 342 coroutine crashes Jython 2.5
     - [ 1407 ] ClassCastException in plain Python coroutine
+    - [ 1424 ] Relative imports do not work in some cases
 
 Jython 2.5.0
   The same as rc4.

@@ -13,7 +13,7 @@ import org.python.expose.MethodType;
 /**
  * A builtin python float.
  */
-@ExposedType(name = "float")
+@ExposedType(name = "float", doc = BuiltinDocs.float_doc)
 public class PyFloat extends PyObject
 {
     /** Precisions used by repr() and str(), respectively. */
@@ -628,6 +628,11 @@ public class PyFloat extends PyObject
         return value;
     }
 
+    @Override
+    public boolean isNumberType() {
+        return true;
+    }
+
     // standard singleton issues apply here to __getformat__/__setformat__,
     // but this is what Python demands
     
@@ -647,7 +652,7 @@ public class PyFloat extends PyObject
     public static volatile Format double_format = Format.BE;
     public static volatile Format float_format = Format.BE;
     
-    @ExposedClassMethod
+    @ExposedClassMethod(doc = BuiltinDocs.float___getformat___doc)
     public static String float___getformat__(PyType type, String typestr) {
         if ("double".equals(typestr)) {
             return double_format.format();
@@ -658,7 +663,7 @@ public class PyFloat extends PyObject
         }
     }
     
-    @ExposedClassMethod
+    @ExposedClassMethod(doc = BuiltinDocs.float___setformat___doc)
     public static void float___setformat__(PyType type, String typestr, String format) {
         Format new_format = null;
         if (!"double".equals(typestr) && !"float".equals(typestr)) {
@@ -681,8 +686,4 @@ public class PyFloat extends PyObject
             }
         }
     }
-
-    public boolean isMappingType() { return false; }
-    public boolean isSequenceType() { return false; }
-
 }

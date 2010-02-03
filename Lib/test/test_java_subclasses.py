@@ -1,8 +1,6 @@
 '''Tests subclassing Java classes in Python'''
 import os
 import sys
-import tempfile
-import subprocess
 import unittest
 
 from test import test_support
@@ -12,6 +10,7 @@ from java.lang import (Boolean, Class, ClassLoader, Comparable,Integer, Object, 
 from java.util import Date, Hashtable, Vector
 
 from java.awt import Color, Component, Dimension, Rectangle
+from javax.swing import ComboBoxModel, ListModel
 from javax.swing.table import AbstractTableModel
 
 from org.python.tests import BeanInterface, Callbacker, Coercions, OwnMethodCaller
@@ -46,6 +45,15 @@ class InterfaceTest(unittest.TestCase):
         c.compareTo(None)
         c.run()
         self.assertEquals(calls, ["ComparableRunner.compareTo", "Runner.run"])
+
+    def test_inherit_interface_twice(self):
+        # http://bugs.jython.org/issue1504
+        class A(ListModel): pass
+        class B(A, ComboBoxModel): pass
+        # Regression caused B's proxy to occur in B's mro twice. That
+        # caused the declaration of C to fail with an inconsistent mro
+        class C(B): pass
+        
 
 class TableModelTest(unittest.TestCase):
     def test_class_coercion(self):
@@ -323,56 +331,14 @@ class ContextClassloaderTest(unittest.TestCase):
         self.assertEquals(len(called), 1)
 
 
-class SettingJavaClassNameTest(unittest.TestCase):
-    def test_setting_name(self):
-        class Fixedname(Runnable):
-            __javaname__ = 'name.set.in.Python'
-            def run(self):
-                pass
-        self.assertEquals('name.set.in.Python', Fixedname().getClass().name)
-        try:
-            class NumberPackageName(Runnable):
-                __javaname__ = 'ok.7.ok'
-                def run(self):
-                    pass
-            self.fail("Shouldn't be able to set a package name that starts with a digit")
-        except TypeError:
-            pass
-        try:
-            class LiteralPackageName(Runnable):
-                __javaname__ = 'ok.true.ok'
-                def run(self):
-                    pass
-            self.fail("Shouldn't be able to use a Java literal as a package name")
-        except TypeError:
-            pass
-
-class StaticProxyCompilationTest(unittest.TestCase):
-    def setUp(self):
-        self.orig_proxy_dir = sys.javaproxy_dir
-        sys.javaproxy_dir = tempfile.mkdtemp()
-
-    def tearDown(self):
-        sys.javaproxy_dir = self.orig_proxy_dir
-
-    def test_proxies_without_classloader(self):
-        # importing with proxy_dir set compiles RunnableImpl there
-        import static_proxy
-
-        # Use the existing environment with the proxy dir added on the classpath
-        env = dict(os.environ)
-        env["CLASSPATH"] = sys.javaproxy_dir
-        script = test_support.findfile("import_as_java_class.py")
-        self.assertEquals(subprocess.call([sys.executable,  "-J-Dpython.cachedir.skip=true",
-            script], env=env),
-            0)
-
 def test_main():
     test_support.run_unittest(InterfaceTest,
             TableModelTest,
             AutoSuperTest,
             PythonSubclassesTest,
             AbstractOnSyspathTest,
-            ContextClassloaderTest,
-            SettingJavaClassNameTest,
-            StaticProxyCompilationTest)
+            ContextClassloaderTest)
+
+
+if __name__ == '__main__':
+    test_main()

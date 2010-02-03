@@ -15,8 +15,10 @@ org/python/core/PyDictionary.class
 org/python/core/PyDictProxy.class
 org/python/core/PyEnumerate.class
 org/python/core/PyEllipsis.class
+org/python/core/PyFastSequenceIter.class
 org/python/core/PyFile.class
 org/python/core/PyFloat.class
+org/python/core/PyFrame.class
 org/python/core/PyFrozenSet.class
 org/python/core/PyFunction.class
 org/python/core/PyGenerator.class
@@ -35,6 +37,7 @@ org/python/core/PySlice.class
 org/python/core/PySlot.class
 org/python/core/PyStaticMethod.class
 org/python/core/PyString.class
+org/python/core/PyStringMap.class
 org/python/core/PySuper.class
 org/python/core/PyTraceback.class
 org/python/core/PyTuple.class
@@ -75,6 +78,7 @@ org/python/modules/_weakref/ProxyType.class
 org/python/modules/_weakref/ReferenceType.class
 org/python/modules/operator$PyAttrGetter.class
 org/python/modules/operator$PyItemGetter.class
+org/python/modules/posix/PyStatResult.class
 org/python/modules/random/PyRandom.class
 org/python/modules/thread/PyLocal.class
 org/python/modules/time/PyTimeTuple.class

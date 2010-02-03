@@ -33,6 +33,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.python.core.imp;
 import org.python.core.Py;
 import org.python.core.PyException;
 import org.python.core.PyObject;
@@ -48,6 +49,10 @@ public class ModjyJServlet extends HttpServlet {
     protected final static String LIB_PYTHON = "/WEB-INF/lib-python";
 
     protected final static String PTH_FILE_EXTENSION = ".pth";
+
+    protected final static String LOAD_SITE_PACKAGES_PARAM = "load_site_packages";
+
+    protected final static String PYTHON_HOME_PARAM = "python.home";
 
     protected PythonInterpreter interp;
 
@@ -75,6 +80,14 @@ public class ModjyJServlet extends HttpServlet {
             String name = (String)e.nextElement();
             props.put(name, getInitParameter(name));
         }
+        // Check if python home is relative, in which case find it in the servlet context
+        String pythonHomeString = props.getProperty(PYTHON_HOME_PARAM);
+        if (pythonHomeString != null) {
+            File pythonHome = new File(pythonHomeString);
+            if (!pythonHome.isAbsolute())
+                pythonHomeString = context.getRealPath(pythonHomeString);
+            props.setProperty(PYTHON_HOME_PARAM, pythonHomeString);
+        }
         return props;
     }
 
@@ -98,7 +111,7 @@ public class ModjyJServlet extends HttpServlet {
                 interp.exec("from modjy.modjy import " + MODJY_PYTHON_CLASSNAME);
             } catch (PyException ix) {
                 throw new ServletException("Unable to import '" + MODJY_PYTHON_CLASSNAME
-                        + "': maybe you need to set the 'python.home' parameter?", ix);
+                        + "': maybe you need to set the '" + PYTHON_HOME_PARAM + "' parameter?", ix);
             }
             PyObject pyServlet = ((PyType)interp.get(MODJY_PYTHON_CLASSNAME)).__call__();
             Object temp = pyServlet.__tojava__(HttpServlet.class);
@@ -127,11 +140,20 @@ public class ModjyJServlet extends HttpServlet {
     }
 
     /**
+     * Close down the modjy servlet.
+     *
+     */
+    @Override
+    public void destroy( ) {
+        interp.cleanup();
+    }
+
+    /**
      * Setup the modjy environment, i.e. 1. Find the location of the modjy.jar file and add it to
      * sys.path 2. Process the WEB-INF/lib-python directory, if it exists
      *
      * @param interp
-     *            - The PythinInterpreter used to service requests
+     *            - The PythonInterpreter used to service requests
      * @param props
      *            - The properties from which config options are found
      * @param systemState
@@ -139,8 +161,24 @@ public class ModjyJServlet extends HttpServlet {
      */
     protected void setupEnvironment(PythonInterpreter interp,
                                     Properties props,
-                                    PySystemState systemState) {
+                                    PySystemState systemState) throws PyException {
+        checkSitePackages(props);
         processPythonLib(interp, systemState);
+    }
+
+    /**
+     * Check if the user has requested to initialise the jython installation "site-packages".
+     *
+     * @param props
+     *            - The properties from which config options are found
+     */
+    protected void checkSitePackages(Properties props) throws PyException {
+        String loadSitePackagesParam = props.getProperty(LOAD_SITE_PACKAGES_PARAM);
+        boolean loadSitePackages = true;
+        if (loadSitePackagesParam != null && loadSitePackagesParam.trim().compareTo("0") == 0)
+            loadSitePackages = false;
+        if (loadSitePackages)
+            imp.load("site");
     }
 
     /**

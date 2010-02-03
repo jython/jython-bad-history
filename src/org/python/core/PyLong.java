@@ -14,7 +14,7 @@ import org.python.expose.MethodType;
  * A builtin python long. This is implemented as a
  * java.math.BigInteger.
  */
-@ExposedType(name = "long")
+@ExposedType(name = "long", doc = BuiltinDocs.long_doc)
 public class PyLong extends PyObject {
 
     public static final PyType TYPE = PyType.fromClass(PyLong.class);
@@ -199,7 +199,7 @@ public class PyLong extends PyObject {
     }
 
     public long asLong(int index) {
-        return getLong(Long.MIN_VALUE, Long.MAX_VALUE, "long too big to convert");
+        return asLong();
     }
 
     public int asInt(int index) {
@@ -211,6 +211,11 @@ public class PyLong extends PyObject {
     public int asInt() {
         return (int)getLong(Integer.MIN_VALUE, Integer.MAX_VALUE,
                             "long int too large to convert to int");
+    }
+
+    @Override
+    public long asLong() {
+        return getLong(Long.MIN_VALUE, Long.MAX_VALUE, "long too big to convert");
     }
 
     public Object __tojava__(Class c) {
@@ -861,6 +866,11 @@ public class PyLong extends PyObject {
     @ExposedMethod(doc = BuiltinDocs.long___index___doc)
     final PyObject long___index__() {
         return this;
+    }
+
+    @Override
+    public boolean isNumberType() {
+        return true;
     }
 
     @Override
