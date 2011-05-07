@@ -123,12 +123,12 @@ svnant.jar.dir=${basedir}/../externals/svnant-jars
         <property name="PY_RELEASE_LEVEL_SNAPSHOT" value="170"/> <!-- 0xAA -->
 
         <!-- The current version info -->
-        <property name="jython.version" value="2.5.2"/>
-        <property name="jython.version.noplus" value="2.5.2"/>
+        <property name="jython.version" value="2.6a0+"/>
+        <property name="jython.version.noplus" value="2.6a0"/>
         <property name="jython.major_version" value="2"/>
-        <property name="jython.minor_version" value="5"/>
-        <property name="jython.micro_version" value="2"/>
-        <property name="jython.release_level" value="${PY_RELEASE_LEVEL_FINAL}"/>
+        <property name="jython.minor_version" value="6"/>
+        <property name="jython.micro_version" value="0"/>
+        <property name="jython.release_level" value="${PY_RELEASE_LEVEL_ALPHA}"/>
         <property name="jython.release_serial" value="0"/>
 
         <condition property="do.snapshot.build">
@@ -393,14 +393,55 @@ svnant.jar.dir=${basedir}/../externals/svnant-jars
         </svn> 
     </target>
 
-    <!-- XXX: could attempt to utilize subwcrev.exe to get the revision on Windows  -->
-    <target name="svnversion" if="os.family.unix">
+    <target name="check-hg">
+      <available file=".hg" type="dir" property="hg.present"/>
+      <condition property="hg-run">
+        <and>
+          <isset property="hg.present"/>
+          <!-- XXX: Might this work on Windows? -->
+          <isset property="os.family.unix"/>
+        </and>
+      </condition>
+    </target>
+    <target name="hg-id" depends="check-hg, hg-branch, hg-tag, hg-version"/>
+
+    <target name="hg-branch" if="hg-run">
+        <exec executable="hg" failifexecutionfails="false" outputproperty="build.hg.branch">
+          <arg line="id -b"/>
+        </exec>
+    </target>
+    <target name="hg-tag" if="hg-run">
+        <exec executable="hg" failifexecutionfails="false" outputproperty="build.hg.tag">
+          <arg line="id -t"/>
+        </exec>
+    </target>
+    <target name="hg-version" if="hg-run">
+        <exec executable="hg" failifexecutionfails="false" outputproperty="build.hg.version">
+          <arg line="id -i"/>
+        </exec>
+    </target>
+
+    <target name="svnversion-check" depends="check-hg">
+      <condition property="svnversion-run">
+        <and>
+          <not>
+            <isset property="hg.present"/>
+          </not>
+          <!-- XXX: could attempt to utilize subwcrev.exe to get the revision on Windows  -->
+          <isset property="os.family.unix"/>
+        </and>
+      </condition>
+    </target>
+    <target name="svnversion" depends="svnversion-check" if="svnversion-run">
         <exec executable="svnversion" failifexecutionfails="false" outputproperty="build.svn.revision"/>
     </target>
 
     <!-- skip-brand can be set in ant.properties or as a system property to keep from updating the
          version.properties file and making the jar on every developer build. -->
-    <target name="brand-version" depends="init, svnversion" unless="skip-brand">
+    <target name="brand-version" depends="init, hg-id, svnversion" unless="skip-brand">
+        <property name="build.hg.branch" value=""/>
+        <property name="build.hg.tag" value=""/>
+        <property name="build.hg.version" value=""/>
         <property name="build.svn.revision" value=""/>
         <tstamp>
             <format property="build.date" pattern="MMM d yyyy" offset="0"/>
@@ -416,7 +457,10 @@ jython.release_level=${jython.release_level}
 jython.release_serial=${jython.release_serial}
 jython.build.date=${build.date}
 jython.build.time=${build.time}
-jython.build.svn_revision=${build.svn.revision}</echo>
+jython.build.svn_revision=${build.svn.revision}
+jython.build.hg_branch=${build.hg.branch}
+jython.build.hg_tag=${build.hg.tag}
+jython.build.hg_version=${build.hg.version}</echo>
     </target>
 
     <target name="brand-readme-version" depends="checkout" if="do.snapshot.build">

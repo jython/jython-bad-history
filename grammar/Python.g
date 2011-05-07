@@ -901,19 +901,31 @@ import_name
 //import_from: ('from' ('.'* dotted_name | '.'+)
 //              'import' ('*' | '(' import_as_names ')' | import_as_names))
 import_from
+@init {
+    stmt stype = null;
+}
+@after {
+   $import_from.tree = stype;
+}
     : FROM (d+=DOT* dotted_name | d+=DOT+) IMPORT
         (STAR
-       -> ^(FROM<ImportFrom>[$FROM, actions.makeFromText($d, $dotted_name.names),
-             actions.makeModuleNameNode($d, $dotted_name.names),
-             actions.makeStarAlias($STAR), actions.makeLevel($d)])
+         {
+             stype = new ImportFrom($FROM, actions.makeFromText($d, $dotted_name.names),
+                 actions.makeModuleNameNode($d, $dotted_name.names),
+                 actions.makeStarAlias($STAR), actions.makeLevel($d));
+         }
         | i1=import_as_names
-       -> ^(FROM<ImportFrom>[$FROM, actions.makeFromText($d, $dotted_name.names),
-             actions.makeModuleNameNode($d, $dotted_name.names),
-             actions.makeAliases($i1.atypes), actions.makeLevel($d)])
+         {
+             stype = new ImportFrom($FROM, actions.makeFromText($d, $dotted_name.names),
+                 actions.makeModuleNameNode($d, $dotted_name.names),
+                 actions.makeAliases($i1.atypes), actions.makeLevel($d));
+         }
         | LPAREN i2=import_as_names COMMA? RPAREN
-       -> ^(FROM<ImportFrom>[$FROM, actions.makeFromText($d, $dotted_name.names),
-             actions.makeModuleNameNode($d, $dotted_name.names),
-             actions.makeAliases($i2.atypes), actions.makeLevel($d)])
+         {
+             stype = new ImportFrom($FROM, actions.makeFromText($d, $dotted_name.names),
+                 actions.makeModuleNameNode($d, $dotted_name.names),
+                 actions.makeAliases($i2.atypes), actions.makeLevel($d));
+         }
         )
     ;
 
@@ -971,8 +983,16 @@ dotted_name
 
 //global_stmt: 'global' NAME (',' NAME)*
 global_stmt
+@init {
+    stmt stype = null;
+}
+@after {
+   $global_stmt.tree = stype;
+}
     : GLOBAL n+=NAME (COMMA n+=NAME)*
-   -> ^(GLOBAL<Global>[$GLOBAL, actions.makeNames($n), actions.makeNameNodes($n)])
+      {
+          stype = new Global($GLOBAL, actions.makeNames($n), actions.makeNameNodes($n));
+      }
     ;
 
 //exec_stmt: 'exec' expr ['in' test [',' test]]
@@ -1143,7 +1163,7 @@ with_var
       }
     ;
 
-//except_clause: 'except' [test [',' test]]
+//except_clause: 'except' [test [('as' | ',') test]]
 except_clause
 @init {
     excepthandler extype = null;
@@ -1151,7 +1171,7 @@ except_clause
 @after {
    $except_clause.tree = extype;
 }
-    : EXCEPT (t1=test[expr_contextType.Load] (COMMA t2=test[expr_contextType.Store])?)? COLON suite[!$suite.isEmpty() && $suite::continueIllegal]
+    : EXCEPT (t1=test[expr_contextType.Load] ((COMMA | AS) t2=test[expr_contextType.Store])?)? COLON suite[!$suite.isEmpty() && $suite::continueIllegal]
       {
           extype = new ExceptHandler($EXCEPT, actions.castExpr($t1.tree), actions.castExpr($t2.tree),
               actions.castStmts($suite.stypes));
@@ -1936,7 +1956,9 @@ classdef
       }
     ;
 
-//arglist: (argument ',')* (argument [',']| '*' test [',' '**' test] | '**' test)
+//arglist: (argument ',')* (argument [',']
+//                         |'*' test (',' argument)* [',' '**' test]
+//                         |'**' test)
 arglist
     returns [List args, List keywords, expr starargs, expr kwargs]
 @init {
@@ -1944,9 +1966,9 @@ arglist
     List kws = new ArrayList();
     List gens = new ArrayList();
 }
-    : argument[arguments, kws, gens, true] (COMMA argument[arguments, kws, gens, false])*
+    : argument[arguments, kws, gens, true, false] (COMMA argument[arguments, kws, gens, false, false])*
           (COMMA
-              ( STAR s=test[expr_contextType.Load] (COMMA DOUBLESTAR k=test[expr_contextType.Load])?
+              ( STAR s=test[expr_contextType.Load] (COMMA argument[arguments, kws, gens, false, true])* (COMMA DOUBLESTAR k=test[expr_contextType.Load])?
               | DOUBLESTAR k=test[expr_contextType.Load]
               )?
           )?
@@ -1959,9 +1981,10 @@ arglist
           $starargs=actions.castExpr($s.tree);
           $kwargs=actions.castExpr($k.tree);
       }
-    | STAR s=test[expr_contextType.Load] (COMMA DOUBLESTAR k=test[expr_contextType.Load])?
+    | STAR s=test[expr_contextType.Load] (COMMA argument[arguments, kws, gens, false, true])* (COMMA DOUBLESTAR k=test[expr_contextType.Load])?
       {
           $starargs=actions.castExpr($s.tree);
+          $keywords=kws;
           $kwargs=actions.castExpr($k.tree);
       }
     | DOUBLESTAR k=test[expr_contextType.Load]
@@ -1972,12 +1995,23 @@ arglist
 
 //argument: test [gen_for] | test '=' test  # Really [keyword '='] test
 argument
-    [List arguments, List kws, List gens, boolean first] returns [boolean genarg]
+    [List arguments, List kws, List gens, boolean first, boolean afterStar] returns [boolean genarg]
     : t1=test[expr_contextType.Load]
         ((ASSIGN t2=test[expr_contextType.Load])
           {
+              expr newkey = actions.castExpr($t1.tree);
+              //Loop through all current keys and fail on duplicate.
+              for(Object o: $kws) {
+                  List list = (List)o;
+                  Object oldkey = list.get(0);
+                  if (oldkey instanceof Name && newkey instanceof Name) {
+                      if (((Name)oldkey).getId().equals(((Name)newkey).getId())) {
+                          errorHandler.error("keyword arguments repeated", $t1.tree);
+                      }
+                  }
+              }
               List<expr> exprs = new ArrayList<expr>();
-              exprs.add(actions.castExpr($t1.tree));
+              exprs.add(newkey);
               exprs.add(actions.castExpr($t2.tree));
               $kws.add(exprs);
           }
@@ -1995,6 +2029,8 @@ argument
           {
               if (kws.size() > 0) {
                   errorHandler.error("non-keyword arg after keyword arg", $t1.tree);
+              } else if (afterStar) {
+                  errorHandler.error("only named arguments may follow *expression", $t1.tree);
               }
               $arguments.add($t1.tree);
           }
@@ -2066,6 +2102,7 @@ yield_expr
       }
     ;
 
+//START OF LEXER RULES
 AS        : 'as' ;
 ASSERT    : 'assert' ;
 BREAK     : 'break' ;
@@ -2209,9 +2246,13 @@ Exponent
 INT :   // Hex
         '0' ('x' | 'X') ( '0' .. '9' | 'a' .. 'f' | 'A' .. 'F' )+
     |   // Octal
-        '0'  ( '0' .. '7' )*
-    |   '1'..'9' DIGITS*
-    ;
+        '0' ('o' | 'O') ( '0' .. '7' )*
+    |   '0'  ( '0' .. '7' )*
+    |   // Binary
+        '0' ('b' | 'B') ( '0' .. '1' )*
+    |   // Decimal
+        '1'..'9' DIGITS*
+;
 
 COMPLEX
     :   DIGITS+ ('j'|'J')
@@ -2229,7 +2270,7 @@ NAME:    ( 'a' .. 'z' | 'A' .. 'Z' | '_')
  *  should make us exit loop not continue.
  */
 STRING
-    :   ('r'|'u'|'ur'|'R'|'U'|'UR'|'uR'|'Ur')?
+    :   ('r'|'u'|'b'|'ur'|'R'|'U'|'B'|'UR'|'uR'|'Ur')?
         (   '\'\'\'' (options {greedy=false;}:TRIAPOS)* '\'\'\''
         |   '"""' (options {greedy=false;}:TRIQUOTE)* '"""'
         |   '"' (ESC|~('\\'|'\n'|'"'))* '"'
