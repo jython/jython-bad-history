@@ -15,6 +15,8 @@ import java.util.Map;
 import org.python.antlr.base.mod;
 import org.python.core.util.RelativeFile;
 
+import org.python.modules._functools._functools;
+
 class BuiltinFunctions extends PyBuiltinFunctionSet {
 
     public static final PyObject module = Py.newString("__builtin__");
@@ -167,7 +169,7 @@ class BuiltinFunctions extends PyBuiltinFunctionSet {
             case 33:
                 return __builtin__.pow(arg1, arg2);
             case 35:
-                return __builtin__.reduce(arg1, arg2);
+                return _functools.reduce(arg1, arg2);
             case 29:
                 return fancyCall(new PyObject[] {arg1, arg2});
             case 30:
@@ -209,7 +211,7 @@ class BuiltinFunctions extends PyBuiltinFunctionSet {
             case 33:
                 return __builtin__.pow(arg1, arg2, arg3);
             case 35:
-                return __builtin__.reduce(arg1, arg2, arg3);
+                return _functools.reduce(arg1, arg2, arg3);
             case 39:
                 __builtin__.setattr(arg1, arg2, arg3);
                 return Py.None;
@@ -356,6 +358,7 @@ public class __builtin__ {
         dict.__setitem__("sorted", new SortedFunction());
         dict.__setitem__("all", new AllFunction());
         dict.__setitem__("any", new AnyFunction());
+        dict.__setitem__("format", new FormatFunction());
     }
 
     public static PyObject abs(PyObject o) {
@@ -1298,6 +1301,25 @@ class AnyFunction extends PyBuiltinFunctionNarrow {
             }
         }
         return Py.False;
+    }
+}
+
+class FormatFunction extends PyBuiltinFunctionNarrow {
+    FormatFunction() {
+        super("format", 1, 2,
+              "format(value[, format_spec]) -> string\n\n" +
+              "Returns value.__format__(format_spec)\n" +
+               "format_spec defaults to \"\"");
+    }
+
+    @Override
+    public PyObject __call__(PyObject arg1) {
+        return __call__(arg1, Py.EmptyString);
+    }
+
+    @Override
+    public PyObject __call__(PyObject arg1, PyObject arg2) {
+        return arg1.__format__(arg2);
     }
 }
 
