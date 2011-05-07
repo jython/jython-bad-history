@@ -1,1591 +1,32 @@
 /// Copyright (c) Corporation for National Research Initiatives
 package org.python.core;
 
-import java.io.UnsupportedEncodingException;
+import java.math.BigInteger;
+
+import org.python.core.util.ExtraMath;
+import org.python.core.util.StringUtil;
+import org.python.expose.ExposedMethod;
+import org.python.expose.ExposedNew;
+import org.python.expose.ExposedType;
+import org.python.expose.MethodType;
 
 /**
  * A builtin python string.
  */
-public class PyString extends PyBaseString implements ClassDictInit
+@ExposedType(name = "str", doc = BuiltinDocs.str_doc)
+public class PyString extends PyBaseString
 {
-    //~ BEGIN GENERATED REGION -- DO NOT EDIT SEE gexpose.py
-    /* type info */
-
-    public static final String exposed_name="str";
-
-    public static void typeSetup(PyObject dict,PyType.Newstyle marker) {
-        class exposed___ne__ extends PyBuiltinMethodNarrow {
-
-            exposed___ne__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___ne__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyString)self).str___ne__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__ne__",new PyMethodDescr("__ne__",PyString.class,1,1,new exposed___ne__(null,null)));
-        class exposed___eq__ extends PyBuiltinMethodNarrow {
-
-            exposed___eq__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___eq__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyString)self).str___eq__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__eq__",new PyMethodDescr("__eq__",PyString.class,1,1,new exposed___eq__(null,null)));
-        class exposed___lt__ extends PyBuiltinMethodNarrow {
-
-            exposed___lt__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___lt__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyString)self).str___lt__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__lt__",new PyMethodDescr("__lt__",PyString.class,1,1,new exposed___lt__(null,null)));
-        class exposed___le__ extends PyBuiltinMethodNarrow {
-
-            exposed___le__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___le__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyString)self).str___le__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__le__",new PyMethodDescr("__le__",PyString.class,1,1,new exposed___le__(null,null)));
-        class exposed___gt__ extends PyBuiltinMethodNarrow {
-
-            exposed___gt__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___gt__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyString)self).str___gt__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__gt__",new PyMethodDescr("__gt__",PyString.class,1,1,new exposed___gt__(null,null)));
-        class exposed___ge__ extends PyBuiltinMethodNarrow {
-
-            exposed___ge__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___ge__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyString)self).str___ge__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__ge__",new PyMethodDescr("__ge__",PyString.class,1,1,new exposed___ge__(null,null)));
-        class exposed___add__ extends PyBuiltinMethodNarrow {
-
-            exposed___add__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___add__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyString)self).str___add__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__add__",new PyMethodDescr("__add__",PyString.class,1,1,new exposed___add__(null,null)));
-        class exposed___mod__ extends PyBuiltinMethodNarrow {
-
-            exposed___mod__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___mod__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyString)self).str___mod__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__mod__",new PyMethodDescr("__mod__",PyString.class,1,1,new exposed___mod__(null,null)));
-        class exposed___mul__ extends PyBuiltinMethodNarrow {
-
-            exposed___mul__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___mul__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyString)self).str___mul__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__mul__",new PyMethodDescr("__mul__",PyString.class,1,1,new exposed___mul__(null,null)));
-        class exposed___rmul__ extends PyBuiltinMethodNarrow {
-
-            exposed___rmul__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___rmul__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyString)self).str___rmul__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__rmul__",new PyMethodDescr("__rmul__",PyString.class,1,1,new exposed___rmul__(null,null)));
-        class exposed___getitem__ extends PyBuiltinMethodNarrow {
-
-            exposed___getitem__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___getitem__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyString)self).seq___finditem__(arg0);
-                if (ret==null) {
-                    throw Py.IndexError("index out of range: "+arg0);
-                }
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__getitem__",new PyMethodDescr("__getitem__",PyString.class,1,1,new exposed___getitem__(null,null)));
-        class exposed___getslice__ extends PyBuiltinMethodNarrow {
-
-            exposed___getslice__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___getslice__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0,PyObject arg1,PyObject arg2) {
-                return((PyString)self).seq___getslice__(arg0,arg1,arg2);
-            }
-
-            public PyObject __call__(PyObject arg0,PyObject arg1) {
-                return((PyString)self).seq___getslice__(arg0,arg1);
-            }
-
-        }
-        dict.__setitem__("__getslice__",new PyMethodDescr("__getslice__",PyString.class,2,3,new exposed___getslice__(null,null)));
-        class exposed___contains__ extends PyBuiltinMethodNarrow {
-
-            exposed___contains__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___contains__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                return Py.newBoolean(((PyString)self).str___contains__(arg0));
-            }
-
-        }
-        dict.__setitem__("__contains__",new PyMethodDescr("__contains__",PyString.class,1,1,new exposed___contains__(null,null)));
-        class exposed___len__ extends PyBuiltinMethodNarrow {
-
-            exposed___len__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___len__(self,info);
-            }
-
-            public PyObject __call__() {
-                return Py.newInteger(((PyString)self).str___len__());
-            }
-
-        }
-        dict.__setitem__("__len__",new PyMethodDescr("__len__",PyString.class,0,0,new exposed___len__(null,null)));
-        class exposed___reduce__ extends PyBuiltinMethodNarrow {
-
-            exposed___reduce__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___reduce__(self,info);
-            }
-
-            public PyObject __call__() {
-                return((PyString)self).str___reduce__();
-            }
-
-        }
-        dict.__setitem__("__reduce__",new PyMethodDescr("__reduce__",PyString.class,0,0,new exposed___reduce__(null,null)));
-        class exposed___str__ extends PyBuiltinMethodNarrow {
-
-            exposed___str__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___str__(self,info);
-            }
-
-            public PyObject __call__() {
-                return((PyString)self).str___str__();
-            }
-
-        }
-        dict.__setitem__("__str__",new PyMethodDescr("__str__",PyString.class,0,0,new exposed___str__(null,null)));
-        class exposed___unicode__ extends PyBuiltinMethodNarrow {
-
-            exposed___unicode__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___unicode__(self,info);
-            }
-
-            public PyObject __call__() {
-                return((PyString)self).str___unicode__();
-            }
-
-        }
-        dict.__setitem__("__unicode__",new PyMethodDescr("__unicode__",PyString.class,0,0,new exposed___unicode__(null,null)));
-        class exposed___hash__ extends PyBuiltinMethodNarrow {
-
-            exposed___hash__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___hash__(self,info);
-            }
-
-            public PyObject __call__() {
-                return Py.newInteger(((PyString)self).str_hashCode());
-            }
-
-        }
-        dict.__setitem__("__hash__",new PyMethodDescr("__hash__",PyString.class,0,0,new exposed___hash__(null,null)));
-        class exposed___repr__ extends PyBuiltinMethodNarrow {
-
-            exposed___repr__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___repr__(self,info);
-            }
-
-            public PyObject __call__() {
-                return new PyString(((PyString)self).str_toString());
-            }
-
-        }
-        dict.__setitem__("__repr__",new PyMethodDescr("__repr__",PyString.class,0,0,new exposed___repr__(null,null)));
-        class exposed_capitalize extends PyBuiltinMethodNarrow {
-
-            exposed_capitalize(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_capitalize(self,info);
-            }
-
-            public PyObject __call__() {
-                return new PyString(((PyString)self).str_capitalize());
-            }
-
-        }
-        dict.__setitem__("capitalize",new PyMethodDescr("capitalize",PyString.class,0,0,new exposed_capitalize(null,null)));
-        class exposed_center extends PyBuiltinMethodNarrow {
-
-            exposed_center(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_center(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                try {
-                    return new PyString(((PyString)self).str_center(arg0.asInt(0)));
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 0:
-                        msg="expected an integer";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-        }
-        dict.__setitem__("center",new PyMethodDescr("center",PyString.class,1,1,new exposed_center(null,null)));
-        class exposed_count extends PyBuiltinMethodNarrow {
-
-            exposed_count(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_count(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0,PyObject arg1,PyObject arg2) {
-                try {
-                    return Py.newInteger(((PyString)self).str_count(arg0.asString(0),arg1.asInt(1),arg2.asInt(2)));
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 1:
-                    case 2:
-                        msg="expected an integer";
-                        break;
-                    case 0:
-                        msg="expected a string";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-            public PyObject __call__(PyObject arg0,PyObject arg1) {
-                try {
-                    return Py.newInteger(((PyString)self).str_count(arg0.asString(0),arg1.asInt(1)));
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 1:
-                        msg="expected an integer";
-                        break;
-                    case 0:
-                        msg="expected a string";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                try {
-                    return Py.newInteger(((PyString)self).str_count(arg0.asString(0)));
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 0:
-                        msg="expected a string";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-        }
-        dict.__setitem__("count",new PyMethodDescr("count",PyString.class,1,3,new exposed_count(null,null)));
-        class exposed_decode extends PyBuiltinMethodNarrow {
-
-            exposed_decode(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_decode(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0,PyObject arg1) {
-                try {
-                    return new PyUnicode(((PyString)self).str_decode(arg0.asString(0),arg1.asString(1)));
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 0:
-                    case 1:
-                        msg="expected a string";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                try {
-                    return new PyUnicode(((PyString)self).str_decode(arg0.asString(0)));
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 0:
-                        msg="expected a string";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-            public PyObject __call__() {
-                return new PyUnicode(((PyString)self).str_decode());
-            }
-
-        }
-        dict.__setitem__("decode",new PyMethodDescr("decode",PyString.class,0,2,new exposed_decode(null,null)));
-        class exposed_encode extends PyBuiltinMethodNarrow {
-
-            exposed_encode(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_encode(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0,PyObject arg1) {
-                try {
-                    return new PyString(((PyString)self).str_encode(arg0.asString(0),arg1.asString(1)));
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 0:
-                    case 1:
-                        msg="expected a string";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                try {
-                    return new PyString(((PyString)self).str_encode(arg0.asString(0)));
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 0:
-                        msg="expected a string";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-            public PyObject __call__() {
-                return new PyString(((PyString)self).str_encode());
-            }
-
-        }
-        dict.__setitem__("encode",new PyMethodDescr("encode",PyString.class,0,2,new exposed_encode(null,null)));
-        class exposed_endswith extends PyBuiltinMethodNarrow {
-
-            exposed_endswith(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_endswith(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0,PyObject arg1,PyObject arg2) {
-                try {
-                    return Py.newBoolean(((PyString)self).str_endswith(arg0.asString(0),arg1.asInt(1),arg2.asInt(2)));
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 1:
-                    case 2:
-                        msg="expected an integer";
-                        break;
-                    case 0:
-                        msg="expected a string";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-            public PyObject __call__(PyObject arg0,PyObject arg1) {
-                try {
-                    return Py.newBoolean(((PyString)self).str_endswith(arg0.asString(0),arg1.asInt(1)));
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 1:
-                        msg="expected an integer";
-                        break;
-                    case 0:
-                        msg="expected a string";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                try {
-                    return Py.newBoolean(((PyString)self).str_endswith(arg0.asString(0)));
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 0:
-                        msg="expected a string";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-        }
-        dict.__setitem__("endswith",new PyMethodDescr("endswith",PyString.class,1,3,new exposed_endswith(null,null)));
-        class exposed_expandtabs extends PyBuiltinMethodNarrow {
-
-            exposed_expandtabs(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_expandtabs(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                try {
-                    return new PyString(((PyString)self).str_expandtabs(arg0.asInt(0)));
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 0:
-                        msg="expected an integer";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-            public PyObject __call__() {
-                return new PyString(((PyString)self).str_expandtabs());
-            }
-
-        }
-        dict.__setitem__("expandtabs",new PyMethodDescr("expandtabs",PyString.class,0,1,new exposed_expandtabs(null,null)));
-        class exposed_find extends PyBuiltinMethodNarrow {
-
-            exposed_find(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_find(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0,PyObject arg1,PyObject arg2) {
-                try {
-                    return Py.newInteger(((PyString)self).str_find(arg0.asString(0),arg1.asInt(1),arg2.asInt(2)));
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 1:
-                    case 2:
-                        msg="expected an integer";
-                        break;
-                    case 0:
-                        msg="expected a string";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-            public PyObject __call__(PyObject arg0,PyObject arg1) {
-                try {
-                    return Py.newInteger(((PyString)self).str_find(arg0.asString(0),arg1.asInt(1)));
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 1:
-                        msg="expected an integer";
-                        break;
-                    case 0:
-                        msg="expected a string";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                try {
-                    return Py.newInteger(((PyString)self).str_find(arg0.asString(0)));
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 0:
-                        msg="expected a string";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-        }
-        dict.__setitem__("find",new PyMethodDescr("find",PyString.class,1,3,new exposed_find(null,null)));
-        class exposed_index extends PyBuiltinMethodNarrow {
-
-            exposed_index(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_index(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0,PyObject arg1,PyObject arg2) {
-                try {
-                    return Py.newInteger(((PyString)self).str_index(arg0.asString(0),arg1.asInt(1),arg2.asInt(2)));
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 1:
-                    case 2:
-                        msg="expected an integer";
-                        break;
-                    case 0:
-                        msg="expected a string";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-            public PyObject __call__(PyObject arg0,PyObject arg1) {
-                try {
-                    return Py.newInteger(((PyString)self).str_index(arg0.asString(0),arg1.asInt(1)));
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 1:
-                        msg="expected an integer";
-                        break;
-                    case 0:
-                        msg="expected a string";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                try {
-                    return Py.newInteger(((PyString)self).str_index(arg0.asString(0)));
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 0:
-                        msg="expected a string";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-        }
-        dict.__setitem__("index",new PyMethodDescr("index",PyString.class,1,3,new exposed_index(null,null)));
-        class exposed_isalnum extends PyBuiltinMethodNarrow {
-
-            exposed_isalnum(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_isalnum(self,info);
-            }
-
-            public PyObject __call__() {
-                return Py.newBoolean(((PyString)self).str_isalnum());
-            }
-
-        }
-        dict.__setitem__("isalnum",new PyMethodDescr("isalnum",PyString.class,0,0,new exposed_isalnum(null,null)));
-        class exposed_isalpha extends PyBuiltinMethodNarrow {
-
-            exposed_isalpha(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_isalpha(self,info);
-            }
-
-            public PyObject __call__() {
-                return Py.newBoolean(((PyString)self).str_isalpha());
-            }
-
-        }
-        dict.__setitem__("isalpha",new PyMethodDescr("isalpha",PyString.class,0,0,new exposed_isalpha(null,null)));
-        class exposed_isdecimal extends PyBuiltinMethodNarrow {
-
-            exposed_isdecimal(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_isdecimal(self,info);
-            }
-
-            public PyObject __call__() {
-                return Py.newBoolean(((PyString)self).str_isdecimal());
-            }
-
-        }
-        dict.__setitem__("isdecimal",new PyMethodDescr("isdecimal",PyString.class,0,0,new exposed_isdecimal(null,null)));
-        class exposed_isdigit extends PyBuiltinMethodNarrow {
-
-            exposed_isdigit(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_isdigit(self,info);
-            }
-
-            public PyObject __call__() {
-                return Py.newBoolean(((PyString)self).str_isdigit());
-            }
-
-        }
-        dict.__setitem__("isdigit",new PyMethodDescr("isdigit",PyString.class,0,0,new exposed_isdigit(null,null)));
-        class exposed_islower extends PyBuiltinMethodNarrow {
-
-            exposed_islower(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_islower(self,info);
-            }
-
-            public PyObject __call__() {
-                return Py.newBoolean(((PyString)self).str_islower());
-            }
-
-        }
-        dict.__setitem__("islower",new PyMethodDescr("islower",PyString.class,0,0,new exposed_islower(null,null)));
-        class exposed_isnumeric extends PyBuiltinMethodNarrow {
-
-            exposed_isnumeric(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_isnumeric(self,info);
-            }
-
-            public PyObject __call__() {
-                return Py.newBoolean(((PyString)self).str_isnumeric());
-            }
-
-        }
-        dict.__setitem__("isnumeric",new PyMethodDescr("isnumeric",PyString.class,0,0,new exposed_isnumeric(null,null)));
-        class exposed_isspace extends PyBuiltinMethodNarrow {
-
-            exposed_isspace(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_isspace(self,info);
-            }
-
-            public PyObject __call__() {
-                return Py.newBoolean(((PyString)self).str_isspace());
-            }
-
-        }
-        dict.__setitem__("isspace",new PyMethodDescr("isspace",PyString.class,0,0,new exposed_isspace(null,null)));
-        class exposed_istitle extends PyBuiltinMethodNarrow {
-
-            exposed_istitle(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_istitle(self,info);
-            }
-
-            public PyObject __call__() {
-                return Py.newBoolean(((PyString)self).str_istitle());
-            }
-
-        }
-        dict.__setitem__("istitle",new PyMethodDescr("istitle",PyString.class,0,0,new exposed_istitle(null,null)));
-        class exposed_isunicode extends PyBuiltinMethodNarrow {
-
-            exposed_isunicode(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_isunicode(self,info);
-            }
-
-            public PyObject __call__() {
-                return Py.newBoolean(((PyString)self).str_isunicode());
-            }
-
-        }
-        dict.__setitem__("isunicode",new PyMethodDescr("isunicode",PyString.class,0,0,new exposed_isunicode(null,null)));
-        class exposed_isupper extends PyBuiltinMethodNarrow {
-
-            exposed_isupper(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_isupper(self,info);
-            }
-
-            public PyObject __call__() {
-                return Py.newBoolean(((PyString)self).str_isupper());
-            }
-
-        }
-        dict.__setitem__("isupper",new PyMethodDescr("isupper",PyString.class,0,0,new exposed_isupper(null,null)));
-        class exposed_join extends PyBuiltinMethodNarrow {
-
-            exposed_join(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_join(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                return((PyString)self).str_join(arg0);
-            }
-
-        }
-        dict.__setitem__("join",new PyMethodDescr("join",PyString.class,1,1,new exposed_join(null,null)));
-        class exposed_ljust extends PyBuiltinMethodNarrow {
-
-            exposed_ljust(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_ljust(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                try {
-                    return new PyString(((PyString)self).str_ljust(arg0.asInt(0)));
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 0:
-                        msg="expected an integer";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-        }
-        dict.__setitem__("ljust",new PyMethodDescr("ljust",PyString.class,1,1,new exposed_ljust(null,null)));
-        class exposed_lower extends PyBuiltinMethodNarrow {
-
-            exposed_lower(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_lower(self,info);
-            }
-
-            public PyObject __call__() {
-                return new PyString(((PyString)self).str_lower());
-            }
-
-        }
-        dict.__setitem__("lower",new PyMethodDescr("lower",PyString.class,0,0,new exposed_lower(null,null)));
-        class exposed_lstrip extends PyBuiltinMethodNarrow {
-
-            exposed_lstrip(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_lstrip(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                try {
-                    return new PyString(((PyString)self).str_lstrip(arg0.asStringOrNull(0)));
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 0:
-                        msg="expected a string or None";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-            public PyObject __call__() {
-                return new PyString(((PyString)self).str_lstrip());
-            }
-
-        }
-        dict.__setitem__("lstrip",new PyMethodDescr("lstrip",PyString.class,0,1,new exposed_lstrip(null,null)));
-        class exposed_replace extends PyBuiltinMethodNarrow {
-
-            exposed_replace(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_replace(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0,PyObject arg1,PyObject arg2) {
-                try {
-                    return((PyString)self).str_replace(arg0,arg1,arg2.asInt(2));
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 2:
-                        msg="expected an integer";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-            public PyObject __call__(PyObject arg0,PyObject arg1) {
-                return((PyString)self).str_replace(arg0,arg1);
-            }
-
-        }
-        dict.__setitem__("replace",new PyMethodDescr("replace",PyString.class,2,3,new exposed_replace(null,null)));
-        class exposed_rfind extends PyBuiltinMethodNarrow {
-
-            exposed_rfind(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_rfind(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0,PyObject arg1,PyObject arg2) {
-                try {
-                    return Py.newInteger(((PyString)self).str_rfind(arg0.asString(0),arg1.asInt(1),arg2.asInt(2)));
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 1:
-                    case 2:
-                        msg="expected an integer";
-                        break;
-                    case 0:
-                        msg="expected a string";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-            public PyObject __call__(PyObject arg0,PyObject arg1) {
-                try {
-                    return Py.newInteger(((PyString)self).str_rfind(arg0.asString(0),arg1.asInt(1)));
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 1:
-                        msg="expected an integer";
-                        break;
-                    case 0:
-                        msg="expected a string";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                try {
-                    return Py.newInteger(((PyString)self).str_rfind(arg0.asString(0)));
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 0:
-                        msg="expected a string";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-        }
-        dict.__setitem__("rfind",new PyMethodDescr("rfind",PyString.class,1,3,new exposed_rfind(null,null)));
-        class exposed_rindex extends PyBuiltinMethodNarrow {
-
-            exposed_rindex(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_rindex(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0,PyObject arg1,PyObject arg2) {
-                try {
-                    return Py.newInteger(((PyString)self).str_rindex(arg0.asString(0),arg1.asInt(1),arg2.asInt(2)));
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 1:
-                    case 2:
-                        msg="expected an integer";
-                        break;
-                    case 0:
-                        msg="expected a string";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-            public PyObject __call__(PyObject arg0,PyObject arg1) {
-                try {
-                    return Py.newInteger(((PyString)self).str_rindex(arg0.asString(0),arg1.asInt(1)));
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 1:
-                        msg="expected an integer";
-                        break;
-                    case 0:
-                        msg="expected a string";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                try {
-                    return Py.newInteger(((PyString)self).str_rindex(arg0.asString(0)));
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 0:
-                        msg="expected a string";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-        }
-        dict.__setitem__("rindex",new PyMethodDescr("rindex",PyString.class,1,3,new exposed_rindex(null,null)));
-        class exposed_rjust extends PyBuiltinMethodNarrow {
-
-            exposed_rjust(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_rjust(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                try {
-                    return new PyString(((PyString)self).str_rjust(arg0.asInt(0)));
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 0:
-                        msg="expected an integer";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-        }
-        dict.__setitem__("rjust",new PyMethodDescr("rjust",PyString.class,1,1,new exposed_rjust(null,null)));
-        class exposed_rstrip extends PyBuiltinMethodNarrow {
-
-            exposed_rstrip(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_rstrip(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                try {
-                    return new PyString(((PyString)self).str_rstrip(arg0.asStringOrNull(0)));
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 0:
-                        msg="expected a string or None";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-            public PyObject __call__() {
-                return new PyString(((PyString)self).str_rstrip());
-            }
-
-        }
-        dict.__setitem__("rstrip",new PyMethodDescr("rstrip",PyString.class,0,1,new exposed_rstrip(null,null)));
-        class exposed_split extends PyBuiltinMethodNarrow {
-
-            exposed_split(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_split(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0,PyObject arg1) {
-                try {
-                    return((PyString)self).str_split(arg0.asStringOrNull(0),arg1.asInt(1));
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 1:
-                        msg="expected an integer";
-                        break;
-                    case 0:
-                        msg="expected a string or None";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                try {
-                    return((PyString)self).str_split(arg0.asStringOrNull(0));
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 0:
-                        msg="expected a string or None";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-            public PyObject __call__() {
-                return((PyString)self).str_split();
-            }
-
-        }
-        dict.__setitem__("split",new PyMethodDescr("split",PyString.class,0,2,new exposed_split(null,null)));
-        class exposed_splitlines extends PyBuiltinMethodNarrow {
-
-            exposed_splitlines(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_splitlines(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                return((PyString)self).str_splitlines(arg0.__nonzero__());
-            }
-
-            public PyObject __call__() {
-                return((PyString)self).str_splitlines();
-            }
-
-        }
-        dict.__setitem__("splitlines",new PyMethodDescr("splitlines",PyString.class,0,1,new exposed_splitlines(null,null)));
-        class exposed_startswith extends PyBuiltinMethodNarrow {
-
-            exposed_startswith(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_startswith(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0,PyObject arg1,PyObject arg2) {
-                try {
-                    return Py.newBoolean(((PyString)self).str_startswith(arg0.asString(0),arg1.asInt(1),arg2.asInt(2)));
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 1:
-                    case 2:
-                        msg="expected an integer";
-                        break;
-                    case 0:
-                        msg="expected a string";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-            public PyObject __call__(PyObject arg0,PyObject arg1) {
-                try {
-                    return Py.newBoolean(((PyString)self).str_startswith(arg0.asString(0),arg1.asInt(1)));
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 1:
-                        msg="expected an integer";
-                        break;
-                    case 0:
-                        msg="expected a string";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                try {
-                    return Py.newBoolean(((PyString)self).str_startswith(arg0.asString(0)));
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 0:
-                        msg="expected a string";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-        }
-        dict.__setitem__("startswith",new PyMethodDescr("startswith",PyString.class,1,3,new exposed_startswith(null,null)));
-        class exposed_strip extends PyBuiltinMethodNarrow {
-
-            exposed_strip(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_strip(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                try {
-                    return new PyString(((PyString)self).str_strip(arg0.asStringOrNull(0)));
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 0:
-                        msg="expected a string or None";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-            public PyObject __call__() {
-                return new PyString(((PyString)self).str_strip());
-            }
-
-        }
-        dict.__setitem__("strip",new PyMethodDescr("strip",PyString.class,0,1,new exposed_strip(null,null)));
-        class exposed_swapcase extends PyBuiltinMethodNarrow {
-
-            exposed_swapcase(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_swapcase(self,info);
-            }
-
-            public PyObject __call__() {
-                return new PyString(((PyString)self).str_swapcase());
-            }
-
-        }
-        dict.__setitem__("swapcase",new PyMethodDescr("swapcase",PyString.class,0,0,new exposed_swapcase(null,null)));
-        class exposed_title extends PyBuiltinMethodNarrow {
-
-            exposed_title(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_title(self,info);
-            }
-
-            public PyObject __call__() {
-                return new PyString(((PyString)self).str_title());
-            }
-
-        }
-        dict.__setitem__("title",new PyMethodDescr("title",PyString.class,0,0,new exposed_title(null,null)));
-        class exposed_translate extends PyBuiltinMethodNarrow {
-
-            exposed_translate(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_translate(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0,PyObject arg1) {
-                try {
-                    return new PyString(((PyString)self).str_translate(arg0.asString(0),arg1.asString(1)));
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 0:
-                    case 1:
-                        msg="expected a string";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                try {
-                    return new PyString(((PyString)self).str_translate(arg0.asString(0)));
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 0:
-                        msg="expected a string";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-        }
-        dict.__setitem__("translate",new PyMethodDescr("translate",PyString.class,1,2,new exposed_translate(null,null)));
-        class exposed_upper extends PyBuiltinMethodNarrow {
-
-            exposed_upper(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_upper(self,info);
-            }
-
-            public PyObject __call__() {
-                return new PyString(((PyString)self).str_upper());
-            }
-
-        }
-        dict.__setitem__("upper",new PyMethodDescr("upper",PyString.class,0,0,new exposed_upper(null,null)));
-        class exposed_zfill extends PyBuiltinMethodNarrow {
-
-            exposed_zfill(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_zfill(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                try {
-                    return new PyString(((PyString)self).str_zfill(arg0.asInt(0)));
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 0:
-                        msg="expected an integer";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-        }
-        dict.__setitem__("zfill",new PyMethodDescr("zfill",PyString.class,1,1,new exposed_zfill(null,null)));
-        dict.__setitem__("__new__",new PyNewWrapper(PyString.class,"__new__",-1,-1) {
-
-                                                                                        public PyObject new_impl(boolean init,PyType subtype,PyObject[]args,String[]keywords) {
-                                                                                            return str_new(this,init,subtype,args,keywords);
-                                                                                        }
-
-                                                                                    });
+    public static final PyType TYPE = PyType.fromClass(PyString.class);
+    protected String string; // cannot make final because of Python intern support
+    protected transient boolean interned=false;
+
+    public String getString() {
+        return string;
     }
-    //~ END GENERATED REGION -- DO NOT EDIT SEE gexpose.py
-
-    private static final PyType STRTYPE = PyType.fromClass(PyString.class);
-
-    protected String string;
-    private transient int cached_hashcode=0;
-    private transient boolean interned=false;
 
     // for PyJavaClass.init()
     public PyString() {
-        this(STRTYPE, "");
+        this(TYPE, "");
     }
 
     public PyString(PyType subType, String string) {
@@ -1598,14 +39,29 @@ public class PyString extends PyBaseString implements ClassDictInit
     }
 
     public PyString(String string) {
-        this(STRTYPE, string);
+        this(TYPE, string);
     }
 
     public PyString(char c) {
-        this(STRTYPE,String.valueOf(c));
+        this(TYPE,String.valueOf(c));
     }
 
-    final static PyObject str_new(PyNewWrapper new_, boolean init, PyType subtype,
+    PyString(StringBuilder buffer) {
+        this(TYPE, new String(buffer));
+    }
+    
+    /**
+     * Creates a PyString from an already interned String. Just means it won't
+     * be reinterned if used in a place that requires interned Strings.
+     */
+    public static PyString fromInterned(String interned) {
+        PyString str = new PyString(TYPE, interned);
+        str.interned = true;
+        return str;
+    }
+
+    @ExposedNew
+    static PyObject str_new(PyNewWrapper new_, boolean init, PyType subtype,
             PyObject[] args, String[] keywords) {
         ArgParser ap = new ArgParser("str", args, keywords, new String[] { "object" }, 0);
         PyObject S = ap.getPyObject(0, null);
@@ -1622,73 +78,79 @@ public class PyString extends PyBaseString implements ClassDictInit
         }
     }
 
-    /** <i>Internal use only. Do not call this method explicit.</i> */
-    public static void classDictInit(PyObject dict) throws PyIgnoreMethodTag {}
-
-    public String safeRepr() throws PyIgnoreMethodTag {
-        return "'string' object";
+    public int[] toCodePoints() {
+        int n = getString().length();
+        int[] codePoints = new int[n];
+        for (int i = 0; i < n; i++) {
+            codePoints[i] = getString().charAt(i);
+        }
+        return codePoints;
     }
-
+    
+    public String substring(int start, int end) {
+        return getString().substring(start, end);
+    }
+    
+    @Override
     public PyString __str__() {
         return str___str__();
     }
 
+    @ExposedMethod(doc = BuiltinDocs.str___str___doc) 
     final PyString str___str__() {
-        return this;
+        if (getClass() == PyString.class) {
+            return this;
+        }
+        return new PyString(getString());
     }
 
+    @Override
     public PyUnicode __unicode__() {
-        return str___unicode__();
-    }
-
-    final PyUnicode str___unicode__() {
         return new PyUnicode(this);
     }
 
+    @Override
     public int __len__() {
         return str___len__();
     }
 
+    @ExposedMethod(doc = BuiltinDocs.str___len___doc)
     final int str___len__() {
-        return string.length();
+        return getString().length();
     }
 
+    @Override
     public String toString() {
-        return str_toString();
-    }
-
-    final String str_toString() {
-        return string;
+        return getString();
     }
 
     public String internedString() {
         if (interned)
-            return string;
+            return getString();
         else {
-            string = string.intern();
+            string = getString().intern();
             interned = true;
-            return string;
+            return getString();
         }
     }
 
+    @Override
     public PyString __repr__() {
-        return new PyString(encode_UnicodeEscape(string, true));
+        return str___repr__();
     }
 
-    private static char[] hexdigit = "0123456789ABCDEF".toCharArray();
+    @ExposedMethod(doc = BuiltinDocs.str___repr___doc)
+    final PyString str___repr__() {
+        return new PyString(encode_UnicodeEscape(getString(), true));
+    }
+
+    private static char[] hexdigit = "0123456789abcdef".toCharArray();
 
     public static String encode_UnicodeEscape(String str,
                                               boolean use_quotes)
     {
-        return encode_UnicodeEscape(str, use_quotes, false);
-    }
-    
-    public static String encode_UnicodeEscape(String str,
-                                              boolean use_quotes,
-                                              boolean unicodeDesignatorPresent)
-    {
         int size = str.length();
-        StringBuffer v = new StringBuffer(str.length());
+        StringBuilder v = new StringBuilder(str.length());
 
         char quote = 0;
 
@@ -1701,16 +163,35 @@ public class PyString extends PyBaseString implements ClassDictInit
         for (int i = 0; size-- > 0; ) {
             int ch = str.charAt(i++);
             /* Escape quotes */
-            if (use_quotes && (ch == quote || ch == '\\')) {
+            if ((use_quotes && ch == quote) || ch == '\\') {
                 v.append('\\');
                 v.append((char) ch);
+                continue;
             }
-            /* Map 16-bit characters to '\\uxxxx' */
-            else if (ch >= 256) {
-                if (use_quotes && !unicodeDesignatorPresent) {
-                   v.insert(0, 'u');
-                   unicodeDesignatorPresent = true;
+                /* Map UTF-16 surrogate pairs to Unicode \UXXXXXXXX escapes */
+                else if (ch >= 0xD800 && ch < 0xDC00) {
+                    char ch2 = str.charAt(i++);
+                    size--;
+                    if (ch2 >= 0xDC00 && ch2 <= 0xDFFF) {
+                    int ucs = (((ch & 0x03FF) << 10) | (ch2 & 0x03FF)) + 0x00010000;
+                    v.append('\\');
+                    v.append('U');
+                    v.append(hexdigit[(ucs >> 28) & 0xf]);
+                    v.append(hexdigit[(ucs >> 24) & 0xf]);
+                    v.append(hexdigit[(ucs >> 20) & 0xf]);
+                    v.append(hexdigit[(ucs >> 16) & 0xf]);
+                    v.append(hexdigit[(ucs >> 12) & 0xf]);
+                    v.append(hexdigit[(ucs >> 8) & 0xf]);
+                    v.append(hexdigit[(ucs >> 4) & 0xf]);
+                    v.append(hexdigit[ucs & 0xf]);
+                    continue;
+                    }
+                    /* Fall through: isolated surrogates are copied as-is */
+                    i--;
+                    size++;
                 }
+            /* Map 16-bit characters to '\\uxxxx' */
+             if (ch >= 256) {
                 v.append('\\');
                 v.append('u');
                 v.append(hexdigit[(ch >> 12) & 0xf]);
@@ -1718,16 +199,16 @@ public class PyString extends PyBaseString implements ClassDictInit
                 v.append(hexdigit[(ch >> 4) & 0xf]);
                 v.append(hexdigit[ch & 15]);
             }
+             /* Map special whitespace to '\t', \n', '\r' */
+            else if (ch == '\t') v.append("\\t");
+            else if (ch == '\n') v.append("\\n");
+            else if (ch == '\r') v.append("\\r");
             /* Map non-printable US ASCII to '\ooo' */
-            else if (use_quotes && ch == '\n') v.append("\\n");
-            else if (use_quotes && ch == '\t') v.append("\\t");
-            else if (use_quotes && ch == '\b') v.append("\\b");
-            else if (use_quotes && ch == '\f') v.append("\\f");
-            else if (use_quotes && ch == '\r') v.append("\\r");
             else if (ch < ' ' || ch >= 127) {
-                v.append("\\x");
-                v.append(hexdigit[(ch >> 4) & 0xF]);
-                v.append(hexdigit[ch & 0xF]);
+                v.append('\\');
+                v.append('x');
+                v.append(hexdigit[(ch >> 4) & 0xf]);
+                v.append(hexdigit[ch & 0xf]);
             }
             /* Copy everything else as-is */
             else
@@ -1740,252 +221,359 @@ public class PyString extends PyBaseString implements ClassDictInit
 
     private static ucnhashAPI pucnHash = null;
 
-    public static String decode_UnicodeEscape(String str, int start, int end,
-                                              String errors, boolean unicode)
-    {
-        StringBuffer v = new StringBuffer(end-start);
-        for (int s = start; s < end; ) {
+    
+    public static String decode_UnicodeEscape(String str,
+                                              int start,
+                                              int end,
+                                              String errors,
+                                              boolean unicode) {
+        StringBuilder v = new StringBuilder(end - start);
+        for(int s = start; s < end;) {
             char ch = str.charAt(s);
-
             /* Non-escape characters are interpreted as Unicode ordinals */
-            if (ch != '\\') {
+            if(ch != '\\') {
                 v.append(ch);
                 s++;
                 continue;
             }
-
+            int loopStart = s;
             /* \ - Escapes */
             s++;
-			if (s == end) {
-				codecs.decoding_error("unicode escape", v, errors, "\\ at end of string");
-				break;
-			}
+            if(s == end) {
+                s = codecs.insertReplacementAndGetResume(v,
+                                                         errors,
+                                                         "unicodeescape",
+                                                         str,
+                                                         loopStart,
+                                                         s + 1,
+                                                         "\\ at end of string");
+                continue;
+            }
             ch = str.charAt(s++);
-            switch (ch) {
-
-            /* \x escapes */
-            case '\n': break;
-            case '\\': v.append('\\'); break;
-            case '\'': v.append('\''); break;
-            case '\"': v.append('\"'); break;
-            case 'b': v.append('\b'); break;
-            case 'f': v.append('\014'); break; /* FF */
-            case 't': v.append('\t'); break;
-            case 'n': v.append('\n'); break;
-            case 'r': v.append('\r'); break;
-            case 'v': v.append('\013'); break; /* VT */
-            case 'a': v.append('\007'); break; /* BEL, not classic C */
-
-            /* \OOO (octal) escapes */
-            case '0': case '1': case '2': case '3':
-            case '4': case '5': case '6': case '7':
-
-                int x = Character.digit(ch, 8);
-                for (int j = 0; j < 2 && s < end; j++, s++) {
-                    ch = str.charAt(s);
-                    if (ch < '0' || ch > '7')
-                        break;
-                    x = (x<<3) + Character.digit(ch, 8);
-                }
-                v.append((char) x);
-                break;
-
-            case 'x':
-                int i;
-                for (x = 0, i = 0; i < 2 && s < end; i++) {
-                    ch = str.charAt(s + i);
-                    int d = Character.digit(ch, 16);
-                    if (d == -1) {
-                        codecs.decoding_error("unicode escape", v, errors,
-                                                     "truncated \\xXX");
-                        i++;
+            switch(ch){
+                /* \x escapes */
+                case '\n':
+                    break;
+                case '\\':
+                    v.append('\\');
+                    break;
+                case '\'':
+                    v.append('\'');
+                    break;
+                case '\"':
+                    v.append('\"');
+                    break;
+                case 'b':
+                    v.append('\b');
+                    break;
+                case 'f':
+                    v.append('\014');
+                    break; /* FF */
+                case 't':
+                    v.append('\t');
+                    break;
+                case 'n':
+                    v.append('\n');
+                    break;
+                case 'r':
+                    v.append('\r');
+                    break;
+                case 'v':
+                    v.append('\013');
+                    break; /* VT */
+                case 'a':
+                    v.append('\007');
+                    break; /* BEL, not classic C */
+                /* \OOO (octal) escapes */
+                case '0':
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                case '5':
+                case '6':
+                case '7':
+                    int x = Character.digit(ch, 8);
+                    for(int j = 0; j < 2 && s < end; j++, s++) {
+                        ch = str.charAt(s);
+                        if(ch < '0' || ch > '7')
+                            break;
+                        x = (x << 3) + Character.digit(ch, 8);
+                    }
+                    v.append((char)x);
+                    break;
+                case 'x':
+                    s = hexescape(v, errors, 2, s, str, end, "truncated \\xXX");
+                    break;
+                case 'u':
+                    if(!unicode) {
+                        v.append('\\');
+                        v.append('u');
                         break;
                     }
-
-                    x = ((x<<4) & ~0xF) + d;
-                }
-                s += i;
-                v.append((char) x);
-                break;
-
-            /* \ uXXXX with 4 hex digits */
-            case 'u':
-                if (!unicode) {
-                    v.append('\\');
-                    v.append('u');
+                    s = hexescape(v,
+                                  errors,
+                                  4,
+                                  s,
+                                  str,
+                                  end,
+                                  "truncated \\uXXXX");
                     break;
-                }
-                if (s+4 > end) {
-                    codecs.decoding_error("unicode escape", v, errors,
-                                              "truncated \\uXXXX");
-                    break;
-                }
-                for (x = 0, i = 0; i < 4; i++) {
-                    ch = str.charAt(s + i);
-                    int d  = Character.digit(ch, 16);
-                    if (d == -1) {
-                        codecs.decoding_error("unicode escape", v, errors,
-                                              "truncated \\uXXXX");
+                case 'U':
+                    if(!unicode) {
+                        v.append('\\');
+                        v.append('U');
                         break;
                     }
-                    x = ((x<<4) & ~0xF) + d;
-                }
-                s += i;
-                v.append((char) x);
-                break;
-
-            case 'N':
-                if (!unicode) {
-                    v.append('\\');
-                    v.append('N');
+                    s = hexescape(v,
+                                  errors,
+                                  8,
+                                  s,
+                                  str,
+                                  end,
+                                  "truncated \\UXXXXXXXX");
                     break;
-                }
-                /* Ok, we need to deal with Unicode Character Names now,
-                 * make sure we've imported the hash table data...
-                 */
-                if (pucnHash == null) {
-                     PyObject mod = imp.importName("ucnhash", true);
-                     mod = mod.__call__();
-                     pucnHash = (ucnhashAPI) mod.__tojava__(Object.class);
-                     if (pucnHash.getCchMax() < 0)
-                         codecs.decoding_error("unicode escape", v, errors,
-                                 "Unicode names not loaded");
-                }
-
-                if (str.charAt(s) == '{') {
-                    int startName = s + 1;
-                    int endBrace = startName;
-
-                    /* look for either the closing brace, or we
-                     * exceed the maximum length of the unicode
-                     * character names
+                case 'N':
+                    if(!unicode) {
+                        v.append('\\');
+                        v.append('N');
+                        break;
+                    }
+                    /*
+                     * Ok, we need to deal with Unicode Character Names now,
+                     * make sure we've imported the hash table data...
                      */
-                    int maxLen = pucnHash.getCchMax();
-                    while (endBrace < end && str.charAt(endBrace) != '}'
-                           && (endBrace - startName) <= maxLen) {
-                        endBrace++;
+                    if(pucnHash == null) {
+                        PyObject mod = imp.importName("ucnhash", true);
+                        mod = mod.__call__();
+                        pucnHash = (ucnhashAPI)mod.__tojava__(Object.class);
+                        if(pucnHash.getCchMax() < 0)
+                            throw Py.UnicodeError("Unicode names not loaded");
                     }
-                    if (endBrace != end && str.charAt(endBrace) == '}') {
-                         int value = pucnHash.getValue(str, startName,
-                                                       endBrace);
-                         if (value < 0) {
-                             codecs.decoding_error("unicode escape", v,
-                                  errors, "Invalid Unicode Character Name");
-                         } else {
-
-							if (value < 1 << 16) {
-								/* In UCS-2 range, easy solution.. */
-								v.append((char) value);
-							} else {
-								/* Oops, its in UCS-4 space, */
-								/* compute and append the two surrogates: */
-								/* translate from 10000..10FFFF to 0..FFFFF */
-								value -= 0x10000;
-
-								/* high surrogate = top 10 bits added to D800 */
-								v.append((char) (0xD800 + (value >> 10)));
-
-								/* low surrogate = bottom 10 bits added to DC00 */
-								v.append((char) (0xDC00 + (value & ~0xFC00)));
-							}
-						}
-                        s = endBrace + 1;
+                    if(str.charAt(s) == '{') {
+                        int startName = s + 1;
+                        int endBrace = startName;
+                        /*
+                         * look for either the closing brace, or we exceed the
+                         * maximum length of the unicode character names
+                         */
+                        int maxLen = pucnHash.getCchMax();
+                        while(endBrace < end && str.charAt(endBrace) != '}'
+                                && (endBrace - startName) <= maxLen) {
+                            endBrace++;
+                        }
+                        if(endBrace != end && str.charAt(endBrace) == '}') {
+                            int value = pucnHash.getValue(str,
+                                                          startName,
+                                                          endBrace);
+                            if(storeUnicodeCharacter(value, v)) {
+                                s = endBrace + 1;
+                            } else {
+                                s = codecs.insertReplacementAndGetResume(v,
+                                                                         errors,
+                                                                         "unicodeescape",
+                                                                         str,
+                                                                         loopStart,
+                                                                         endBrace + 1,
+                                                                         "illegal Unicode character");
+                            }
+                        } else {
+                            s = codecs.insertReplacementAndGetResume(v,
+                                                                     errors,
+                                                                     "unicodeescape",
+                                                                     str,
+                                                                     loopStart,
+                                                                     endBrace,
+                                                                     "malformed \\N character escape");
+                        }
                         break;
                     } else {
-                         codecs.decoding_error("unicode escape", v, errors,
-                              "Unicode name missing closing brace");
+                        s = codecs.insertReplacementAndGetResume(v,
+                                                                 errors,
+                                                                 "unicodeescape",
+                                                                 str,
+                                                                 loopStart,
+                                                                 s + 1,
+                                                                 "malformed \\N character escape");
                     }
-                } else {
-					codecs.decoding_error("unicode escape", v, errors, "Missing opening brace for Unicode "
-							+ "Character Name escape");
-				}
-                break;
-
-           default:
-               v.append('\\');
-               v.append(str.charAt(s-1));
-               break;
-           }
-       }
-       return v.toString();
+                    break;
+                default:
+                    v.append('\\');
+                    v.append(str.charAt(s - 1));
+                    break;
+            }
+        }
+        return v.toString();
     }
 
+    private static int hexescape(StringBuilder partialDecode,
+                                 String errors,
+                                 int digits,
+                                 int hexDigitStart,
+                                 String str,
+                                 int size,
+                                 String errorMessage) {
+        if(hexDigitStart + digits > size) {
+            return codecs.insertReplacementAndGetResume(partialDecode,
+                                                        errors,
+                                                        "unicodeescape",
+                                                        str,
+                                                        hexDigitStart - 2,
+                                                        size,
+                                                        errorMessage);
+        }
+        int i = 0;
+        int x = 0;
+        for(; i < digits; ++i) {
+            char c = str.charAt(hexDigitStart + i);
+            int d = Character.digit(c, 16);
+            if(d == -1) {
+                return codecs.insertReplacementAndGetResume(partialDecode,
+                                                            errors,
+                                                            "unicodeescape",
+                                                            str,
+                                                            hexDigitStart - 2,
+                                                            hexDigitStart + i + 1,
+                                                            errorMessage);
+            }
+            x = (x << 4) & ~0xF;
+            if(c >= '0' && c <= '9')
+                x += c - '0';
+            else if(c >= 'a' && c <= 'f')
+                x += 10 + c - 'a';
+            else
+                x += 10 + c - 'A';
+        }
+        if(storeUnicodeCharacter(x, partialDecode)) {
+            return hexDigitStart + i;
+        } else {
+            return codecs.insertReplacementAndGetResume(partialDecode,
+                                                        errors,
+                                                        "unicodeescape",
+                                                        str,
+                                                        hexDigitStart - 2,
+                                                        hexDigitStart + i + 1,
+                                                        "illegal Unicode character");
+        }
+    }
+
+    /*pass in an int since this can be a UCS-4 character */
+    private static boolean storeUnicodeCharacter(int value,
+            StringBuilder partialDecode) {
+        if (value < 0 || (value >= 0xD800 && value <= 0xDFFF)) {
+            return false;
+        } else if (value <= PySystemState.maxunicode) {
+            partialDecode.appendCodePoint(value);
+            return true;
+        }
+        return false;
+    }
+
+    @ExposedMethod(doc = BuiltinDocs.str___getitem___doc)
+    final PyObject str___getitem__(PyObject index) {
+        PyObject ret = seq___finditem__(index);
+        if (ret == null) {
+            throw Py.IndexError("string index out of range");
+        }
+        return ret;
+    }
+    
+    //XXX: need doc
+    @ExposedMethod(defaults = "null")
+    final PyObject str___getslice__(PyObject start, PyObject stop, PyObject step) {
+        return seq___getslice__(start, stop, step);
+    }
+
+    @Override
     public int __cmp__(PyObject other) {
         return str___cmp__(other);
     }
 
+    @ExposedMethod(type = MethodType.CMP)
     final int str___cmp__(PyObject other) {
         if (!(other instanceof PyString))
             return -2;
 
-        int c = string.compareTo(((PyString)other).string);
+        int c = getString().compareTo(((PyString) other).getString());
         return c < 0 ? -1 : c > 0 ? 1 : 0;
     }
 
+    @Override
     public PyObject __eq__(PyObject other) {
         return str___eq__(other);
     }
 
+    @ExposedMethod(type = MethodType.BINARY, doc = BuiltinDocs.str___eq___doc)
     final PyObject str___eq__(PyObject other) {
         String s = coerce(other);
         if (s == null)
             return null;
-        return string.equals(s) ? Py.One : Py.Zero;
+        return getString().equals(s) ? Py.True : Py.False;
     }
 
+    @Override
     public PyObject __ne__(PyObject other) {
         return str___ne__(other);
     }
 
+    @ExposedMethod(type = MethodType.BINARY, doc = BuiltinDocs.str___ne___doc)
     final PyObject str___ne__(PyObject other) {
         String s = coerce(other);
         if (s == null)
             return null;
-        return string.equals(s) ? Py.Zero : Py.One;
+        return getString().equals(s) ? Py.False : Py.True;
     }
     
+    @Override
     public PyObject __lt__(PyObject other) {
-        String s = coerce(other);
-        if (s == null)
-            return null;
-        return string.compareTo(s) < 0 ? Py.One : Py.Zero;
+        return str___lt__(other);
     }
-    
+
+    @ExposedMethod(type = MethodType.BINARY, doc = BuiltinDocs.str___lt___doc)
     final PyObject str___lt__(PyObject other){
-    	return __lt__(other);
+        String s = coerce(other);
+        if (s == null)
+            return null;
+        return getString().compareTo(s) < 0 ? Py.True : Py.False;
     }
 
+    @Override
     public PyObject __le__(PyObject other) {
-        String s = coerce(other);
-        if (s == null)
-            return null;
-        return string.compareTo(s) <= 0 ? Py.One : Py.Zero;
+        return str___le__(other);
     }
-    
+
+    @ExposedMethod(type = MethodType.BINARY, doc = BuiltinDocs.str___le___doc)
     final PyObject str___le__(PyObject other){
-    	return __le__(other);
+        String s = coerce(other);
+        if (s == null)
+            return null;
+        return getString().compareTo(s) <= 0 ? Py.True : Py.False;
     }
 
+    @Override
     public PyObject __gt__(PyObject other) {
-        String s = coerce(other);
-        if (s == null)
-            return null;
-        return string.compareTo(s) > 0 ? Py.One : Py.Zero;
-    }
-    
-    final PyObject str___gt__(PyObject other){
-    	return __gt__(other);
+        return str___gt__(other);
     }
 
-    public PyObject __ge__(PyObject other) {
+    @ExposedMethod(type = MethodType.BINARY, doc = BuiltinDocs.str___gt___doc)
+    final PyObject str___gt__(PyObject other){
         String s = coerce(other);
         if (s == null)
             return null;
-        return string.compareTo(s) >= 0 ? Py.One : Py.Zero;
+        return getString().compareTo(s) > 0 ? Py.True : Py.False;
     }
-    
+
+    @Override
+    public PyObject __ge__(PyObject other) {
+        return str___ge__(other);
+    }
+
+    @ExposedMethod(type = MethodType.BINARY, doc = BuiltinDocs.str___ge___doc)
     final PyObject str___ge__(PyObject other){
-    	return __ge__(other);
+        String s = coerce(other);
+        if (s == null)
+            return null;
+        return getString().compareTo(s) >= 0 ? Py.True : Py.False;
     }
 
     private static String coerce(PyObject o) {
@@ -1994,14 +582,29 @@ public class PyString extends PyBaseString implements ClassDictInit
         return null;
     }
 
+    @Override
     public int hashCode() {
-        return str_hashCode();
+        return str___hash__();
     }
 
-    final int str_hashCode() {
-        if (cached_hashcode == 0)
-            cached_hashcode = string.hashCode();
-        return cached_hashcode;
+//    @Override
+//    public boolean equals(Object obj) {
+//        if (obj == null) {
+//            return false;
+//        }
+//        if (getClass() != obj.getClass()) {
+//            return false;
+//        }
+//        final PyString other = (PyString) obj;
+//        if ((this.string == null) ? (other.string != null) : !this.string.equals(other.string)) {
+//            return false;
+//        }
+//        return true;
+//    }
+
+    @ExposedMethod(doc = BuiltinDocs.str___hash___doc)
+    final int str___hash__() {
+        return getString().hashCode();
     }
 
     /**
@@ -2010,53 +613,24 @@ public class PyString extends PyBaseString implements ClassDictInit
      *         corresponding char.
      */
     public byte[] toBytes() {
-        return to_bytes(string);
+        return StringUtil.toBytes(getString());
     }
 
-    /**
-     * @return a byte array with one byte for each char in s. Each byte contains
-     *         the low-order bits of its corresponding char.
-     */
-    public static byte[] to_bytes(String s) {
-        try {
-            return s.getBytes("ISO-8859-1");
-        } catch(UnsupportedEncodingException e) {
-            // This JVM is whacked, it doesn't even have iso-8859-1
-            throw Py.SystemError("Java couldn't find the ISO-8859-1 encoding");
-        }
-    }
-
-    /**
-     * @return A String with chars corresponding to the bytes in buf
-     */
-    public static String from_bytes(byte[] buf) {
-        return from_bytes(buf, 0, buf.length);
-    }
-    
-    /**
-     * @return A String of len buff with chars corresponding to buf from off to
-     *         off + len
-     */
-    public static String from_bytes(byte[] buf, int off, int len) {
-        // Yes, I known the method is deprecated, but it is the fastest
-        // way of converting between between byte[] and String
-        return new String(buf, 0, off, len);
-    }
-
-    public Object __tojava__(Class c) {
+    @Override
+    public Object __tojava__(Class<?> c) {
         if (c.isAssignableFrom(String.class)) {
-            return string;
+            return getString();
         }
 
         if (c == Character.TYPE || c == Character.class)
-            if (string.length() == 1)
-                return new Character(string.charAt(0));
+            if (getString().length() == 1)
+                return new Character(getString().charAt(0));
 
         if (c.isArray()) {
             if (c.getComponentType() == Byte.TYPE)
                 return toBytes();
             if (c.getComponentType() == Character.TYPE)
-                return string.toCharArray();
+                return getString().toCharArray();
         }
 
         if (c.isInstance(this))
@@ -2066,7 +640,7 @@ public class PyString extends PyBaseString implements ClassDictInit
     }
 
     protected PyObject pyget(int i) {
-        return Py.newString(string.charAt(i));
+        return Py.newString(getString().charAt(i));
     }
 
     protected PyObject getslice(int start, int stop, int step) {
@@ -2079,9 +653,9 @@ public class PyString extends PyBaseString implements ClassDictInit
             char new_chars[] = new char[n];
             int j = 0;
             for (int i=start; j<n; i+=step)
-                new_chars[j++] = string.charAt(i);
+                new_chars[j++] = getString().charAt(i);
 
-            return createInstance(new String(new_chars));
+            return createInstance(new String(new_chars), true);
         }
     }
 
@@ -2089,111 +663,147 @@ public class PyString extends PyBaseString implements ClassDictInit
         return new PyString(str);
     }
 
+    protected PyString createInstance(String str, boolean isBasic) {
+        // ignore isBasic, doesn't apply to PyString, just PyUnicode
+        return new PyString(str);
+    } 
+    
+    @Override
     public boolean __contains__(PyObject o) {
         return str___contains__(o);
     }
 
+    @ExposedMethod(doc = BuiltinDocs.str___contains___doc)
     final boolean str___contains__(PyObject o) {
         if (!(o instanceof PyString))
             throw Py.TypeError("'in <string>' requires string as left operand");
         PyString other = (PyString) o;
-        return string.indexOf(other.string) >= 0;
+        return getString().indexOf(other.getString()) >= 0;
     }
 
     protected PyObject repeat(int count) {
-        if (count < 0)
+        if(count < 0) {
             count = 0;
-        int s = string.length();
-        char new_chars[] = new char[s*count];
-        for (int i=0; i<count; i++) {
-            string.getChars(0, s, new_chars, i*s);
+        }
+        int s = getString().length();
+        if((long)s * count > Integer.MAX_VALUE) {
+            // Since Strings store their data in an array, we can't make one
+            // longer than Integer.MAX_VALUE. Without this check we get
+            // NegativeArraySize exceptions when we create the array on the
+            // line with a wrapped int.
+            throw Py.OverflowError("max str len is " + Integer.MAX_VALUE);
+        }
+        char new_chars[] = new char[s * count];
+        for(int i = 0; i < count; i++) {
+            getString().getChars(0, s, new_chars, i * s);
         }
         return createInstance(new String(new_chars));
     }
 
+    @Override
+    public PyObject __mul__(PyObject o) {
+        return str___mul__(o);
+    }
+
+    @ExposedMethod(type = MethodType.BINARY, doc = BuiltinDocs.str___mul___doc)
     final PyObject str___mul__(PyObject o) {
-        if (!(o instanceof PyInteger || o instanceof PyLong))
+        if (!o.isIndex()) {
             return null;
-        int count = ((PyInteger)o.__int__()).getValue();
-        return repeat(count);
-    }
-
-    final PyObject str___rmul__(PyObject o) {
-        if (!(o instanceof PyInteger || o instanceof PyLong))
-            return null;
-        int count = ((PyInteger)o.__int__()).getValue();
-        return repeat(count);
-    }
-
-    public PyObject __add__(PyObject generic_other) {
-        return str___add__(generic_other);
-    }
-
-    final PyObject str___add__(PyObject generic_other) {
-        if (generic_other instanceof PyString) {
-            PyString other = (PyString)generic_other;
-            String result = string.concat(other.string);
-            if (generic_other instanceof PyUnicode) {
-                return new PyUnicode(result);
-            }
-            return createInstance(result);
         }
-        else return null;
+        return repeat(o.asIndex(Py.OverflowError));
+    }
+    
+    @Override
+    public PyObject __rmul__(PyObject o) {
+        return str___rmul__(o);
     }
 
-    /**
-     * Used for pickling.
-     *
-     * @return a tuple of (class, tuple)
-     */
-    public PyObject __reduce__() {
-        return str___reduce__();
+    @ExposedMethod(type = MethodType.BINARY, doc = BuiltinDocs.str___rmul___doc)
+    final PyObject str___rmul__(PyObject o) {
+        if (!o.isIndex()) {
+            return null;
+        }
+        return repeat(o.asIndex(Py.OverflowError));
     }
 
-    final PyObject str___reduce__() {
-        return object___reduce__();
+    @Override
+    public PyObject __add__(PyObject other) {
+        return str___add__(other);
+    }
+    
+    @ExposedMethod(type = MethodType.BINARY, doc = BuiltinDocs.str___add___doc)
+    final PyObject str___add__(PyObject other) {
+        if (other instanceof PyUnicode) {
+            return decode().__add__(other);
+        }
+        if (other instanceof PyString) {
+            PyString otherStr = (PyString)other;
+            return new PyString(getString().concat(otherStr.getString()));
+        }
+        return null;
     }
 
+    @ExposedMethod(doc = BuiltinDocs.str___getnewargs___doc)
+    final PyTuple str___getnewargs__() {
+        return new PyTuple(new PyString(this.getString()));
+    }
+
+    @Override
     public PyTuple __getnewargs__() {
-        return new PyTuple(new PyObject[]{
-            new PyString(str_toString())
-            }
-        );
+        return str___getnewargs__();
     }
 
+    @Override
     public PyObject __mod__(PyObject other) {
         return str___mod__(other);
     }
     
+    @ExposedMethod(doc = BuiltinDocs.str___mod___doc)
     public PyObject str___mod__(PyObject other){
-        StringFormatter fmt = new StringFormatter(string);
+        StringFormatter fmt = new StringFormatter(getString(), false);
         return fmt.format(other);
     }
 
+    @Override
     public PyObject __int__() {
-        return Py.newInteger(atoi(10));
+        try
+        {
+            return Py.newInteger(atoi(10));
+        } catch (PyException e) {
+            if (e.match(Py.OverflowError)) {
+                return atol(10);
+            }
+            throw e;
+        }
     }
 
-    public PyLong __long__() {
+    @Override
+    public PyObject __long__() {
         return atol(10);
     }
 
+    @Override
     public PyFloat __float__() {
         return new PyFloat(atof());
     }
 
+    @Override
     public PyObject __pos__() {
       throw Py.TypeError("bad operand type for unary +");
     }
 
+    @Override
     public PyObject __neg__() {
       throw Py.TypeError("bad operand type for unary -");
     }
 
+    @Override
     public PyObject __invert__() {
       throw Py.TypeError("bad operand type for unary ~");
     }
 
+    @SuppressWarnings("fallthrough")
+    @Override
     public PyComplex __complex__() {
         boolean got_re = false;
         boolean got_im = false;
@@ -2201,8 +811,8 @@ public class PyString extends PyBaseString implements ClassDictInit
         boolean sw_error = false;
 
         int s = 0;
-        int n = string.length();
-        while (s < n && Character.isSpaceChar(string.charAt(s)))
+        int n = getString().length();
+        while (s < n && Character.isSpaceChar(getString().charAt(s)))
             s++;
 
         if (s == n) {
@@ -2215,7 +825,7 @@ public class PyString extends PyBaseString implements ClassDictInit
 
         int sign = 1;
         do {
-            char c = string.charAt(s);
+            char c = getString().charAt(s);
             switch (c) {
             case '-':
                 sign = -1;
@@ -2227,7 +837,7 @@ public class PyString extends PyBaseString implements ClassDictInit
                 }
                 //  a character is guaranteed, but it better be a digit
                 //  or J or j
-                c = string.charAt(++s);  //  eat the sign character
+                c = getString().charAt(++s);  //  eat the sign character
                                          //  and check the next
                 if  (!Character.isDigit(c) && c!='J' && c!='j')
                     sw_error = true;
@@ -2251,7 +861,7 @@ public class PyString extends PyBaseString implements ClassDictInit
                 break;
 
             case ' ':
-                while (s < n && Character.isSpaceChar(string.charAt(s)))
+                while (s < n && Character.isSpaceChar(getString().charAt(s)))
                     s++;
                 if (s != n)
                     sw_error = true;
@@ -2263,11 +873,15 @@ public class PyString extends PyBaseString implements ClassDictInit
                     sw_error = true;
                     break;
                 }
-                int end = endDouble(string, s);
-                z = Double.valueOf(string.substring(s, end)).doubleValue();
+                int end = endDouble(getString(),s);
+                z = Double.valueOf(getString().substring(s, end)).doubleValue();
+                if (z == Double.POSITIVE_INFINITY) {
+                	throw Py.ValueError(String.format("float() out of range: %.150s", getString()));
+                }
+
                 s=end;
                 if (s < n) {
-                    c = string.charAt(s);
+                    c = getString().charAt(s);
                     if  (c == 'J' || c == 'j') {
                         break;
                     }
@@ -2291,7 +905,7 @@ public class PyString extends PyBaseString implements ClassDictInit
 
         if (sw_error) {
             throw Py.ValueError("malformed string for complex() " +
-                                string.substring(s));
+                                getString().substring(s));
         }
 
         return new PyComplex(x,y);
@@ -2322,25 +936,28 @@ public class PyString extends PyBaseString implements ClassDictInit
     public String lower() {
         return str_lower();
     }
-
+    
+    @ExposedMethod(doc = BuiltinDocs.str_lower_doc)
     final String str_lower() {
-        return string.toLowerCase();
+        return getString().toLowerCase();
     }
 
     public String upper() {
         return str_upper();
     }
 
+    @ExposedMethod(doc = BuiltinDocs.str_upper_doc)
     final String str_upper() {
-        return string.toUpperCase();
+        return getString().toUpperCase();
     }
 
     public String title() {
         return str_title();
     }
 
+    @ExposedMethod(doc = BuiltinDocs.str_title_doc)
     final String str_title() {
-        char[] chars = string.toCharArray();
+        char[] chars = getString().toCharArray();
         int n = chars.length;
 
         boolean previous_is_cased = false;
@@ -2365,8 +982,9 @@ public class PyString extends PyBaseString implements ClassDictInit
         return str_swapcase();
     }
 
+    @ExposedMethod(doc = BuiltinDocs.str_swapcase_doc)
     final String str_swapcase() {
-        char[] chars = string.toCharArray();
+        char[] chars = getString().toCharArray();
         int n=chars.length;
         for (int i=0; i<n; i++) {
             char c = chars[i];
@@ -2381,10 +999,6 @@ public class PyString extends PyBaseString implements ClassDictInit
     }
 
     public String strip() {
-        return str_strip();
-    }
-
-    final String str_strip() {
         return str_strip(null);
     }
 
@@ -2392,8 +1006,9 @@ public class PyString extends PyBaseString implements ClassDictInit
         return str_strip(sep);
     }
 
+    @ExposedMethod(defaults = "null", doc = BuiltinDocs.str_strip_doc)
     final String str_strip(String sep) {
-        char[] chars = string.toCharArray();
+        char[] chars = getString().toCharArray();
         int n=chars.length;
         int start=0;
         if (sep == null)
@@ -2413,26 +1028,23 @@ public class PyString extends PyBaseString implements ClassDictInit
 
         if (end >= start) {
             return (end < n-1 || start > 0)
-                ? string.substring(start, end+1) : string;
+                ? getString().substring(start, end+1) : getString();
         } else {
             return "";
         }
     }
 
     public String lstrip() {
-        return str_lstrip();
-    }
-
-    final String str_lstrip() {
         return str_lstrip(null);
     }
-
+    
     public String lstrip(String sep) {
         return str_lstrip(sep);
     }
 
+    @ExposedMethod(defaults = "null", doc = BuiltinDocs.str_lstrip_doc)
     final String str_lstrip(String sep) {
-        char[] chars = string.toCharArray();
+        char[] chars = getString().toCharArray();
         int n=chars.length;
         int start=0;
         if (sep == null)
@@ -2442,23 +1054,16 @@ public class PyString extends PyBaseString implements ClassDictInit
             while (start < n && sep.indexOf(chars[start]) >= 0)
                 start++;
 
-        return (start > 0) ? string.substring(start, n) : string;
-    }
-
-    public String rstrip() {
-        return str_rstrip();
-    }
-
-    final String str_rstrip() {
-        return str_rstrip(null);
+        return (start > 0) ? getString().substring(start, n) : getString();
     }
 
     public String rstrip(String sep) {
         return str_rstrip(sep);
     }
-
+    
+    @ExposedMethod(defaults = "null", doc = BuiltinDocs.str_rstrip_doc)
     final String str_rstrip(String sep) {
-        char[] chars = string.toCharArray();
+        char[] chars = getString().toCharArray();
         int n=chars.length;
         int end=n-1;
         if (sep == null)
@@ -2468,23 +1073,15 @@ public class PyString extends PyBaseString implements ClassDictInit
             while (end >= 0 && sep.indexOf(chars[end]) >= 0)
                 end--;
 
-        return (end < n-1) ? string.substring(0, end+1) : string;
+        return (end < n-1) ? getString().substring(0, end+1) : getString();
     }
 
 
     public PyList split() {
-        return str_split();
-    }
-
-    final PyList str_split() {
         return str_split(null, -1);
     }
 
     public PyList split(String sep) {
-        return str_split(sep);
-    }
-
-    final PyList str_split(String sep) {
         return str_split(sep, -1);
     }
 
@@ -2492,13 +1089,18 @@ public class PyString extends PyBaseString implements ClassDictInit
         return str_split(sep, maxsplit);
     }
 
+    @ExposedMethod(defaults = {"null", "-1"}, doc = BuiltinDocs.str_split_doc)
     final PyList str_split(String sep, int maxsplit) {
-        if (sep != null)
+        if (sep != null) {
+            if (sep.length() == 0) {
+                throw Py.ValueError("empty separator");
+            }
             return splitfields(sep, maxsplit);
+        }
 
         PyList list = new PyList();
 
-        char[] chars = string.toCharArray();
+        char[] chars = getString().toCharArray();
         int n=chars.length;
 
         if (maxsplit < 0)
@@ -2526,24 +1128,200 @@ public class PyString extends PyBaseString implements ClassDictInit
         return list;
     }
 
-    private PyList splitfields(String sep, int maxsplit) {
+    public PyList rsplit() {
+        return str_rsplit(null, -1);
+    }
+
+    public PyList rsplit(String sep) {
+        return str_rsplit(sep, -1);
+    }
+
+    public PyList rsplit(String sep, int maxsplit) {
+        return str_rsplit(sep, maxsplit);
+    }
+
+    @ExposedMethod(defaults = {"null", "-1"}, doc = BuiltinDocs.str_rsplit_doc)
+    final PyList str_rsplit(String sep, int maxsplit) {
+        if (sep != null) {
+            if (sep.length() == 0) {
+                throw Py.ValueError("empty separator");
+            }
+            PyList list = rsplitfields(sep, maxsplit);
+            list.reverse();
+            return list;
+        }
+
+        PyList list = new PyList();
+        char[] chars = getString().toCharArray();
+
+        if (maxsplit < 0) {
+            maxsplit = chars.length;
+        }
+
+        int splits = 0;
+        int i = chars.length - 1;
+
+        while (i > -1 && Character.isWhitespace(chars[i])) {
+            i--;
+        }
+        if (i == -1) {
+            return list;
+        }
+
+        while (splits < maxsplit) {
+            while (i > -1 && Character.isWhitespace(chars[i])) {
+                i--;
+            }
+            if (i == -1) {
+                break;
+            }
+
+            int nextWsChar = i;
+            while (nextWsChar > -1 && !Character.isWhitespace(chars[nextWsChar])) {
+                nextWsChar--;
+            }
+            if (nextWsChar == -1) {
+                break;
+            }
+
+            splits++;
+            list.add(fromSubstring(nextWsChar + 1, i + 1));
+            i = nextWsChar;
+        }
+        while (i > -1 && Character.isWhitespace(chars[i])) {
+            i--;
+        }
+        if (i > -1) {
+            list.add(fromSubstring(0,i+1));
+        }
+        list.reverse();
+        return list;
+    }
+
+    public PyTuple partition(PyObject sepObj) {
+        return str_partition(sepObj);
+    }
+
+    @ExposedMethod(doc = BuiltinDocs.str_partition_doc)
+    final PyTuple str_partition(PyObject sepObj) {
+        String sep;
+
+        if (sepObj instanceof PyUnicode) {
+            return unicodePartition(sepObj);
+        } else if (sepObj instanceof PyString) {
+            sep = ((PyString) sepObj).getString();
+        } else {
+            throw Py.TypeError("expected a character buffer object");
+        }
+
         if (sep.length() == 0) {
             throw Py.ValueError("empty separator");
         }
 
+        int index = getString().indexOf(sep);
+        if (index != -1) {
+            return new PyTuple(fromSubstring(0, index), sepObj,
+                               fromSubstring(index + sep.length(), getString().length()));
+        } else {
+            return new PyTuple(this, Py.EmptyString, Py.EmptyString);
+        }
+    }
+
+    final PyTuple unicodePartition(PyObject sepObj) {
+        PyUnicode strObj = __unicode__();
+        String str = strObj.getString();
+
+        // Will throw a TypeError if not a basestring
+        String sep = sepObj.asString();
+        sepObj = sepObj.__unicode__();
+
+        if (sep.length() == 0) {
+            throw Py.ValueError("empty separator");
+        }
+
+        int index = str.indexOf(sep);
+        if (index != -1) {
+            return new PyTuple(strObj.fromSubstring(0, index), sepObj,
+                               strObj.fromSubstring(index + sep.length(), str.length()));
+        } else {
+            PyUnicode emptyUnicode = Py.newUnicode("");
+            return new PyTuple(this, emptyUnicode, emptyUnicode);
+        }
+    }
+
+    public PyTuple rpartition(PyObject sepObj) {
+        return str_rpartition(sepObj);
+    }
+
+    @ExposedMethod(doc = BuiltinDocs.str_rpartition_doc)
+    final PyTuple str_rpartition(PyObject sepObj) {
+        String sep;
+
+        if (sepObj instanceof PyUnicode) {
+            return unicodePartition(sepObj);
+        } else if (sepObj instanceof PyString) {
+            sep = ((PyString) sepObj).getString();
+        } else {
+            throw Py.TypeError("expected a character buffer object");
+        }
+
+        if (sep.length() == 0) {
+            throw Py.ValueError("empty separator");
+        }
+
+        int index = getString().lastIndexOf(sep);
+        if (index != -1) {
+            return new PyTuple(fromSubstring(0, index), sepObj,
+                               fromSubstring(index + sep.length(), getString().length()));
+        } else {
+            return new PyTuple(Py.EmptyString, Py.EmptyString, this);
+        }
+    }
+
+    final PyTuple unicodeRpartition(PyObject sepObj) {
+        PyUnicode strObj = __unicode__();
+        String str = strObj.getString();
+
+        // Will throw a TypeError if not a basestring
+        String sep = sepObj.asString();
+        sepObj = sepObj.__unicode__();
+
+        if (sep.length() == 0) {
+            throw Py.ValueError("empty separator");
+        }
+
+        int index = str.lastIndexOf(sep);
+        if (index != -1) {
+            return new PyTuple(strObj.fromSubstring(0, index), sepObj,
+                               strObj.fromSubstring(index + sep.length(), str.length()));
+        } else {
+            PyUnicode emptyUnicode = Py.newUnicode("");
+            return new PyTuple(emptyUnicode, emptyUnicode, this);
+        }
+    }
+
+    private PyList splitfields(String sep, int maxsplit) {
         PyList list = new PyList();
 
-        int length = string.length();
+        int length = getString().length();
         if (maxsplit < 0)
-            maxsplit = length;
+            maxsplit = length + 1;
 
         int lastbreak = 0;
         int splits = 0;
         int sepLength = sep.length();
+        int index;
+        if((sep.length() == 0) && (maxsplit != 0)) {
+            index = getString().indexOf(sep, lastbreak);
+            list.append(fromSubstring(lastbreak, index));
+            splits++;
+        }
         while (splits < maxsplit) {
-            int index = string.indexOf(sep, lastbreak);
+            index = getString().indexOf(sep, lastbreak);
             if (index == -1)
                 break;
+            if(sep.length() == 0)
+                index++;
             splits += 1;
             list.append(fromSubstring(lastbreak, index));
             lastbreak = index + sepLength;
@@ -2554,11 +1332,38 @@ public class PyString extends PyBaseString implements ClassDictInit
         return list;
     }
 
-    public PyList splitlines() {
-        return str_splitlines();
+    private PyList rsplitfields(String sep, int maxsplit) {
+        PyList list = new PyList();
+
+        int length = getString().length();
+        if (maxsplit < 0) {
+            maxsplit = length + 1;
+        }
+
+        int lastbreak = length;
+        int splits = 0;
+        int index = length;
+        int sepLength = sep.length();
+
+        while (index > 0 && splits < maxsplit) {
+            int i = getString().lastIndexOf(sep, index - sepLength);
+            if (i == index) {
+                i -= sepLength;
+            }
+            if (i < 0) {
+                break;
+            }
+            splits++;
+            list.append(fromSubstring(i + sepLength, lastbreak));
+            lastbreak = i;
+            index = i;
+
+        }
+        list.append(fromSubstring(0, lastbreak));
+        return list;
     }
 
-    final PyList str_splitlines() {
+    public PyList splitlines() {
         return str_splitlines(false);
     }
 
@@ -2566,10 +1371,11 @@ public class PyString extends PyBaseString implements ClassDictInit
         return str_splitlines(keepends);
     }
 
+    @ExposedMethod(defaults = "false", doc = BuiltinDocs.str_splitlines_doc)
     final PyList str_splitlines(boolean keepends) {
         PyList list = new PyList();
 
-        char[] chars = string.toCharArray();
+        char[] chars = getString().toCharArray();
         int n=chars.length;
 
         int j = 0;
@@ -2599,242 +1405,159 @@ public class PyString extends PyBaseString implements ClassDictInit
     }
 
     protected PyString fromSubstring(int begin, int end) {
-        return createInstance(string.substring(begin, end));
+        return createInstance(getString().substring(begin, end), true);
     }
 
     public int index(String sub) {
-        return str_index(sub);
-    }
-
-    final int str_index(String sub) {
-        return str_index(sub, 0, string.length());
+        return str_index(sub, 0, null);
     }
 
     public int index(String sub, int start) {
-        return str_index(sub, start);
-    }
-
-    final int str_index(String sub, int start) {
-        return str_index(sub, start, string.length());
+        return str_index(sub, start, null);
     }
 
     public int index(String sub, int start, int end) {
-        return str_index(sub, start, end);
+        return str_index(sub, start, Py.newInteger(end));
     }
 
-    final int str_index(String sub, int start, int end) {
-        int n = string.length();
-
-        if (start < 0)
-            start = n+start;
-        if (end < 0)
-            end = n+end;
-
-        int index;
-        if (end < n) {
-            index = string.substring(start, end).indexOf(sub);
-        } else {
-            index = string.indexOf(sub, start);
-        }
+    @ExposedMethod(defaults = {"0", "null"}, doc = BuiltinDocs.str_index_doc)
+    final int str_index(String sub, int start, PyObject end) {
+        int index = str_find(sub, start, end);
         if (index == -1)
             throw Py.ValueError("substring not found in string.index");
         return index;
     }
 
     public int rindex(String sub) {
-        return str_rindex(sub);
-    }
-
-    final int str_rindex(String sub) {
-        return str_rindex(sub, 0, string.length());
+        return str_rindex(sub, 0, null);
     }
 
     public int rindex(String sub, int start) {
-        return str_rindex(sub, start);
-    }
-
-    final int str_rindex(String sub, int start) {
-        return str_rindex(sub, start, string.length());
+        return str_rindex(sub, start, null);
     }
 
     public int rindex(String sub, int start, int end) {
-        return str_rindex(sub, start, end);
+        return str_rindex(sub, start, Py.newInteger(end));
     }
 
-    final int str_rindex(String sub, int start, int end) {
-        int n = string.length();
-
-        if (start < 0)
-            start = n+start;
-        if (end < 0)
-            end = n+end;
-
-        int index;
-        if (start > 0) {
-            index = string.substring(start, end).lastIndexOf(sub);
-        } else {
-            index = string.lastIndexOf(sub, end);
-        }
-        if (index == -1)
+    @ExposedMethod(defaults = {"0", "null"}, doc = BuiltinDocs.str_rindex_doc)
+    final int str_rindex(String sub, int start, PyObject end) {
+        int index = str_rfind(sub, start, end);
+        if(index == -1)
             throw Py.ValueError("substring not found in string.rindex");
         return index;
     }
 
     public int count(String sub) {
-        return str_count(sub);
-    }
-
-    final int str_count(String sub) {
-        return count(sub, 0, string.length());
+        return str_count(sub, 0, null);
     }
 
     public int count(String sub, int start) {
-        return str_count(sub, start);
-    }
-
-    final int str_count(String sub, int start) {
-        return count(sub, start, string.length());
+        return str_count(sub, start, null);
     }
 
     public int count(String sub, int start, int end) {
-        return str_count(sub, start, end);
+        return str_count(sub, start, Py.newInteger(end));
     }
-
-    final int str_count(String sub, int start, int end) {
-        int len = string.length();
-        if (end > len)
-            end = len;
-        if (end < 0)
-            end += len;
-        if (end < 0)
-            end = 0;
-        if (start < 0)
-            start += len;
-        if (start < 0)
-            start = 0;
-
+    
+    @ExposedMethod(defaults = {"0", "null"}, doc = BuiltinDocs.str_count_doc)
+    final int str_count(String sub, int start, PyObject end) {
+        int[] indices = translateIndices(start, end);
         int n = sub.length();
-        end = end + 1 - n;
-        if (n == 0)
-            return end-start;
-
-        int count=0;
-        while (start < end) {
-            int index = string.indexOf(sub, start);
-            if (index >= end || index == -1)
+        if(n == 0) {
+            if (start > getString().length()) {
+                return 0;
+            }
+            return indices[1] - indices[0] + 1;
+        }
+        int count = 0;
+        while(true){
+            int index = getString().indexOf(sub, indices[0]);
+            indices[0] = index + n;
+            if(indices[0] > indices[1] || index == -1) {
                 break;
+            }
             count++;
-            start = index + n;
         }
         return count;
     }
 
     public int find(String sub) {
-        return str_find(sub);
-    }
-
-    final int str_find(String sub) {
-        return str_find(sub, 0, string.length());
+        return str_find(sub, 0, null);
     }
 
     public int find(String sub, int start) {
-        return str_find(sub, start);
-    }
-
-    final int str_find(String sub, int start) {
-        return str_find(sub, start, string.length());
+        return str_find(sub, start, null);
     }
 
     public int find(String sub, int start, int end) {
-        return str_find(sub, start, end);
+        return str_find(sub, start, Py.newInteger(end));
     }
 
-    final int str_find(String sub, int start, int end) {
-        int n = string.length();
-        if (start < 0)
-            start = n+start;
-        if (end < 0)
-            end = n+end;
-        if (end > n)
-            end = n;
-        if (start > end)
-            start = end;
-        int slen = sub.length();
-        end = end-slen;
-
-        int index = string.indexOf(sub, start);
-        if (index > end)
+    @ExposedMethod(defaults = {"0", "null"}, doc = BuiltinDocs.str_find_doc)
+    final int str_find(String sub, int start, PyObject end) {
+        int[] indices = translateIndices(start, end);
+        int index = getString().indexOf(sub, indices[0]);
+        if (index < start || index > indices[1]) {
             return -1;
+        }
         return index;
     }
 
     public int rfind(String sub) {
-        return str_rfind(sub);
-    }
-
-    final int str_rfind(String sub) {
-        return str_rfind(sub, 0, string.length());
+        return str_rfind(sub, 0, null);
     }
 
     public int rfind(String sub, int start) {
-        return str_rfind(sub, start);
-    }
-
-    final int str_rfind(String sub, int start) {
-        return str_rfind(sub, start, string.length());
+        return str_rfind(sub, start, null);
     }
 
     public int rfind(String sub, int start, int end) {
-        return str_rfind(sub, start, end);
+        return str_rfind(sub, start, Py.newInteger(end));
     }
 
-    final int str_rfind(String sub, int start, int end) {
-        int n = string.length();
-        if (start < 0)
-            start = n+start;
-        if (end < 0)
-            end = n+end;
-        if (end > n)
-            end = n;
-        if (start > end)
-            start = end;
-        int slen = sub.length();
-        end = end-slen;
-
-        int index = string.lastIndexOf(sub, end);
-        if (index < start)
+    @ExposedMethod(defaults = {"0", "null"}, doc = BuiltinDocs.str_rfind_doc)
+    final int str_rfind(String sub, int start, PyObject end) {
+        int[] indices = translateIndices(start, end);
+        int index = getString().lastIndexOf(sub, indices[1] - sub.length());
+        if (index < start) {
             return -1;
+        }
         return index;
     }
 
     public double atof() {
-        StringBuffer s = null;
-        int n = string.length();
+        StringBuilder s = null;
+        int n = getString().length();
         for (int i = 0; i < n; i++) {
-            char ch = string.charAt(i);
+            char ch = getString().charAt(i);
             if (ch == '\u0000') {
                 throw Py.ValueError("null byte in argument for float()");
             }
             if (Character.isDigit(ch)) {
                 if (s == null)
-                    s = new StringBuffer(string);
+                    s = new StringBuilder(getString());
                 int val = Character.digit(ch, 10);
                 s.setCharAt(i, Character.forDigit(val, 10));
             }
         }
-        String sval = string;
+        String sval = getString();
         if (s != null)
             sval = s.toString();
         try {
             // Double.valueOf allows format specifier ("d" or "f") at the end
             String lowSval = sval.toLowerCase();
+            if (lowSval.equals("nan")) return Double.NaN;
+            else if (lowSval.equals("inf")) return Double.POSITIVE_INFINITY;
+            else if (lowSval.equals("-inf")) return Double.NEGATIVE_INFINITY;
+            
             if (lowSval.endsWith("d") || lowSval.endsWith("f")) {
                 throw new NumberFormatException("format specifiers not allowed");
             }
             return Double.valueOf(sval).doubleValue();
         }
         catch (NumberFormatException exc) {
-            throw Py.ValueError("invalid literal for __float__: "+string);
+            throw Py.ValueError("invalid literal for __float__: "+getString());
         }
     }
 
@@ -2848,26 +1571,26 @@ public class PyString extends PyBaseString implements ClassDictInit
         }
 
         int b = 0;
-        int e = string.length();
+        int e = getString().length();
 
-        while (b < e && Character.isWhitespace(string.charAt(b)))
+        while (b < e && Character.isWhitespace(getString().charAt(b)))
             b++;
 
-        while (e > b && Character.isWhitespace(string.charAt(e-1)))
+        while (e > b && Character.isWhitespace(getString().charAt(e-1)))
             e--;
 
         char sign = 0;
         if (b < e) {
-            sign = string.charAt(b);
+            sign = getString().charAt(b);
             if (sign == '-' || sign == '+') {
                 b++;
-                while (b < e && Character.isWhitespace(string.charAt(b))) b++;
+                while (b < e && Character.isWhitespace(getString().charAt(b))) b++;
             }
 
             if (base == 0 || base == 16) {
-                if (string.charAt(b) == '0') {
+                if (getString().charAt(b) == '0') {
                     if (b < e-1 &&
-                           Character.toUpperCase(string.charAt(b+1)) == 'X') {
+                           Character.toUpperCase(getString().charAt(b+1)) == 'X') {
                         base = 16;
                         b += 2;
                     } else {
@@ -2881,23 +1604,24 @@ public class PyString extends PyBaseString implements ClassDictInit
         if (base == 0)
             base = 10;
 
-        String s = string;
-        if (b > 0 || e < string.length())
-            s = string.substring(b, e);
+        String s = getString();
+        if (b > 0 || e < getString().length())
+            s = getString().substring(b, e);
 
         try {
-            long result = Long.parseLong(s, base);
-            if (result < 0 && !(sign == '-' && result == -result))
-                throw Py.ValueError("invalid literal for __int__: "+string);
-            if (sign == '-')
-                result = - result;
-            if (result < Integer.MIN_VALUE || result > Integer.MAX_VALUE)
-                throw Py.ValueError("invalid literal for __int__: "+string);
-            return (int) result;
+            BigInteger bi;
+            if (sign == '-') {
+                bi = new BigInteger("-" + s, base);
+            } else
+                bi = new BigInteger(s, base);
+            if (bi.compareTo(PyInteger.MAX_INT) > 0 || bi.compareTo(PyInteger.MIN_INT) < 0) {
+                throw Py.OverflowError("long int too large to convert to int");
+            }
+            return bi.intValue();
         } catch (NumberFormatException exc) {
-            throw Py.ValueError("invalid literal for __int__: "+string);
+            throw Py.ValueError("invalid literal for int() with base " + base + ": " + getString());
         } catch (StringIndexOutOfBoundsException exc) {
-            throw Py.ValueError("invalid literal for __int__: "+string);
+            throw Py.ValueError("invalid literal for int() with base " + base + ": " + getString());
         }
     }
 
@@ -2906,7 +1630,7 @@ public class PyString extends PyBaseString implements ClassDictInit
     }
 
     public PyLong atol(int base) {
-        String str = string;
+        String str = getString();
         int b = 0;
         int e = str.length();
 
@@ -2915,12 +1639,11 @@ public class PyString extends PyBaseString implements ClassDictInit
 
         while (e > b && Character.isWhitespace(str.charAt(e-1)))
             e--;
-        if (e > b && (str.charAt(e-1) == 'L' || str.charAt(e-1) == 'l'))
-            e--;
+
 
         char sign = 0;
         if (b < e) {
-            sign = string.charAt(b);
+            sign = getString().charAt(b);
             if (sign == '-' || sign == '+') {
                 b++;
                 while (b < e && Character.isWhitespace(str.charAt(b))) b++;
@@ -2928,9 +1651,9 @@ public class PyString extends PyBaseString implements ClassDictInit
 
 
             if (base == 0 || base == 16) {
-                if (string.charAt(b) == '0') {
+                if (getString().charAt(b) == '0') {
                     if (b < e-1 &&
-                           Character.toUpperCase(string.charAt(b+1)) == 'X') {
+                           Character.toUpperCase(getString().charAt(b+1)) == 'X') {
                         base = 16;
                         b += 2;
                     } else {
@@ -2946,9 +1669,13 @@ public class PyString extends PyBaseString implements ClassDictInit
         if (base < 2 || base > 36)
             throw Py.ValueError("invalid base for long literal:" + base);
 
+        // if the base >= 22, then an 'l' or 'L' is a digit!
+        if (base < 22 && e > b && (str.charAt(e-1) == 'L' || str.charAt(e-1) == 'l'))
+            e--;
+        
         if (b > 0 || e < str.length())
             str = str.substring(b, e);
-
+        
         try {
             java.math.BigInteger bi = null;
             if (sign == '-')
@@ -2957,62 +1684,91 @@ public class PyString extends PyBaseString implements ClassDictInit
                 bi = new java.math.BigInteger(str, base);
             return new PyLong(bi);
         } catch (NumberFormatException exc) {
-            throw Py.ValueError("invalid literal for __long__: "+str);
+            if (this instanceof PyUnicode) {
+                // TODO: here's a basic issue: do we use the BigInteger constructor
+                // above, or add an equivalent to CPython's PyUnicode_EncodeDecimal;
+                // we should note that the current error string does not quite match
+                // CPython regardless of the codec, that's going to require some more work
+                throw Py.UnicodeEncodeError("decimal", "codec can't encode character",
+                        0,0, "invalid decimal Unicode string");
+            }
+            else {
+            throw Py.ValueError("invalid literal for long() with base " + base + ": " + getString());
+            }
         } catch (StringIndexOutOfBoundsException exc) {
-            throw Py.ValueError("invalid literal for __long__: "+str);
+            throw Py.ValueError("invalid literal for long() with base " + base + ": " + getString());
         }
     }
 
-
-    private static String spaces(int n) {
+    private static String padding(int n, char pad) {
         char[] chars = new char[n];
         for (int i=0; i<n; i++)
-            chars[i] = ' ';
+            chars[i] = pad;
         return new String(chars);
     }
 
+    private static char parse_fillchar(String function, String fillchar) {
+        if (fillchar == null) { return ' '; }
+        if (fillchar.length() != 1) {
+            throw Py.TypeError(function + "() argument 2 must be char, not str");
+        }
+        return fillchar.charAt(0);
+    }
+    
     public String ljust(int width) {
-        return str_ljust(width);
+        return str_ljust(width, null);
     }
 
-    final String str_ljust(int width) {
-        int n = width-string.length();
+    public String ljust(int width, String padding) {
+        return str_ljust(width, padding);
+    }
+    
+    @ExposedMethod(defaults="null", doc = BuiltinDocs.str_ljust_doc)
+    final String str_ljust(int width, String fillchar) {
+        char pad = parse_fillchar("ljust", fillchar);
+        int n = width-getString().length();
         if (n <= 0)
-            return string;
-        return string+spaces(n);
+            return getString();
+        return getString()+padding(n, pad);
     }
 
     public String rjust(int width) {
-        return str_rjust(width);
+        return str_rjust(width, null);
     }
 
-    final String str_rjust(int width) {
-        int n = width-string.length();
+    @ExposedMethod(defaults="null", doc = BuiltinDocs.str_rjust_doc)
+    final String str_rjust(int width, String fillchar) {
+        char pad = parse_fillchar("rjust", fillchar);
+        int n = width-getString().length();
         if (n <= 0)
-            return string;
-        return spaces(n)+string;
+            return getString();
+        return padding(n, pad)+getString();
     }
 
     public String center(int width) {
-        return str_center(width);
+        return str_center(width, null);
     }
 
-    final String str_center(int width) {
-        int n = width-string.length();
+    @ExposedMethod(defaults="null", doc = BuiltinDocs.str_center_doc)
+    final String str_center(int width, String fillchar) {
+        char pad = parse_fillchar("center", fillchar);
+        int n = width-getString().length();
         if (n <= 0)
-            return string;
+            return getString();
         int half = n/2;
         if (n%2 > 0 &&  width%2 > 0)
             half += 1;
-        return spaces(half)+string+spaces(n-half);
+        
+        return padding(half, pad)+getString()+padding(n-half, pad);
     }
 
     public String zfill(int width) {
         return str_zfill(width);
     }
 
+    @ExposedMethod(doc = BuiltinDocs.str_zfill_doc)
     final String str_zfill(int width) {
-        String s = string;
+        String s = getString();
         int n = s.length();
         if (n >= width)
             return s;
@@ -3037,10 +1793,6 @@ public class PyString extends PyBaseString implements ClassDictInit
     }
 
     public String expandtabs() {
-        return str_expandtabs();
-    }
-
-    final String str_expandtabs() {
         return str_expandtabs(8);
     }
 
@@ -3048,9 +1800,10 @@ public class PyString extends PyBaseString implements ClassDictInit
         return str_expandtabs(tabsize);
     }
 
+    @ExposedMethod(defaults = "8", doc = BuiltinDocs.str_expandtabs_doc)
     final String str_expandtabs(int tabsize) {
-        String s = string;
-        StringBuffer buf = new StringBuffer((int)(s.length()*1.5));
+        String s = getString();
+        StringBuilder buf = new StringBuilder((int)(s.length()*1.5));
         char[] chars = s.toCharArray();
         int n = chars.length;
         int position = 0;
@@ -3078,123 +1831,298 @@ public class PyString extends PyBaseString implements ClassDictInit
         return str_capitalize();
     }
 
+    @ExposedMethod(doc = BuiltinDocs.str_capitalize_doc)
     final String str_capitalize() {
-        if (string.length() == 0)
-            return string;
-        String first = string.substring(0,1).toUpperCase();
-        return first.concat(string.substring(1).toLowerCase());
+        if (getString().length() == 0)
+            return getString();
+        String first = getString().substring(0,1).toUpperCase();
+        return first.concat(getString().substring(1).toLowerCase());
     }
 
-    final PyString str_replace(PyObject oldPiece, PyObject newPiece) {
-        return str_replace(oldPiece, newPiece, string.length());
-    }
-    
-    final PyString str_replace(PyObject oldPiece, PyObject newPiece, int maxsplit) {
-        if(!(oldPiece instanceof PyString) || !(newPiece instanceof PyString)){
+    @ExposedMethod(defaults = "null", doc = BuiltinDocs.str_replace_doc)
+    final PyString str_replace(PyObject oldPiece, PyObject newPiece, PyObject maxsplit) {
+        if(!(oldPiece instanceof PyString) || !(newPiece instanceof PyString)) {
             throw Py.TypeError("str or unicode required for replace");
         }
-        return ((PyString)newPiece).str_join(str_split(((PyString)oldPiece).string, maxsplit));
+
+        return replace((PyString)oldPiece, (PyString)newPiece, maxsplit == null ? -1 : maxsplit.asInt());
     }
-
-    public String join(PyObject seq) {
-        return str_join(seq).string;
-    }
-
-    final PyString str_join(PyObject seq) {
-        StringBuffer buf = new StringBuffer();
-
-        PyObject iter = seq.__iter__();
-        PyObject obj = null;
-        boolean needsUnicode = false;
-        for (int i = 0; (obj = iter.__iternext__()) != null; i++) {
-            if (!(obj instanceof PyString)){
-                 throw Py.TypeError(
-                        "sequence item " + i + ": expected string, " +
-                        obj.safeRepr() + " found");
+    
+    protected PyString replace(PyString oldPiece, PyString newPiece, int maxsplit) {
+        int len = getString().length();
+        int old_len = oldPiece.getString().length();
+        if (len == 0) {
+            if (maxsplit == -1 && old_len == 0) {
+                return createInstance(newPiece.getString(), true);
             }
-            if(obj instanceof PyUnicode){
-                needsUnicode = true;
-            }
-            if (i > 0){
-                buf.append(string);
-            }
-            buf.append(((PyString)obj).string);
+            return createInstance(getString(), true);
         }
-        if(needsUnicode || this instanceof PyUnicode){
-            return new PyUnicode(buf.toString());
+        
+        if (old_len == 0 && newPiece.getString().length() != 0 && maxsplit !=0) {
+            // old="" and new != "", interleave new piece with each char in original, taking in effect maxsplit
+            StringBuilder buffer = new StringBuilder();
+            int i = 0;
+            buffer.append(newPiece.getString());
+            for (; i < len && (i < maxsplit-1 || maxsplit == -1); i++) {
+                buffer.append(getString().charAt(i));
+                buffer.append(newPiece.getString());
+            }
+            buffer.append(getString().substring(i));
+            return createInstance(buffer.toString(), true);
+        }
+       
+        if(maxsplit == -1) {
+            if(old_len == 0) {
+                maxsplit = len + 1;
+            } else {
+                maxsplit = len;
+            }
+        }
+        
+        return newPiece.join(splitfields(oldPiece.getString(), maxsplit));
+    }
+
+    public PyString join(PyObject seq) {
+        return str_join(seq);
+    }
+
+    @ExposedMethod(doc = BuiltinDocs.str_join_doc)
+    final PyString str_join(PyObject obj) {
+        PySequence seq = fastSequence(obj, "");
+        int seqLen = seq.__len__();
+        if (seqLen == 0) {
+            return Py.EmptyString;
+        }
+
+        PyObject item;
+        if (seqLen == 1) {
+            item = seq.pyget(0);
+            if (item.getType() == PyString.TYPE || item.getType() == PyUnicode.TYPE) {
+                return (PyString)item;
+            }
+        }
+
+        // There are at least two things to join, or else we have a subclass of the
+        // builtin types in the sequence. Do a pre-pass to figure out the total amount of
+        // space we'll need, see whether any argument is absurd, and defer to the Unicode
+        // join if appropriate
+        int i = 0;
+        long size = 0;
+        int sepLen = getString().length();
+        for (; i < seqLen; i++) {
+            item = seq.pyget(i);
+            if (!(item instanceof PyString)) {
+                throw Py.TypeError(String.format("sequence item %d: expected string, %.80s found",
+                                                 i, item.getType().fastGetName()));
+            }
+            if (item instanceof PyUnicode) {
+                // Defer to Unicode join. CAUTION: There's no gurantee that the original
+                // sequence can be iterated over again, so we must pass seq here
+                return unicodeJoin(seq);
+            }
+
+            if (i != 0) {
+                size += sepLen;
+            }
+            size += ((PyString) item).getString().length();
+            if (size > Integer.MAX_VALUE) {
+                throw Py.OverflowError("join() result is too long for a Python string");
+            }
+        }
+
+        // Catenate everything
+        StringBuilder buf = new StringBuilder((int)size);
+        for (i = 0; i < seqLen; i++) {
+            item = seq.pyget(i);
+            if (i != 0) {
+                buf.append(getString());
+            }
+            buf.append(((PyString) item).getString());
         }
         return new PyString(buf.toString());
     }
 
+    final PyUnicode unicodeJoin(PyObject obj) {
+        PySequence seq = fastSequence(obj, "");
+        // A codec may be invoked to convert str objects to Unicode, and so it's possible
+        // to call back into Python code during PyUnicode_FromObject(), and so it's
+        // possible for a sick codec to change the size of fseq (if seq is a list).
+        // Therefore we have to keep refetching the size -- can't assume seqlen is
+        // invariant.
+        int seqLen = seq.__len__();
+        // If empty sequence, return u""
+        if (seqLen == 0) {
+            return new PyUnicode();
+        }
 
-    public boolean startswith(String prefix) {
-        return str_startswith(prefix);
+        // If singleton sequence with an exact Unicode, return that
+        PyObject item;
+        if (seqLen == 1) {
+            item = seq.pyget(0);
+            if (item.getType() == PyUnicode.TYPE) {
+                return (PyUnicode)item;
+            }
+        }
+
+        String sep = null;
+        if (seqLen > 1) {
+            if (this instanceof PyUnicode) {
+                sep = getString();
+            } else {
+                sep = ((PyUnicode) decode()).getString();
+                // In case decode()'s codec mutated seq
+                seqLen = seq.__len__();
+            }
+        }
+
+        // At least two items to join, or one that isn't exact Unicode
+        long size = 0;
+        int sepLen = getString().length();
+        StringBuilder buf = new StringBuilder();
+        String itemString;
+        for (int i = 0; i < seqLen; i++) {
+            item = seq.pyget(i);
+            // Convert item to Unicode
+            if (!(item instanceof PyString)) {
+                throw Py.TypeError(String.format("sequence item %d: expected string or Unicode,"
+                                                 + " %.80s found",
+                                                 i, item.getType().fastGetName()));
+            }
+            if (!(item instanceof PyUnicode)) {
+                item = ((PyString)item).decode();
+                // In case decode()'s codec mutated seq
+                seqLen = seq.__len__();
+            }
+            itemString = ((PyUnicode) item).getString();
+
+            if (i != 0) {
+                size += sepLen;
+                buf.append(sep);
+            }
+            size += itemString.length();
+            if (size > Integer.MAX_VALUE) {
+                throw Py.OverflowError("join() result is too long for a Python string");
+            }
+            buf.append(itemString);
+        }
+        return new PyUnicode(buf.toString());
     }
 
-    final boolean str_startswith(String prefix) {
-        return string.startsWith(prefix);
+    public boolean startswith(PyObject prefix) {
+        return str_startswith(prefix, 0, null);
     }
 
-    public boolean startswith(String prefix, int offset) {
-        return str_startswith(prefix, offset);
+    public boolean startswith(PyObject prefix, int offset) {
+        return str_startswith(prefix, offset, null);
     }
 
-    final boolean str_startswith(String prefix, int offset) {
-        return string.startsWith(prefix, offset);
+    public boolean startswith(PyObject prefix, int start, int end) {
+        return str_startswith(prefix, start, Py.newInteger(end));
     }
 
-    public boolean startswith(String prefix, int start, int end) {
-        return str_startswith(prefix, start, end);
+    @ExposedMethod(defaults = {"0", "null"}, doc = BuiltinDocs.str_startswith_doc)
+    final boolean str_startswith(PyObject prefix, int start, PyObject end) {
+        int[] indices = translateIndices(start, end);
+        
+        if (prefix instanceof PyString) {
+        	String strPrefix = ((PyString) prefix).getString();
+            if (indices[1] - indices[0] < strPrefix.length())
+                return false;
+            
+        	return getString().startsWith(strPrefix, indices[0]);
+        } else if (prefix instanceof PyTuple) {
+        	PyObject[] prefixes = ((PyTuple)prefix).getArray();
+        	
+        	for (int i = 0 ; i < prefixes.length ; i++) {
+        		if (!(prefixes[i] instanceof PyString))
+        			throw Py.TypeError("expected a character buffer object");
+
+        		String strPrefix = ((PyString) prefixes[i]).getString();
+                if (indices[1] - indices[0] < strPrefix.length())
+                	continue;
+                
+        		if (getString().startsWith(strPrefix, indices[0]))
+        			return true;
+        	}
+        	return false;
+        } else {
+        	throw Py.TypeError("expected a character buffer object or tuple");
+        }
     }
 
-    final boolean str_startswith(String prefix, int start, int end) {
-        if (start < 0 || start + prefix.length() > string.length())
-            return false;
-        if (end > string.length())
-            end = string.length();
-        String substr = string.substring(start, end);
-        return substr.startsWith(prefix);
+    public boolean endswith(PyObject suffix) {
+        return str_endswith(suffix, 0, null);
     }
 
-    public boolean endswith(String suffix) {
-        return str_endswith(suffix);
+    public boolean endswith(PyObject suffix, int start) {
+        return str_endswith(suffix, start, null);
     }
 
-    final boolean str_endswith(String suffix) {
-        return string.endsWith(suffix);
+    public boolean endswith(PyObject suffix, int start, int end) {
+        return str_endswith(suffix, start, Py.newInteger(end));
     }
 
-    public boolean endswith(String suffix, int start) {
-        return str_endswith(suffix, start);
-    }
+    @ExposedMethod(defaults = {"0", "null"}, doc = BuiltinDocs.str_endswith_doc)
+    final boolean str_endswith(PyObject suffix, int start, PyObject end) {
+        int[] indices = translateIndices(start, end);
 
-    final boolean str_endswith(String suffix, int start) {
-        return str_endswith(suffix, start, string.length());
-    }
+        String substr = getString().substring(indices[0], indices[1]);
+        if (suffix instanceof PyString) {
+	        return substr.endsWith(((PyString) suffix).getString());
+        } else if (suffix instanceof PyTuple) {
+        	PyObject[] suffixes = ((PyTuple)suffix).getArray();
+        	
+        	for (int i = 0 ; i < suffixes.length ; i++) {
+        		if (!(suffixes[i] instanceof PyString))
+        			throw Py.TypeError("expected a character buffer object");
 
-    public boolean endswith(String suffix, int start, int end) {
-        return str_endswith(suffix, start, end);
-    }
+        		if (substr.endsWith(((PyString) suffixes[i]).getString()))
+        			return true;
+        	}
+        	return false;
+        } else {
+        	throw Py.TypeError("expected a character buffer object or tuple");
+        }
+    } 
 
-    final boolean str_endswith(String suffix, int start, int end) {
-        int len = string.length();
-
-        if (start < 0 || start > len || suffix.length() > len)
-            return false;
-
-        end = (end <= len ? end : len);
-        if (end < start)
-            return false;
-
-        String substr = string.substring(start, end);
-        return substr.endsWith(suffix);
+    /**
+     * Turns the possibly negative Python slice start and end into valid indices
+     * into this string.
+     * 
+     * @return a 2 element array of indices into this string describing a
+     *         substring from [0] to [1]. [0] <= [1], [0] >= 0 and [1] <=
+     *         string.length()
+     * 
+     */
+    protected int[] translateIndices(int start, PyObject end) {
+        int iEnd;
+        if(end == null) {
+            iEnd = getString().length();
+        } else {
+            iEnd = end.asInt();
+        }
+        int n = getString().length();
+        if(iEnd < 0) {
+            iEnd = n + iEnd;
+            if(iEnd < 0) {
+                iEnd = 0;
+            }
+        } else if(iEnd > n) {
+            iEnd = n;
+        }
+        if(start < 0) {
+            start = n + start;
+            if(start < 0) {
+                start = 0;
+            }
+        }
+        if(start > iEnd) {
+            start = iEnd;
+        }
+        return new int[] {start, iEnd};
     }
 
     public String translate(String table) {
-        return str_translate(table);
-    }
-
-    final String str_translate(String table) {
         return str_translate(table, null);
     }
 
@@ -3202,14 +2130,15 @@ public class PyString extends PyBaseString implements ClassDictInit
         return str_translate(table, deletechars);
     }
 
+    @ExposedMethod(defaults = "null", doc = BuiltinDocs.str_translate_doc)
     final String str_translate(String table, String deletechars) {
         if (table.length() != 256)
             throw Py.ValueError(
                 "translation table must be 256 characters long");
 
-        StringBuffer buf = new StringBuffer(string.length());
-        for (int i=0; i < string.length(); i++) {
-            char c = string.charAt(i);
+        StringBuilder buf = new StringBuilder(getString().length());
+        for (int i=0; i < getString().length(); i++) {
+            char c = getString().charAt(i);
             if (deletechars != null && deletechars.indexOf(c) >= 0)
                 continue;
             try {
@@ -3225,9 +2154,9 @@ public class PyString extends PyBaseString implements ClassDictInit
 
     //XXX: is this needed?
     public String translate(PyObject table) {
-        StringBuffer v = new StringBuffer(string.length());
-        for (int i=0; i < string.length(); i++) {
-            char ch = string.charAt(i);
+        StringBuilder v = new StringBuilder(getString().length());
+        for (int i=0; i < getString().length(); i++) {
+            char ch = getString().charAt(i);
 
             PyObject w = Py.newInteger(ch);
             PyObject x = table.__finditem__(w);
@@ -3265,16 +2194,17 @@ public class PyString extends PyBaseString implements ClassDictInit
         return str_islower();
     }
 
+    @ExposedMethod(doc = BuiltinDocs.str_islower_doc)
     final boolean str_islower() {
-        int n = string.length();
+        int n = getString().length();
 
         /* Shortcut for single character strings */
         if (n == 1)
-            return Character.isLowerCase(string.charAt(0));
+            return Character.isLowerCase(getString().charAt(0));
 
         boolean cased = false;
         for (int i = 0; i < n; i++) {
-            char ch = string.charAt(i);
+            char ch = getString().charAt(i);
 
             if (Character.isUpperCase(ch) || Character.isTitleCase(ch))
                 return false;
@@ -3288,16 +2218,17 @@ public class PyString extends PyBaseString implements ClassDictInit
         return str_isupper();
     }
 
+    @ExposedMethod(doc = BuiltinDocs.str_isupper_doc)
     final boolean str_isupper() {
-        int n = string.length();
+        int n = getString().length();
 
         /* Shortcut for single character strings */
         if (n == 1)
-            return Character.isUpperCase(string.charAt(0));
+            return Character.isUpperCase(getString().charAt(0));
 
         boolean cased = false;
         for (int i = 0; i < n; i++) {
-            char ch = string.charAt(i);
+            char ch = getString().charAt(i);
 
             if (Character.isLowerCase(ch) || Character.isTitleCase(ch))
                 return false;
@@ -3311,18 +2242,19 @@ public class PyString extends PyBaseString implements ClassDictInit
         return str_isalpha();
     }
 
+    @ExposedMethod(doc = BuiltinDocs.str_isalpha_doc)
     final boolean str_isalpha() {
-        int n = string.length();
+        int n = getString().length();
 
         /* Shortcut for single character strings */
         if (n == 1)
-            return Character.isLetter(string.charAt(0));
+            return Character.isLetter(getString().charAt(0));
 
         if (n == 0)
             return false;
 
         for (int i = 0; i < n; i++) {
-            char ch = string.charAt(i);
+            char ch = getString().charAt(i);
 
             if (!Character.isLetter(ch))
                 return false;
@@ -3334,18 +2266,19 @@ public class PyString extends PyBaseString implements ClassDictInit
         return str_isalnum();
     }
 
+    @ExposedMethod(doc = BuiltinDocs.str_isalnum_doc)
     final boolean str_isalnum() {
-        int n = string.length();
+        int n = getString().length();
 
         /* Shortcut for single character strings */
         if (n == 1)
-            return _isalnum(string.charAt(0));
+            return _isalnum(getString().charAt(0));
 
         if (n == 0)
             return false;
 
         for (int i = 0; i < n; i++) {
-            char ch = string.charAt(i);
+            char ch = getString().charAt(i);
 
             if (!_isalnum(ch))
                 return false;
@@ -3366,12 +2299,13 @@ public class PyString extends PyBaseString implements ClassDictInit
         return str_isdecimal();
     }
 
+    @ExposedMethod(doc = BuiltinDocs.unicode_isdecimal_doc)
     final boolean str_isdecimal() {
-        int n = string.length();
+        int n = getString().length();
 
         /* Shortcut for single character strings */
         if (n == 1) {
-            char ch = string.charAt(0);
+            char ch = getString().charAt(0);
             return _isdecimal(ch);
         }
 
@@ -3379,7 +2313,7 @@ public class PyString extends PyBaseString implements ClassDictInit
             return false;
 
         for (int i = 0; i < n; i++) {
-            char ch = string.charAt(i);
+            char ch = getString().charAt(i);
 
             if (!_isdecimal(ch))
                 return false;
@@ -3396,18 +2330,19 @@ public class PyString extends PyBaseString implements ClassDictInit
         return str_isdigit();
     }
 
+    @ExposedMethod(doc = BuiltinDocs.str_isdigit_doc)
     final boolean str_isdigit() {
-        int n = string.length();
+        int n = getString().length();
 
         /* Shortcut for single character strings */
         if (n == 1)
-            return Character.isDigit(string.charAt(0));
+            return Character.isDigit(getString().charAt(0));
 
         if (n == 0)
             return false;
 
         for (int i = 0; i < n; i++) {
-            char ch = string.charAt(i);
+            char ch = getString().charAt(i);
 
             if (!Character.isDigit(ch))
                 return false;
@@ -3419,18 +2354,19 @@ public class PyString extends PyBaseString implements ClassDictInit
         return str_isnumeric();
     }
 
+    @ExposedMethod(doc = BuiltinDocs.unicode_isnumeric_doc)
     final boolean str_isnumeric() {
-        int n = string.length();
+        int n = getString().length();
 
         /* Shortcut for single character strings */
         if (n == 1)
-            return _isnumeric(string.charAt(0));
+            return _isnumeric(getString().charAt(0));
 
         if (n == 0)
             return false;
 
         for (int i = 0; i < n; i++) {
-            char ch = string.charAt(i);
+            char ch = getString().charAt(i);
             if (!_isnumeric(ch))
                 return false;
         }
@@ -3448,18 +2384,19 @@ public class PyString extends PyBaseString implements ClassDictInit
         return str_istitle();
     }
 
+    @ExposedMethod(doc = BuiltinDocs.str_istitle_doc)
     final boolean str_istitle() {
-        int n = string.length();
+        int n = getString().length();
 
         /* Shortcut for single character strings */
         if (n == 1)
-            return Character.isTitleCase(string.charAt(0)) ||
-                   Character.isUpperCase(string.charAt(0));
+            return Character.isTitleCase(getString().charAt(0)) ||
+                   Character.isUpperCase(getString().charAt(0));
 
         boolean cased = false;
         boolean previous_is_cased = false;
         for (int i = 0; i < n; i++) {
-            char ch = string.charAt(i);
+            char ch = getString().charAt(i);
 
             if (Character.isUpperCase(ch) || Character.isTitleCase(ch)) {
                 if (previous_is_cased)
@@ -3483,18 +2420,19 @@ public class PyString extends PyBaseString implements ClassDictInit
         return str_isspace();
     }
 
+    @ExposedMethod(doc = BuiltinDocs.str_isspace_doc)
     final boolean str_isspace() {
-        int n = string.length();
+        int n = getString().length();
 
         /* Shortcut for single character strings */
         if (n == 1)
-            return Character.isWhitespace(string.charAt(0));
+            return Character.isWhitespace(getString().charAt(0));
 
         if (n == 0)
             return false;
 
         for (int i = 0; i < n; i++) {
-            char ch = string.charAt(i);
+            char ch = getString().charAt(i);
 
             if (!Character.isWhitespace(ch))
                 return false;
@@ -3506,10 +2444,12 @@ public class PyString extends PyBaseString implements ClassDictInit
         return str_isunicode();
     }
 
+    @ExposedMethod(doc = "isunicode is deprecated.")
     final boolean str_isunicode() {
-        int n = string.length();
+        Py.warning(Py.DeprecationWarning, "isunicode is deprecated.");
+        int n = getString().length();
         for (int i = 0; i < n; i++) {
-            char ch = string.charAt(i);
+            char ch = getString().charAt(i);
             if (ch > 255)
                 return true;
         }
@@ -3517,18 +2457,10 @@ public class PyString extends PyBaseString implements ClassDictInit
     }
 
     public String encode() {
-        return str_encode();
-    }
-
-    final String str_encode() {
         return str_encode(null, null);
     }
 
     public String encode(String encoding) {
-        return str_encode(encoding);
-    }
-
-    final String str_encode(String encoding) {
         return str_encode(encoding, null);
     }
 
@@ -3536,44 +2468,73 @@ public class PyString extends PyBaseString implements ClassDictInit
         return str_encode(encoding, errors);
     }
 
+    @ExposedMethod(defaults = {"null", "null"}, doc = BuiltinDocs.str_encode_doc)
     final String str_encode(String encoding, String errors) {
         return codecs.encode(this, encoding, errors);
     }
 
-    public String decode() {
-        return str_decode();
+    public PyObject decode() {
+        return str_decode(null, null);
     }
 
-    final String str_decode() {
-        return str_decode(null, null); // xxx
-    }
-
-    public String decode(String encoding) {
-        return str_decode(encoding);
-    }
-
-    final String str_decode(String encoding) {
+    public PyObject decode(String encoding) {
         return str_decode(encoding, null);
     }
 
-    public String decode(String encoding, String errors) {
+    public PyObject decode(String encoding, String errors) {
         return str_decode(encoding, errors);
     }
 
-    final String str_decode(String encoding, String errors) {
+    @ExposedMethod(defaults = {"null", "null"}, doc = BuiltinDocs.str_decode_doc)
+    final PyObject str_decode(String encoding, String errors) {
         return codecs.decode(this, encoding, errors);
     }
 
     /* arguments' conversion helper */
 
+    @Override
     public String asString(int index) throws PyObject.ConversionException {
-        return string;
+        return getString();
     }
 
+    @Override
+    public String asString() {
+        return getString();
+    }
+
+    @Override
+    public int asInt() {
+        // We have to override asInt/Long/Double because we override __int/long/float__,
+        // but generally don't want implicit atoi conversions for the base types. blah
+        asNumberCheck("__int__", "an integer");
+        return super.asInt();
+    }
+
+    @Override
+    public long asLong() {
+        asNumberCheck("__long__", "an integer");
+        return super.asLong();
+    }
+
+    @Override
+    public double asDouble() {
+        asNumberCheck("__float__", "a float");
+        return super.asDouble();
+    }
+
+    private void asNumberCheck(String methodName, String description) {
+        PyType type = getType();
+        if (type == PyString.TYPE || type == PyUnicode.TYPE || type.lookup(methodName) == null) {
+            throw Py.TypeError(description + " is required");
+        }
+    }
+
+    @Override
     public String asName(int index) throws PyObject.ConversionException {
         return internedString();
     }
 
+    @Override
     protected String unsupportedopMessage(String op, PyObject o2) {
         if (op.equals("+")) {
             return "cannot concatenate ''{1}'' and ''{2}'' objects";
@@ -3586,7 +2547,7 @@ final class StringFormatter
 {
     int index;
     String format;
-    StringBuffer buffer;
+    StringBuilder buffer;
     boolean negative;
     int precision;
     int argIndex;
@@ -3617,7 +2578,7 @@ final class StringFormatter
         index = 0;
         this.format = format;
         this.unicodeCoercion = unicodeCoercion;
-        buffer = new StringBuffer(format.length()+100);
+        buffer = new StringBuilder(format.length()+100);
     }
 
     PyObject getarg() {
@@ -3674,9 +2635,22 @@ final class StringFormatter
         
     }
 
-    private String formatLong(PyString arg, char type, boolean altFlag) {
+    private String formatLong(PyObject arg, char type, boolean altFlag) {
+        PyString argAsString;
+        switch (type) {
+            case 'o':
+                argAsString = arg.__oct__();
+                break;
+            case 'x':
+            case 'X':
+                argAsString = arg.__hex__();
+                break;
+            default:
+                argAsString = arg.__str__();
+                break;
+        }
         checkPrecision("long");
-        String s = arg.toString();
+        String s = argAsString.toString();
         int end = s.length();
         int ptr = 0;
 
@@ -3709,7 +2683,7 @@ final class StringFormatter
             }
         }
         if (precision > numdigits) {
-            StringBuffer buf = new StringBuffer();
+            StringBuilder buf = new StringBuilder();
             for (int i = 0; i < numnondigits; ++i)
                 buf.append(s.charAt(ptr++));
             for (int i = 0; i < precision - numdigits; i++)
@@ -3721,15 +2695,52 @@ final class StringFormatter
             s = s.substring(ptr, end);
 
         switch (type) {
-        case 'x' :
-            s = s.toLowerCase();
+        case 'X' :
+            s = s.toUpperCase();
             break;
         }
         return s;
     }
 
-    private String formatInteger(PyObject arg, int radix, boolean unsigned) {
-        return formatInteger(((PyInteger)arg.__int__()).getValue(), radix, unsigned);
+    /**
+     * Formats arg as an integer, with the specified radix
+     *
+     * type and altFlag are needed to be passed to {@link #formatLong(PyObject, char, boolean)}
+     * in case the result of <code>arg.__int__()</code> is a PyLong.
+     */
+    private String formatInteger(PyObject arg, int radix, boolean unsigned, char type, boolean altFlag) {
+        PyObject argAsInt;
+        if (arg instanceof PyInteger || arg instanceof PyLong) {
+            argAsInt = arg;
+        } else {
+            // use __int__ to get an int (or long)
+            if (arg instanceof PyFloat) {
+                // safe to call __int__:
+                argAsInt = arg.__int__();
+            } else {
+                // Same case noted on formatFloatDecimal:
+                // We can't simply call arg.__int__() because PyString implements
+                // it without exposing it to python (i.e, str instances has no
+                // __int__ attribute). So, we would support strings as arguments
+                // for %d format, which is forbidden by CPython tests (on
+                // test_format.py).
+        try {
+                    argAsInt = arg.__getattr__("__int__").__call__();
+                } catch (PyException e) {
+                    // XXX: Swallow customs AttributeError throws from __float__ methods
+                    // No better alternative for the moment
+                    if (e.match(Py.AttributeError)) {
+            throw Py.TypeError("int argument required");
+        }
+                    throw e;
+        }
+    }
+        }
+        if (argAsInt instanceof PyInteger) {
+            return formatInteger(((PyInteger)argAsInt).getValue(), radix, unsigned);
+        } else { // must be a PyLong (as per __int__ contract)
+            return formatLong(argAsInt, type, altFlag);
+        }
     }
 
     private String formatInteger(long v, int radix, boolean unsigned) {
@@ -3750,13 +2761,17 @@ final class StringFormatter
         return s;
     }
 
-    private String formatFloatDecimal(PyObject arg, boolean truncate) {
-        return formatFloatDecimal(arg.__float__().getValue(), truncate);
+    private double asDouble(PyObject obj) {
+        try {
+            return obj.asDouble();
+        } catch (PyException pye) {
+            throw !pye.match(Py.TypeError) ? pye : Py.TypeError("float argument required");
+        }
     }
 
     private String formatFloatDecimal(double v, boolean truncate) {
         checkPrecision("decimal");
-        java.text.NumberFormat format = java.text.NumberFormat.getInstance(
+        java.text.NumberFormat numberFormat = java.text.NumberFormat.getInstance(
                                            java.util.Locale.US);
         int prec = precision;
         if (prec == -1)
@@ -3765,11 +2780,11 @@ final class StringFormatter
             v = -v;
             negative = true;
         }
-        format.setMaximumFractionDigits(prec);
-        format.setMinimumFractionDigits(truncate ? 0 : prec);
-        format.setGroupingUsed(false);
+        numberFormat.setMaximumFractionDigits(prec);
+        numberFormat.setMinimumFractionDigits(truncate ? 0 : prec);
+        numberFormat.setGroupingUsed(false);
 
-        String ret = format.format(v);
+        String ret = numberFormat.format(v);
 //         System.err.println("formatFloat: "+v+", prec="+prec+", ret="+ret);
 //         if (ret.indexOf('.') == -1) {
 //             return ret+'.';
@@ -3780,8 +2795,8 @@ final class StringFormatter
     private String formatFloatExponential(PyObject arg, char e,
                                          boolean truncate)
     {
-        StringBuffer buf = new StringBuffer();
-        double v = arg.__float__().getValue();
+        StringBuilder buf = new StringBuilder();
+        double v = asDouble(arg);
         boolean isNegative = false;
         if (v < 0) {
             v = -v;
@@ -3789,14 +2804,10 @@ final class StringFormatter
         }
         double power = 0.0;
         if (v > 0)
-            power = ExtraMath.closeFloor(ExtraMath.log10(v));
+            power = ExtraMath.closeFloor(Math.log10(v));
         //System.err.println("formatExp: "+v+", "+power);
         int savePrecision = precision;
-
-        if (truncate)
-            precision = -1;
-        else
-            precision = 3;
+        precision = 2;
 
         String exp = formatInteger((long)power, 10, false);
         if (negative) {
@@ -3804,8 +2815,7 @@ final class StringFormatter
             exp = '-'+exp;
         }
         else {
-            if (!truncate)
-                exp = '+'+exp;
+            exp = '+' + exp;
         }
 
         precision = savePrecision;
@@ -3820,10 +2830,11 @@ final class StringFormatter
         return buf.toString();
     }
 
+    @SuppressWarnings("fallthrough")
     public PyString format(PyObject args) {
         PyObject dict = null;
         this.args = args;
-        boolean needUnicode = false;
+        boolean needUnicode = unicodeCoercion;
         if (args instanceof PyTuple) {
             argIndex = 0;
         } else {
@@ -3856,7 +2867,6 @@ final class StringFormatter
             }
             c = pop();
             if (c == '(') {
-                //System.out.println("( found");
                 if (dict == null)
                     throw Py.TypeError("format requires a mapping");
                 int parens = 1;
@@ -3869,8 +2879,7 @@ final class StringFormatter
                         parens++;
                 }
                 String tmp = format.substring(keyStart, index-1);
-                this.args = dict.__getitem__(new PyString(tmp));
-                //System.out.println("args: "+args+", "+argIndex);
+                this.args = dict.__getitem__(needUnicode ? new PyUnicode(tmp) : new PyString(tmp));
             } else {
                 push();
             }
@@ -3906,7 +2915,6 @@ final class StringFormatter
                 continue;
             }
             PyObject arg = getarg();
-            //System.out.println("args: "+args+", "+argIndex+", "+arg);
             char fill = ' ';
             String string=null;
             negative = false;
@@ -3914,13 +2922,15 @@ final class StringFormatter
                 fill = '0';
             else
                 fill = ' ';
-
             switch(c) {
             case 's':
+                if (arg instanceof PyUnicode) {
+                    needUnicode = true;
+                }
             case 'r':
                 fill = ' ';
                 if (c == 's')
-                    if (unicodeCoercion)
+                    if (needUnicode)
                         string = arg.__unicode__().toString();
                     else
                         string = arg.__str__().toString();
@@ -3929,107 +2939,135 @@ final class StringFormatter
                 if (precision >= 0 && string.length() > precision) {
                     string = string.substring(0, precision);
                 }
-                if (arg instanceof PyUnicode) {
-                    needUnicode = true;
-                }
+
                 break;
             case 'i':
             case 'd':
                 if (arg instanceof PyLong)
-                    string = formatLong(arg.__str__(), c, altFlag);
+                    string = formatLong(arg, c, altFlag);
                 else
-                    string = formatInteger(arg, 10, false);
+                    string = formatInteger(arg, 10, false, c, altFlag);
                 break;
             case 'u':
                 if (arg instanceof PyLong)
-                    string = formatLong(arg.__str__(), c, altFlag);
-                else
-                    string = formatInteger(arg, 10, true);
+                    string = formatLong(arg, c, altFlag);
+                else if (arg instanceof PyInteger || arg instanceof PyFloat)
+                    string = formatInteger(arg, 10, false, c, altFlag);
+                else throw Py.TypeError("int argument required");
                 break;
             case 'o':
                 if (arg instanceof PyLong)
-                    string = formatLong(arg.__oct__(), c, altFlag);
-                else {
-                    string = formatInteger(arg, 8, true);
+                    string = formatLong(arg, c, altFlag);
+                else if (arg instanceof PyInteger || arg instanceof PyFloat) {
+                    string = formatInteger(arg, 8, false, c, altFlag);
                     if (altFlag && string.charAt(0) != '0') {
                         string = "0" + string;
                     }
                 }
+                else throw Py.TypeError("int argument required");
                 break;
             case 'x':
                 if (arg instanceof PyLong)
-                    string = formatLong(arg.__hex__(), c, altFlag);
-                else {
-                    string = formatInteger(arg, 16, true);
+                    string = formatLong(arg, c, altFlag);
+                else if (arg instanceof PyInteger || arg instanceof PyFloat) {
+                    string = formatInteger(arg, 16, false, c, altFlag);
                     string = string.toLowerCase();
                     if (altFlag) {
                         string = "0x" + string;
                     }
                 }
+                else throw Py.TypeError("int argument required");
                 break;
             case 'X':
                 if (arg instanceof PyLong)
-                    string = formatLong(arg.__hex__(), c, altFlag);
-                else {
-                    string = formatInteger(arg, 16, true);
+                    string = formatLong(arg, c, altFlag);
+                else if (arg instanceof PyInteger || arg instanceof PyFloat) {
+                    string = formatInteger(arg, 16, false, c, altFlag);
                     string = string.toUpperCase();
                     if (altFlag) {
                         string = "0X" + string;
                    }
                 }
-
+                else throw Py.TypeError("int argument required");
                 break;
             case 'e':
             case 'E':
                 string = formatFloatExponential(arg, c, false);
                 break;
             case 'f':
-                string = formatFloatDecimal(arg, false);
-//                 if (altFlag && string.indexOf('.') == -1)
-//                     string += '.';
+            case 'F':
+                string = formatFloatDecimal(asDouble(arg), false);
                 break;
             case 'g':
             case 'G':
-                int prec = precision;
-                if (prec == -1)
-                    prec = 6;
-                double v = arg.__float__().getValue();
-                int digits = (int)Math.ceil(ExtraMath.log10(v));
-                if (digits > 0) {
-                    if (digits <= prec) {
-                        precision = prec-digits;
-                        string = formatFloatDecimal(arg, true);
-                    } else {
-                        string = formatFloatExponential(arg, (char)(c-2),
-                                                        true);
+                int origPrecision = precision;
+                if (precision == -1) {
+                    precision = 6;
+                }
+
+                double v = asDouble(arg);
+                int exponent = (int)ExtraMath.closeFloor(Math.log10(Math.abs(v == 0 ? 1 : v)));
+                if (v == Double.POSITIVE_INFINITY) {
+                    string = "inf";
+                } else if (v == Double.NEGATIVE_INFINITY) {
+                    string = "-inf";
+                } else if (exponent >= -4 && exponent < precision) {
+                    precision -= exponent + 1;
+                    string = formatFloatDecimal(v, !altFlag);
+
+                    // XXX: this block may be unnecessary now
+                    if (altFlag && string.indexOf('.') == -1) {
+                        int zpad = origPrecision - string.length();
+                        string += '.';
+                        if (zpad > 0) {
+                            char zeros[] = new char[zpad];
+                            for (int ci=0; ci<zpad; zeros[ci++] = '0')
+                                ;
+                            string += new String(zeros);
+                        }
                     }
                 } else {
-                    string = formatFloatDecimal(arg, true);
-                }
-                if (altFlag && string.indexOf('.') == -1) {
-                    int zpad = prec - string.length();
-                    string += '.';
-                    if (zpad > 0) {
-                        char zeros[] = new char[zpad];
-                        for (int ci=0; ci<zpad; zeros[ci++] = '0')
-                            ;
-                        string += new String(zeros);
-                    }
+                    // Exponential precision is the number of digits after the decimal
+                    // point, whereas 'g' precision is the number of significant digits --
+                    // and expontential always provides one significant digit before the
+                    // decimal point
+                    precision--;
+                    string = formatFloatExponential(arg, (char)(c-2), !altFlag);
                 }
                 break;
             case 'c':
                 fill = ' ';
                 if (arg instanceof PyString) {
                     string = ((PyString)arg).toString();
-                    if (string.length() != 1)
+                    if (string.length() != 1) {
                         throw Py.TypeError("%c requires int or char");
+                    }
                     if (arg instanceof PyUnicode) {
                         needUnicode = true;
                     }
                     break;
                 }
-                char tmp = (char)((PyInteger)arg.__int__()).getValue();
-                string = new Character(tmp).toString();
+                int val;
+                try {
+                    // Explicitly __int__ so we can look for an AttributeError (which is
+                    // less invasive to mask than a TypeError)
+                    val = arg.__int__().asInt();
+                } catch (PyException e){
+                    if (e.match(Py.AttributeError)) {
+                        throw Py.TypeError("%c requires int or char");
+                    }
+                    throw e;
+                }
+                if (!needUnicode) {
+                    if (val < 0) {
+                        throw Py.OverflowError("unsigned byte integer is less than minimum");
+                    } else if (val > 255) {
+                        throw Py.OverflowError("unsigned byte integer is greater than maximum");
+                    }
+                } else if (val < 0 || val > PySystemState.maxunicode) {
+                    throw Py.OverflowError("%c arg not in range(0x110000) (wide Python build)");
+                }
+                string = new String(new int[] {val}, 0, 1);
                 break;
 
             default:
@@ -4096,12 +3134,12 @@ final class StringFormatter
         if (argIndex == -1 ||
             (argIndex >= 0 && args.__finditem__(argIndex) != null))
         {
-            throw Py.TypeError("not all arguments converted");
+            throw Py.TypeError("not all arguments converted during string formatting");
         }
         if (needUnicode) {
-            return new PyUnicode(buffer.toString());
+            return new PyUnicode(buffer);
         }
-        return new PyString(buffer.toString());
+        return new PyString(buffer);
     }
 
 }

@@ -2,6 +2,7 @@
 # regression test for SAX 2.0
 # $Id: test_sax.py,v 1.13 2004/03/20 07:46:04 fdrake Exp $
 
+import urllib
 from xml.sax import handler, make_parser, ContentHandler, \
                     SAXException, SAXReaderNotAvailable, SAXParseException
 try:
@@ -13,7 +14,7 @@ from xml.sax.saxutils import XMLGenerator, escape, unescape, quoteattr, \
                              XMLFilterBase, Location
 from xml.sax.xmlreader import InputSource, AttributesImpl, AttributesNSImpl
 from cStringIO import StringIO
-from test.test_support import verbose, TestFailed, findfile
+from test.test_support import is_jython, verbose, TestFailed, findfile
 
 # ===== Utilities
 
@@ -156,7 +157,7 @@ def test_xmlgen_escaped_content():
 def test_xmlgen_escaped_attr():
     result = StringIO()
     gen = XMLGenerator(result)
-    
+
     gen.startDocument()
     gen.startElement("doc", {"x": unicode("\\u3042", "unicode-escape")})
     gen.endElement("doc")
@@ -318,10 +319,10 @@ def test_expat_dtdhandler():
 ]>
 <doc></doc>'''))
     if len(handler._entities) != 1 or len(handler._entities[0]) != 4:
-	return 0
+        return 0
     name, pubId, sysId, ndata = handler._entities[0]
     if name != 'img' or not pubId is None or not sysId.endswith('expat.gif') or ndata != 'GIF':
-	return 0
+        return 0
     return handler._notations == [("GIF", "-//CompuServe//NOTATION Graphics Interchange Format 89a//EN", None)]
 
 # ===== EntityResolver support
@@ -406,6 +407,29 @@ def test_expat_nsattrs_wattr():
            attrs.getValue((ns_uri, "attr")) == "val" and \
            attrs[(ns_uri, "attr")] == "val"
 
+def test_expat_nsattrs_no_namespace():
+    parser = make_parser()
+    parser.setFeature(handler.feature_namespaces, 1)
+    gather = AttrGatherer()
+    parser.setContentHandler(gather)
+
+    parser.parse(StringIO("<doc attr='val'/>"))
+
+    attrs = gather._attrs
+
+    return attrs.getLength() == 1 and \
+           attrs.getNames() == [(None, "attr")] and \
+           attrs.getQNames() == ["attr"] and \
+           len(attrs) == 1 and \
+           attrs.has_key((None, "attr")) and \
+           attrs.keys() == [(None, "attr")] and \
+           attrs.get((None, "attr")) == "val" and \
+           attrs.get((None, "attr"), 25) == "val" and \
+           attrs.items() == [((None, "attr"), "val")] and \
+           attrs.values() == ["val"] and \
+           attrs.getValue((None, "attr")) == "val" and \
+           attrs[(None, "attr")] == "val"
+
 # ===== InputSource support
 
 xml_test_out = open(findfile("test.xml.out")).read()
@@ -450,8 +474,8 @@ class LocatorTest(XMLGenerator):
         self.location = None
 
     def setDocumentLocator(self, locator):
-	XMLGenerator.setDocumentLocator(self, locator)
-	self.location = Location(self._locator)
+        XMLGenerator.setDocumentLocator(self, locator)
+        self.location = Location(self._locator)
 
 def test_expat_locator_noinfo():
     result = StringIO()
@@ -472,14 +496,15 @@ def test_expat_locator_withinfo():
     parser.setContentHandler(xmlgen)
     testfile = findfile("test.xml")
     parser.parse(testfile)
-    #In Jython, the system id is a URL with forward slashes, and under Windows
-    #findfile returns a path with backslashes, so replace the backslashes with
-    #forward
-    import os
-    if os.name == 'java':
-	testfile = testfile.replace('\\', '/')
+    if is_jython:
+        # In Jython, the system id is a URL with forward slashes, and
+        # under Windows findfile returns a path with backslashes, so
+        # replace the backslashes with forward
+        testfile = testfile.replace('\\', '/')
 
-    return xmlgen.location.getSystemId().endswith(testfile) and \
+    # urllib.quote isn't the exact encoder (e.g. ':' isn't escaped)
+    expected = urllib.quote(testfile).replace('%3A', ':')
+    return xmlgen.location.getSystemId().endswith(expected) and \
            xmlgen.location.getPublicId() is None
 
 
@@ -715,8 +740,8 @@ items = locals().items()
 items.sort()
 for (name, value) in items:
     if name.startswith('test_expat') and java_14:
-	#skip expat tests on java14 since the crimson parser is so crappy
-	continue
+        #skip expat tests on java14 since the crimson parser is so crappy
+        continue
     if name[:5] == "test_":
         confirm(value(), name)
 

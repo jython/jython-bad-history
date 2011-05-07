@@ -1,29 +1,24 @@
 /*
  * Jython Database Specification API 2.0
  *
- * $Id$
  *
  * Copyright (c) 2001 brian zimmer <bzimmer@ziclix.com>
  *
  */
 package com.ziclix.python.sql;
 
-import org.python.core.Py;
-import org.python.core.PyFile;
-import org.python.core.PyLong;
-import org.python.core.PyObject;
-import org.python.core.PyList;
-import org.python.core.PyString;
-
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.lang.reflect.Constructor;
 import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.sql.Blob;
 import java.sql.CallableStatement;
+import java.sql.Clob;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -32,6 +27,11 @@ import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
+
+import org.python.core.Py;
+import org.python.core.PyFile;
+import org.python.core.PyList;
+import org.python.core.PyObject;
 
 /**
  * The DataHandler is responsible mapping the JDBC data type to
@@ -45,12 +45,10 @@ import java.sql.Types;
  * CLOBs and Arrays.
  *
  * @author brian zimmer
- * @author last revised by $Author$
- * @version $Revision$
  */
 public class DataHandler {
 
-    // default size for buffers
+    /** Default size for buffers. */
     private static final int INITIAL_SIZE = 1024 * 4;
 
     private static final String[] SYSTEM_DATAHANDLERS = {
@@ -122,7 +120,13 @@ public class DataHandler {
     public void setJDBCObject(PreparedStatement stmt, int index, PyObject object) throws SQLException {
 
         try {
-            stmt.setObject(index, object.__tojava__(Object.class));
+            Object o = object.__tojava__(Object.class);
+            if (o instanceof BigInteger) {
+                //XXX: This is in here to specifically fix passing a PyLong into Postgresql.
+                stmt.setObject(index, o, Types.BIGINT);
+            } else {
+                stmt.setObject(index, o);
+            }
         } catch (Exception e) {
             SQLException cause = null, ex = new SQLException("error setting index [" + index + "]");
 
@@ -149,8 +153,8 @@ public class DataHandler {
      * @param type the <i>java.sql.Types</i> for which this PyObject should be bound
      * @throws SQLException
      */
-    public void setJDBCObject(PreparedStatement stmt, int index, PyObject object, int type) throws SQLException {
-
+    public void setJDBCObject(PreparedStatement stmt, int index, PyObject object, int type)
+        throws SQLException {
         try {
             if (checkNull(stmt, index, object, type)) {
                 return;
@@ -160,25 +164,22 @@ public class DataHandler {
 
                 case Types.DATE:
                     Date date = (Date) object.__tojava__(Date.class);
-
                     stmt.setDate(index, date);
                     break;
 
                 case Types.TIME:
                     Time time = (Time) object.__tojava__(Time.class);
-
                     stmt.setTime(index, time);
                     break;
 
                 case Types.TIMESTAMP:
                     Timestamp timestamp = (Timestamp) object.__tojava__(Timestamp.class);
-
                     stmt.setTimestamp(index, timestamp);
                     break;
 
                 case Types.LONGVARCHAR:
                     if (object instanceof PyFile) {
-                        object = new PyString(((PyFile) object).read());
+                        object = ((PyFile) object).read();
                     }
 
                     String varchar = (String) object.__tojava__(String.class);
@@ -193,14 +194,15 @@ public class DataHandler {
 
                 default :
                     if (object instanceof PyFile) {
-                        object = new PyString(((PyFile) object).read());
+                        object = ((PyFile) object).read();
                     }
 
                     stmt.setObject(index, object.__tojava__(Object.class), type);
                     break;
             }
         } catch (Exception e) {
-            SQLException cause = null, ex = new SQLException("error setting index [" + index + "], type [" + type + "]");
+            SQLException cause = null, ex = new SQLException("error setting index [" + index
+                                                             + "], type [" + type + "]");
 
             if (e instanceof SQLException) {
                 cause = (SQLException) e;
@@ -209,7 +211,6 @@ public class DataHandler {
             }
 
             ex.setNextException(cause);
-
             throw ex;
         }
     }
@@ -226,55 +227,33 @@ public class DataHandler {
      * @throws SQLException if the type is unmappable
      */
     public PyObject getPyObject(ResultSet set, int col, int type) throws SQLException {
-
         PyObject obj = Py.None;
 
         switch (type) {
 
             case Types.CHAR:
             case Types.VARCHAR:
+            case Java6Types.NCHAR:
+            case Java6Types.NVARCHAR:
                 String string = set.getString(col);
-
-                obj = (string == null) ? Py.None : Py.newString(string);
+                obj = string == null ? Py.None : Py.newUnicode(string);
                 break;
 
             case Types.LONGVARCHAR:
-                InputStream longvarchar = set.getAsciiStream(col);
-
-                if (longvarchar == null) {
-                    obj = Py.None;
-                } else {
-                    try {
-                        longvarchar = new BufferedInputStream(longvarchar);
-
-                        byte[] bytes = DataHandler.read(longvarchar);
-
-                        if (bytes != null) {
-                            obj = Py.newString(PyString.from_bytes(bytes));
-                        }
-                    } finally {
-                        try {
-                            longvarchar.close();
-                        } catch (Throwable t) {}
-                    }
-                }
+            case Java6Types.LONGNVARCHAR:
+                Reader reader = set.getCharacterStream(col);
+                obj = reader == null ? Py.None : Py.newUnicode(read(reader));
                 break;
 
             case Types.NUMERIC:
             case Types.DECIMAL:
-                BigDecimal bd = null;
-
-                try {
-                    bd = set.getBigDecimal(col, set.getMetaData().getPrecision(col));
-                } catch (Throwable t) {
-                    bd = set.getBigDecimal(col, 10);
-                }
-
+                BigDecimal bd = set.getBigDecimal(col);
                 obj = (bd == null) ? Py.None : Py.newFloat(bd.doubleValue());
                 break;
 
             case Types.BIT:
-                obj = set.getBoolean(col) ? Py.One : Py.Zero;
+            case Types.BOOLEAN:
+                obj = set.getBoolean(col) ? Py.True : Py.False;
                 break;
 
             case Types.INTEGER:
@@ -284,7 +263,7 @@ public class DataHandler {
                 break;
 
             case Types.BIGINT:
-                obj = new PyLong(set.getLong(col));
+                obj = Py.newLong(set.getLong(col));
                 break;
 
             case Types.FLOAT:
@@ -297,15 +276,17 @@ public class DataHandler {
                 break;
 
             case Types.TIME:
-                obj = Py.java2py(set.getTime(col));
+                obj = Py.newTime(set.getTime(col));
                 break;
 
             case Types.TIMESTAMP:
-                obj = Py.java2py(set.getTimestamp(col));
+                obj = Py.newDatetime(set.getTimestamp(col));
                 break;
 
             case Types.DATE:
-                obj = Py.java2py(set.getDate(col));
+                Object date = set.getObject(col);
+                // don't newDate mysql YEAR columns
+                obj = date instanceof Date ? Py.newDate((Date)date) : Py.java2py(date);
                 break;
 
             case Types.NULL:
@@ -313,6 +294,7 @@ public class DataHandler {
                 break;
 
             case Types.OTHER:
+            case Types.JAVA_OBJECT:
                 obj = Py.java2py(set.getObject(col));
                 break;
 
@@ -322,14 +304,43 @@ public class DataHandler {
                 obj = Py.java2py(set.getBytes(col));
                 break;
 
-            default :
-                Integer[] vals = {new Integer(col), new Integer(type)};
-                String msg = zxJDBC.getString("errorGettingIndex", vals);
+            case Types.BLOB:
+                Blob blob = set.getBlob(col);
+                obj = blob == null ? Py.None : Py.java2py(read(blob.getBinaryStream()));
+                break;
 
-                throw new SQLException(msg);
+            case Types.CLOB:
+            case Java6Types.NCLOB:
+            case Java6Types.SQLXML:
+                Clob clob = set.getClob(col);
+                obj = clob == null ? Py.None : Py.java2py(read(clob.getCharacterStream()));
+                break;
+                
+            // TODO can we support these?
+            case Types.ARRAY:
+                throw createUnsupportedTypeSQLException("ARRAY", col);
+            case Types.DATALINK:
+                throw createUnsupportedTypeSQLException("DATALINK", col);
+            case Types.DISTINCT:
+                throw createUnsupportedTypeSQLException("DISTINCT", col);
+            case Types.REF:
+                throw createUnsupportedTypeSQLException("REF", col);
+            case Java6Types.ROWID:
+                throw createUnsupportedTypeSQLException("STRUCT", col);
+            case Types.STRUCT:
+                throw createUnsupportedTypeSQLException("STRUCT", col);
+                
+            default :
+                throw createUnsupportedTypeSQLException(new Integer(type), col);
         }
 
-        return (set.wasNull() || (obj == null)) ? Py.None : obj;
+        return set.wasNull() || obj == null ? Py.None : obj;
+    }
+
+    protected final SQLException createUnsupportedTypeSQLException(Object type, int col) {
+        Object[] vals = {type, new Integer(col)};
+        String msg = zxJDBC.getString("unsupportedTypeForColumn", vals);
+        return new SQLException(msg);
     }
 
     /**
@@ -342,7 +353,6 @@ public class DataHandler {
      * @throws SQLException if the type is unmappable
      */
     public PyObject getPyObject(CallableStatement stmt, int col, int type) throws SQLException {
-
         PyObject obj = Py.None;
 
         switch (type) {
@@ -351,19 +361,17 @@ public class DataHandler {
             case Types.VARCHAR:
             case Types.LONGVARCHAR:
                 String string = stmt.getString(col);
-
-                obj = (string == null) ? Py.None : Py.newString(string);
+                obj = (string == null) ? Py.None : Py.newUnicode(string);
                 break;
 
             case Types.NUMERIC:
             case Types.DECIMAL:
-                BigDecimal bd = stmt.getBigDecimal(col, 10);
-
+                BigDecimal bd = stmt.getBigDecimal(col);
                 obj = (bd == null) ? Py.None : Py.newFloat(bd.doubleValue());
                 break;
 
             case Types.BIT:
-                obj = stmt.getBoolean(col) ? Py.One : Py.Zero;
+                obj = stmt.getBoolean(col) ? Py.True : Py.False;
                 break;
 
             case Types.INTEGER:
@@ -373,7 +381,7 @@ public class DataHandler {
                 break;
 
             case Types.BIGINT:
-                obj = new PyLong(stmt.getLong(col));
+                obj = Py.newLong(stmt.getLong(col));
                 break;
 
             case Types.FLOAT:
@@ -386,15 +394,15 @@ public class DataHandler {
                 break;
 
             case Types.TIME:
-                obj = Py.java2py(stmt.getTime(col));
+                obj = Py.newTime(stmt.getTime(col));
                 break;
 
             case Types.TIMESTAMP:
-                obj = Py.java2py(stmt.getTimestamp(col));
+                obj = Py.newDatetime(stmt.getTimestamp(col));
                 break;
 
             case Types.DATE:
-                obj = Py.java2py(stmt.getDate(col));
+                obj = Py.newDate(stmt.getDate(col));
                 break;
 
             case Types.NULL:
@@ -412,13 +420,10 @@ public class DataHandler {
                 break;
 
             default :
-                Integer[] vals = {new Integer(col), new Integer(type)};
-                String msg = zxJDBC.getString("errorGettingIndex", vals);
-
-                throw new SQLException(msg);
+                createUnsupportedTypeSQLException(type, col);
         }
 
-        return (stmt.wasNull() || (obj == null)) ? Py.None : obj;
+        return stmt.wasNull() || obj == null ? Py.None : obj;
     }
 
     /**
@@ -434,7 +439,8 @@ public class DataHandler {
      * @throws SQLException
      *
      */
-    public void registerOut(CallableStatement statement, int index, int colType, int dataType, String dataTypeName) throws SQLException {
+    public void registerOut(CallableStatement statement, int index, int colType, int dataType,
+                            String dataTypeName) throws SQLException {
 
         try {
             statement.registerOutParameter(index, dataType);
@@ -459,7 +465,8 @@ public class DataHandler {
      *
      * @return true if the object is null and was set on the statement, false otherwise
      */
-    public static final boolean checkNull(PreparedStatement stmt, int index, PyObject object, int type) throws SQLException {
+    public static final boolean checkNull(PreparedStatement stmt, int index, PyObject object,
+                                          int type) throws SQLException {
 
         if ((object == null) || (Py.None == object)) {
             stmt.setNull(index, type);
@@ -469,54 +476,57 @@ public class DataHandler {
     }
 
     /**
-     * Since the driver needs to the know the length of all streams,
-     * read it into a byte[] array.
+     * Consume the InputStream into an byte array and close the InputStream.
      *
-     * @return the stream as a byte[]
+     * @return the contents of the InputStream a byte[]
      */
     public static final byte[] read(InputStream stream) {
-
-        int b = -1, read = 0;
-        byte[] results = new byte[INITIAL_SIZE];
+        int size = 0;
+        byte[] buffer = new byte[INITIAL_SIZE];
+        ByteArrayOutputStream baos = new ByteArrayOutputStream(INITIAL_SIZE);
 
         try {
-            while ((b = stream.read()) != -1) {
-                if (results.length < (read + 1)) {
-                    byte[] tmp = results;
-                    results = new byte[results.length * 2];
-                    System.arraycopy(tmp, 0, results, 0, tmp.length);
-                }
-                results[read++] = (byte) b;
+            while ((size = stream.read(buffer)) != -1) {
+                baos.write(buffer, 0, size);
             }
-        } catch (IOException e) {
-            throw zxJDBC.makeException(e);
+        } catch (IOException ioe) {
+            throw zxJDBC.makeException(ioe);
+        } finally {
+            try {
+                stream.close();
+            } catch (IOException ioe) {
+                throw zxJDBC.makeException(ioe);
+            }
         }
 
-        byte[] tmp = results;
-        results = new byte[read];
-        System.arraycopy(tmp, 0, results, 0, read);
-        return results;
+        return baos.toByteArray();
     }
 
     /**
-     * Read all the chars from the Reader into the String.
+     * Consume the Reader into a String and close the Reader.
      *
-     * @return the contents of the Reader in a String
+     * @return the contents of the Reader as a String
      */
-    public static final String read(Reader reader) {
-
-        int c = 0;
-        StringBuffer buffer = new StringBuffer(INITIAL_SIZE);
+    public static String read(Reader reader) {
+        int size = 0;
+        char[] buffer = new char[INITIAL_SIZE];
+        StringBuilder builder = new StringBuilder(INITIAL_SIZE);
 
         try {
-            while ((c = reader.read()) != -1) {
-                buffer.append((char) c);
+            while ((size = reader.read(buffer)) != -1) {
+                builder.append(buffer, 0, size);
             }
-        } catch (IOException e) {
-            throw zxJDBC.makeException(e);
+        } catch (IOException ioe) {
+            throw zxJDBC.makeException(ioe);
+        } finally {
+            try {
+                reader.close();
+            } catch (IOException ioe) {
+                throw zxJDBC.makeException(ioe);
+            }
         }
 
-        return buffer.toString();
+        return builder.toString();
     }
 
     /**
@@ -527,10 +537,10 @@ public class DataHandler {
     public static final DataHandler getSystemDataHandler() {
         DataHandler dh = new DataHandler();
 
-        for (int i = 0; i < SYSTEM_DATAHANDLERS.length; i++) {
+        for (String element : SYSTEM_DATAHANDLERS) {
             try {
-                Class c = Class.forName(SYSTEM_DATAHANDLERS[i]);
-                Constructor cons = c.getConstructor(new Class[]{DataHandler.class});
+                Class<?> c = Class.forName(element);
+                Constructor<?> cons = c.getConstructor(new Class<?>[]{DataHandler.class});
                 dh = (DataHandler) cons.newInstance(new Object[]{dh});
             } catch (Throwable t) {}
         }
@@ -544,14 +554,70 @@ public class DataHandler {
      * @return a list of datahandlers
      */
     public PyObject __chain__() {
-        return new PyList(new PyObject[] { Py.java2py(this) });
+        return new PyList(Py.javas2pys(this));
     }
 
     /**
      * Returns the classname of this datahandler.
      */
+    @Override
     public String toString() {
         return getClass().getName();
     }
+    
+    /**
+     * This interface can be removed as soon as we target java 6
+     */
+    private static interface Java6Types{
+        /**
+         * The constant in the Java programming language, sometimes referred to
+         * as a type code, that identifies the generic SQL type <code>ROWID</code>
+         * 
+         * @since 1.6
+         *
+         */
+        public final static int ROWID = -8;
+
+        /**
+         * The constant in the Java programming language, sometimes referred to
+         * as a type code, that identifies the generic SQL type <code>NCHAR</code>
+         *
+         * @since 1.6
+         */
+        public static final int NCHAR = -15;
+
+        /**
+         * The constant in the Java programming language, sometimes referred to
+         * as a type code, that identifies the generic SQL type <code>NVARCHAR</code>.
+         *
+         * @since 1.6
+         */
+        public static final int NVARCHAR = -9;
+
+        /**
+         * The constant in the Java programming language, sometimes referred to
+         * as a type code, that identifies the generic SQL type <code>LONGNVARCHAR</code>.
+         *
+         * @since 1.6
+         */
+        public static final int LONGNVARCHAR = -16;
+
+        /**
+         * The constant in the Java programming language, sometimes referred to
+         * as a type code, that identifies the generic SQL type <code>NCLOB</code>.
+         *
+         * @since 1.6
+         */
+        public static final int NCLOB = 2011;
+
+        /**
+         * The constant in the Java programming language, sometimes referred to
+         * as a type code, that identifies the generic SQL type <code>XML</code>.
+         *
+         * @since 1.6 
+         */
+        public static final int SQLXML = 2009;
+    }
+    
 }
 

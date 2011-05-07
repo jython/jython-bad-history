@@ -14,7 +14,6 @@ public class InteractiveInterpreter extends PythonInterpreter {
     }
         public InteractiveInterpreter(PyObject locals, PySystemState systemState) {
             super(locals, systemState);
-            cflags = new CompilerFlags();
         }
 
     /**
@@ -40,24 +39,23 @@ public class InteractiveInterpreter extends PythonInterpreter {
      * whether to use sys.ps1 or sys.ps2 to prompt the next line.
      **/
     public boolean runsource(String source) {
-        return runsource(source, "<input>", "single");
+        return runsource(source, "<input>", CompileMode.single);
     }
 
     public boolean runsource(String source, String filename) {
-        return runsource(source, filename, "single");
+        return runsource(source, filename, CompileMode.single);
     }
 
-    public boolean runsource(String source, String filename, String symbol) {
+    public boolean runsource(String source, String filename, CompileMode kind) {
         PyObject code;
         try {
-            code = Py.compile_command_flags(source, filename, symbol, cflags, true);
+            code = Py.compile_command_flags(source, filename, kind, cflags, true);
         } catch (PyException exc) {
-            if (Py.matchException(exc, Py.SyntaxError)) {
+            if (exc.match(Py.SyntaxError)) {
                 // Case 1
                 showexception(exc);
                 return false;
-            } else if (Py.matchException(exc, Py.ValueError) ||
-                       Py.matchException(exc, Py.OverflowError)) {
+            } else if (exc.match(Py.ValueError) || exc.match(Py.OverflowError)) {
                 // Should not print the stack trace, just the error.
                 showexception(exc);
                 return false;
@@ -90,7 +88,7 @@ public class InteractiveInterpreter extends PythonInterpreter {
         try {
             exec(code);
         } catch (PyException exc) {
-            if (Py.matchException(exc, Py.SystemExit)) throw exc;
+            if (exc.match(Py.SystemExit)) throw exc;
             showexception(exc);
         }
     }

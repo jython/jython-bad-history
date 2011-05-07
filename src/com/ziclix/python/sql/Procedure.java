@@ -1,7 +1,6 @@
 /*
  * Jython Database Specification API 2.0
  *
- * $Id$
  *
  * Copyright (c) 2001 brian zimmer <bzimmer@ziclix.com>
  *
@@ -25,8 +24,6 @@ import java.util.BitSet;
  * the appropriate parameters.
  *
  * @author brian zimmer
- * @author last modified by $Author$
- * @version $Revision$
  */
 public class Procedure extends Object {
 
@@ -165,8 +162,8 @@ public class Procedure extends Object {
             if (normal) {
                 statement = cursor.connection.connection.prepareCall(sqlString);
             } else {
-                int t = ((PyInteger)rsType.__int__()).getValue();
-                int c = ((PyInteger)rsConcur.__int__()).getValue();
+                int t = rsType.asInt();
+                int c = rsConcur.asInt();
 
                 statement = cursor.connection.connection.prepareCall(sqlString, t, c);
             }
@@ -202,7 +199,7 @@ public class Procedure extends Object {
         // do nothing with params at the moment
         for (int i = 0, len = this.columns.__len__(), binding = 0; i < len; i++) {
             PyObject column = this.columns.__getitem__(i);
-            int colType = ((PyInteger)column.__getitem__(COLUMN_TYPE).__int__()).getValue();
+            int colType = column.__getitem__(COLUMN_TYPE).asInt();
 
             switch (colType) {
 
@@ -213,7 +210,7 @@ public class Procedure extends Object {
                     PyInteger key = Py.newInteger(binding++);
 
                     if (bindings.__finditem__(key) == null) {
-                        int dataType = ((PyInteger)column.__getitem__(DATA_TYPE).__int__()).getValue();
+                        int dataType = column.__getitem__(DATA_TYPE).asInt();
                         bindings.__setitem__(key, Py.newInteger(dataType));
                     }
 
@@ -256,7 +253,7 @@ public class Procedure extends Object {
         if (this.columns != Py.None) {
             for (int i = 0, len = this.columns.__len__(); i < len; i++) {
                 PyObject column = this.columns.__getitem__(i);
-                int colType = ((PyInteger)column.__getitem__(COLUMN_TYPE).__int__()).getValue();
+                int colType = column.__getitem__(COLUMN_TYPE).asInt();
 
                 switch (colType) {
 
@@ -326,8 +323,8 @@ public class Procedure extends Object {
 
         for (int i = 0, len = this.columns.__len__(); i < len; i++) {
             PyObject column = this.columns.__getitem__(i);
-            int colType = ((PyInteger)column.__getitem__(COLUMN_TYPE).__int__()).getValue();
-            int dataType = ((PyInteger)column.__getitem__(DATA_TYPE).__int__()).getValue();
+            int colType = column.__getitem__(COLUMN_TYPE).asInt();
+            int dataType = column.__getitem__(DATA_TYPE).asInt();
             String dataTypeName = column.__getitem__(DATA_TYPE_NAME).toString();
 
             switch (colType) {

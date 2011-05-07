@@ -1,19 +1,16 @@
 /*
  * Jython Database Specification API 2.0
  *
- * $Id$
  *
  * Copyright (c) 2001 brian zimmer <bzimmer@ziclix.com>
  *
  */
 package com.ziclix.python.sql.handler;
 
+import com.informix.jdbc.IfmxStatement;
+
 import com.ziclix.python.sql.DataHandler;
 import com.ziclix.python.sql.FilterDataHandler;
-import org.python.core.Py;
-import org.python.core.PyFile;
-import org.python.core.PyObject;
-import org.python.core.PyString;
 
 import java.io.InputStream;
 import java.sql.Blob;
@@ -23,12 +20,15 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 
+import org.python.core.Py;
+import org.python.core.PyFile;
+import org.python.core.PyObject;
+import org.python.core.PyString;
+
 /**
  * Informix specific data handling.
  *
  * @author brian zimmer
- * @author last revised by $Author$
- * @version $Revision$
  */
 public class InformixDataHandler extends FilterDataHandler {
 
@@ -48,12 +48,11 @@ public class InformixDataHandler extends FilterDataHandler {
      * @return PyObject
      * @throws SQLException
      */
+    @Override
     public PyObject getRowId(Statement stmt) throws SQLException {
-
-        if (stmt instanceof com.informix.jdbc.IfmxStatement) {
-            return Py.newInteger(((com.informix.jdbc.IfmxStatement) stmt).getSerial());
+        if (stmt instanceof IfmxStatement) {
+            return Py.newInteger(((IfmxStatement) stmt).getSerial());
         }
-
         return super.getRowId(stmt);
     }
 
@@ -66,8 +65,9 @@ public class InformixDataHandler extends FilterDataHandler {
      * @param type
      * @throws SQLException
      */
-    public void setJDBCObject(PreparedStatement stmt, int index, PyObject object, int type) throws SQLException {
-
+    @Override
+    public void setJDBCObject(PreparedStatement stmt, int index, PyObject object, int type)
+        throws SQLException {
         if (DataHandler.checkNull(stmt, index, object, type)) {
             return;
         }
@@ -79,7 +79,7 @@ public class InformixDataHandler extends FilterDataHandler {
                 String varchar;
                 // Ifx driver can't handle the setCharacterStream() method so use setObject() instead
                 if (object instanceof PyFile) {
-                    varchar = ((PyFile) object).read();
+                    varchar = ((PyFile) object).read().toString();
                 } else {
                     varchar = (String) object.__tojava__(String.class);
                 }
@@ -105,9 +105,11 @@ public class InformixDataHandler extends FilterDataHandler {
      * @param object
      * @throws SQLException
      */
-    public void setJDBCObject(PreparedStatement stmt, int index, PyObject object) throws SQLException {
-
-        // there is a bug in the Ifx driver when using setObject() with a String for a prepared statement
+    @Override
+    public void setJDBCObject(PreparedStatement stmt, int index, PyObject object)
+        throws SQLException {
+        // there is a bug in the Ifx driver when using setObject() with a String for a
+        // prepared statement
         if (object instanceof PyString) {
             super.setJDBCObject(stmt, index, object, Types.VARCHAR);
         } else {
@@ -124,6 +126,8 @@ public class InformixDataHandler extends FilterDataHandler {
      * @return the mapped Python object
      * @throws SQLException thrown for a sql exception
      */
+    @SuppressWarnings("fallthrough")
+    @Override
     public PyObject getPyObject(ResultSet set, int col, int type) throws SQLException {
 
         PyObject obj = Py.None;
@@ -132,7 +136,6 @@ public class InformixDataHandler extends FilterDataHandler {
 
             case Types.OTHER:
                 try {
-
                     // informix returns boolean as OTHERs, so let's give that a try
                     obj = set.getBoolean(col) ? Py.One : Py.Zero;
                 } catch (SQLException e) {
@@ -144,33 +147,15 @@ public class InformixDataHandler extends FilterDataHandler {
                 int major = set.getStatement().getConnection().getMetaData().getDriverMajorVersion();
                 int minor = set.getStatement().getConnection().getMetaData().getDriverMinorVersion();
 
-                if ((major <= 2) && (minor <= 11)) {
+                if (major <= 2 && minor <= 11) {
                     Blob blob = set.getBlob(col);
-
-                    if (blob == null) {
-                        obj = Py.None;
-                    } else {
-                        InputStream is = null;
-
-                        try {
-
-                            // the available() bug means we CANNOT buffer this stream
-                            is = blob.getBinaryStream();
-                            obj = Py.java2py(DataHandler.read(is));
-                        } finally {
-                            try {
-                                is.close();
-                            } catch (Exception e) {
-                            }
-                        }
-                    }
-
+                    obj = blob == null ? Py.None : Py.java2py(read(blob.getBinaryStream()));
                     break;
                 }
             default :
                 obj = super.getPyObject(set, col, type);
         }
 
-        return (set.wasNull() || (obj == null)) ? Py.None : obj;
+        return set.wasNull() || obj == null ? Py.None : obj;
     }
 }

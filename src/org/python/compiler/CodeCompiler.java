@@ -1,199 +1,189 @@
 // Copyright (c) Corporation for National Research Initiatives
-
 package org.python.compiler;
 
 import java.io.IOException;
-import java.util.Hashtable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.ListIterator;
+import java.util.Map;
 import java.util.Stack;
 import java.util.Vector;
 
+import org.python.antlr.ParseException;
+import org.python.antlr.PythonTree;
+import org.python.antlr.Visitor;
+import org.python.antlr.ast.Assert;
+import org.python.antlr.ast.Assign;
+import org.python.antlr.ast.Attribute;
+import org.python.antlr.ast.AugAssign;
+import org.python.antlr.ast.BinOp;
+import org.python.antlr.ast.BoolOp;
+import org.python.antlr.ast.Break;
+import org.python.antlr.ast.Call;
+import org.python.antlr.ast.ClassDef;
+import org.python.antlr.ast.Compare;
+import org.python.antlr.ast.Continue;
+import org.python.antlr.ast.Delete;
+import org.python.antlr.ast.Dict;
+import org.python.antlr.ast.Ellipsis;
+import org.python.antlr.ast.ExceptHandler;
+import org.python.antlr.ast.Exec;
+import org.python.antlr.ast.Expr;
+import org.python.antlr.ast.Expression;
+import org.python.antlr.ast.ExtSlice;
+import org.python.antlr.ast.For;
+import org.python.antlr.ast.FunctionDef;
+import org.python.antlr.ast.GeneratorExp;
+import org.python.antlr.ast.Global;
+import org.python.antlr.ast.If;
+import org.python.antlr.ast.IfExp;
+import org.python.antlr.ast.Import;
+import org.python.antlr.ast.ImportFrom;
+import org.python.antlr.ast.Index;
+import org.python.antlr.ast.Interactive;
+import org.python.antlr.ast.Lambda;
+import org.python.antlr.ast.List;
+import org.python.antlr.ast.ListComp;
+import org.python.antlr.ast.Name;
+import org.python.antlr.ast.Num;
+import org.python.antlr.ast.Pass;
+import org.python.antlr.ast.Print;
+import org.python.antlr.ast.Raise;
+import org.python.antlr.ast.Repr;
+import org.python.antlr.ast.Return;
+import org.python.antlr.ast.Slice;
+import org.python.antlr.ast.Str;
+import org.python.antlr.ast.Subscript;
+import org.python.antlr.ast.Suite;
+import org.python.antlr.ast.TryExcept;
+import org.python.antlr.ast.TryFinally;
+import org.python.antlr.ast.Tuple;
+import org.python.antlr.ast.UnaryOp;
+import org.python.antlr.ast.While;
+import org.python.antlr.ast.With;
+import org.python.antlr.ast.Yield;
+import org.python.antlr.ast.alias;
+import org.python.antlr.ast.cmpopType;
+import org.python.antlr.ast.comprehension;
+import org.python.antlr.ast.expr_contextType;
+import org.python.antlr.ast.keyword;
+import org.python.antlr.ast.operatorType;
+import org.python.antlr.base.expr;
+import org.python.antlr.base.mod;
+import org.python.antlr.base.stmt;
 import org.python.core.CompilerFlags;
+import org.python.core.ContextGuard;
+import org.python.core.ContextManager;
+import org.python.core.imp;
+import org.python.core.Py;
+import org.python.core.PyCode;
 import org.python.core.PyComplex;
+import org.python.core.PyDictionary;
+import org.python.core.PyException;
 import org.python.core.PyFloat;
+import org.python.core.PyFrame;
+import org.python.core.PyFunction;
 import org.python.core.PyInteger;
+import org.python.core.PyList;
 import org.python.core.PyLong;
 import org.python.core.PyObject;
-import org.python.parser.ParseException;
-import org.python.parser.SimpleNode;
-import org.python.parser.Visitor;
-import org.python.parser.ast.Assert;
-import org.python.parser.ast.Assign;
-import org.python.parser.ast.Attribute;
-import org.python.parser.ast.AugAssign;
-import org.python.parser.ast.BinOp;
-import org.python.parser.ast.BoolOp;
-import org.python.parser.ast.Break;
-import org.python.parser.ast.Call;
-import org.python.parser.ast.ClassDef;
-import org.python.parser.ast.Compare;
-import org.python.parser.ast.Continue;
-import org.python.parser.ast.Delete;
-import org.python.parser.ast.Dict;
-import org.python.parser.ast.Ellipsis;
-import org.python.parser.ast.Exec;
-import org.python.parser.ast.Expr;
-import org.python.parser.ast.Expression;
-import org.python.parser.ast.ExtSlice;
-import org.python.parser.ast.For;
-import org.python.parser.ast.FunctionDef;
-import org.python.parser.ast.Global;
-import org.python.parser.ast.If;
-import org.python.parser.ast.Import;
-import org.python.parser.ast.ImportFrom;
-import org.python.parser.ast.Index;
-import org.python.parser.ast.Interactive;
-import org.python.parser.ast.Lambda;
-import org.python.parser.ast.List;
-import org.python.parser.ast.ListComp;
-import org.python.parser.ast.Name;
-import org.python.parser.ast.Num;
-import org.python.parser.ast.Pass;
-import org.python.parser.ast.Print;
-import org.python.parser.ast.Raise;
-import org.python.parser.ast.Repr;
-import org.python.parser.ast.Return;
-import org.python.parser.ast.Slice;
-import org.python.parser.ast.Str;
-import org.python.parser.ast.Subscript;
-import org.python.parser.ast.Suite;
-import org.python.parser.ast.TryExcept;
-import org.python.parser.ast.TryFinally;
-import org.python.parser.ast.Tuple;
-import org.python.parser.ast.UnaryOp;
-import org.python.parser.ast.Unicode;
-import org.python.parser.ast.While;
-import org.python.parser.ast.Yield;
-import org.python.parser.ast.excepthandlerType;
-import org.python.parser.ast.exprType;
-import org.python.parser.ast.expr_contextType;
-import org.python.parser.ast.keywordType;
-import org.python.parser.ast.listcompType;
-import org.python.parser.ast.modType;
-import org.python.parser.ast.stmtType;
+import org.python.core.PySlice;
+import org.python.core.PyString;
+import org.python.core.PyTuple;
+import org.python.core.PyUnicode;
+import org.python.core.ThreadState;
+import org.objectweb.asm.Label;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.commons.Method;
+import static org.python.util.CodegenUtils.*;
 
-public class CodeCompiler extends Visitor
-    implements ClassConstants //, PythonGrammarTreeConstants
-{
+public class CodeCompiler extends Visitor implements Opcodes, ClassConstants {
 
-    public static final Object Exit=new Integer(1);
-    public static final Object NoExit=null;
+    private static final Object Exit = new Integer(1);
+    private static final Object NoExit = null;
+    private Module module;
+    private Code code;
+    private CompilerFlags cflags;
+    private int temporary;
+    private expr_contextType augmode;
+    private int augtmp1;
+    private int augtmp2;
+    private int augtmp3;
+    private int augtmp4;
+    private boolean fast_locals, print_results;
+    private Map<String, SymInfo> tbl;
+    private ScopeInfo my_scope;
+    private boolean optimizeGlobals = true;
+    private String className;
+    private Stack<Label> continueLabels, breakLabels;
+    private Stack<ExceptionHandler> exceptionHandlers;
+    private Vector<Label> yields = new Vector<Label>();
 
-    public static final int GET=0;
-    public static final int SET=1;
-    public static final int DEL=2;
-    public static final int AUGGET=3;
-    public static final int AUGSET=4;
-
-    public Module module;
-    public Code code;
-    public ConstantPool pool;
-    public CodeCompiler mrefs;
-    public CompilerFlags cflags;
-
-    int temporary;
-    int augmode;
-    int augtmp1;
-    int augtmp2;
-    int augtmp3;
-    int augtmp4;
-
-    public boolean fast_locals, print_results;
-
-    public Hashtable tbl;
-    public ScopeInfo my_scope;
-
-    boolean optimizeGlobals = true;
-    public Vector names;
-    public String className;
-
-    public Stack continueLabels, breakLabels;
-    public Stack exceptionHandlers;
-    public Vector yields = new Vector();
-
-    /* break/continue finally's level.
-     * This is the lowest level in the exceptionHandlers which should
-     * be executed at break or continue.
-     * It is saved/updated/restored when compiling loops.
-     * A similar level for returns is not needed because a new CodeCompiler
-     * is used for each PyCode, ie. each 'function'.
-     * When returning through finally's all the exceptionHandlers are executed.
+    /*
+     * break/continue finally's level.  This is the lowest level in the
+     * exceptionHandlers which should be executed at break or continue.  It is
+     * saved/updated/restored when compiling loops.  A similar level for
+     * returns is not needed because a new CodeCompiler is used for each
+     * PyCode, in other words: each 'function'.  When returning through
+     * finally's all the exceptionHandlers are executed.
      */
-    public int bcfLevel = 0;
+    private int bcfLevel = 0;
+    private int yield_count = 0;
+    private Stack<String> stack = new Stack<String>();
 
     public CodeCompiler(Module module, boolean print_results) {
         this.module = module;
         this.print_results = print_results;
 
-        mrefs = this;
-        pool = module.classfile.pool;
-
-        continueLabels = new Stack();
-        breakLabels = new Stack();
-        exceptionHandlers = new Stack();
+        continueLabels = new Stack<Label>();
+        breakLabels = new Stack<Label>();
+        exceptionHandlers = new Stack<ExceptionHandler>();
     }
 
-    public int PyNone;
     public void getNone() throws IOException {
-        if (mrefs.PyNone == 0) {
-            mrefs.PyNone = pool.Fieldref("org/python/core/Py", "None",
-                                         $pyObj);
-        }
-        code.getstatic(mrefs.PyNone);
+        code.getstatic(p(Py.class), "None", ci(PyObject.class));
     }
 
     public void loadFrame() throws Exception {
         code.aload(1);
     }
 
-
-    int f_lasti;
+    public void loadThreadState() throws Exception {
+        code.aload(2);
+    }
 
     public void setLastI(int idx) throws Exception {
-        if (mrefs.f_lasti == 0) {
-            mrefs.f_lasti = code.pool.Fieldref(
-                        "org/python/core/PyFrame", "f_lasti", "I");
-        }
         loadFrame();
         code.iconst(idx);
-        code.putfield(mrefs.f_lasti);
+        code.putfield(p(PyFrame.class), "f_lasti", "I");
     }
-    
-    int f_back;
 
     private void loadf_back() throws Exception {
-        if (mrefs.f_back == 0) {
-            mrefs.f_back = code.pool.Fieldref(
-                        "org/python/core/PyFrame", "f_back", $pyFrame);
-        }
-        code.getfield(f_back);
+        code.getfield(p(PyFrame.class), "f_back", ci(PyFrame.class));
     }
 
     public int storeTop() throws Exception {
-        int tmp = code.getLocal("org/python/core/PyObject");
+        int tmp = code.getLocal(p(PyObject.class));
         code.astore(tmp);
         return tmp;
     }
 
-    public int setline;
     public void setline(int line) throws Exception {
-        //System.out.println("line: "+line+", "+code.stack);
         if (module.linenumbers) {
             code.setline(line);
             loadFrame();
             code.iconst(line);
-            if (mrefs.setline == 0) {
-                mrefs.setline = pool.Methodref("org/python/core/PyFrame",
-                                               "setline", "(I)V");
-            }
-            code.invokevirtual(mrefs.setline);
+            code.invokevirtual(p(PyFrame.class), "setline", sig(Void.TYPE, Integer.TYPE));
         }
     }
 
-    public void setline(SimpleNode node) throws Exception {
-        setline(node.beginLine);
+    public void setline(PythonTree node) throws Exception {
+        setline(node.getLine());
     }
 
-    public void set(SimpleNode node) throws Exception {
+    public void set(PythonTree node) throws Exception {
         int tmp = storeTop();
         set(node, tmp);
         code.aconst_null();
@@ -201,208 +191,268 @@ public class CodeCompiler extends Visitor
         code.freeLocal(tmp);
     }
 
-
-    boolean inSet = false;
-    public void set(SimpleNode node, int tmp) throws Exception {
-        //System.out.println("tmp: "+tmp);
-        if (inSet) {
-            System.out.println("recurse set: "+tmp+", "+temporary);
-        }
+    public void set(PythonTree node, int tmp) throws Exception {
         temporary = tmp;
         visit(node);
     }
 
-
-    private void saveAugTmps(SimpleNode node, int count) throws Exception {
+    private void saveAugTmps(PythonTree node, int count) throws Exception {
         if (count >= 4) {
-            augtmp4 = code.getLocal("org/python/core/PyObject");
+            augtmp4 = code.getLocal(ci(PyObject.class));
             code.astore(augtmp4);
         }
         if (count >= 3) {
-            augtmp3 = code.getLocal("org/python/core/PyObject");
+            augtmp3 = code.getLocal(ci(PyObject.class));
             code.astore(augtmp3);
         }
         if (count >= 2) {
-            augtmp2 = code.getLocal("org/python/core/PyObject");
+            augtmp2 = code.getLocal(ci(PyObject.class));
             code.astore(augtmp2);
         }
-        augtmp1 = code.getLocal("org/python/core/PyObject");
+        augtmp1 = code.getLocal(ci(PyObject.class));
         code.astore(augtmp1);
 
         code.aload(augtmp1);
-        if (count >= 2)
+        if (count >= 2) {
             code.aload(augtmp2);
-        if (count >= 3)
+        }
+        if (count >= 3) {
             code.aload(augtmp3);
-        if (count >= 4)
+        }
+        if (count >= 4) {
             code.aload(augtmp4);
+        }
     }
 
+    private void restoreAugTmps(PythonTree node, int count) throws Exception {
+        code.aload(augtmp1);
+        code.freeLocal(augtmp1);
+        if (count == 1) {
+            return;
+        }
+        code.aload(augtmp2);
+        code.freeLocal(augtmp2);
+        if (count == 2) {
+            return;
+        }
+        code.aload(augtmp3);
+        code.freeLocal(augtmp3);
+        if (count == 3) {
+            return;
+        }
+        code.aload(augtmp4);
+        code.freeLocal(augtmp4);
+    }
 
-    private void restoreAugTmps(SimpleNode node, int count) throws Exception {
-       code.aload(augtmp1);
-       code.freeLocal(augtmp1);
-       if (count == 1)
-           return;
-       code.aload(augtmp2);
-       code.freeLocal(augtmp2);
-       if (count == 2)
-           return;
-       code.aload(augtmp3);
-       code.freeLocal(augtmp3);
-       if (count == 3)
-           return;
-       code.aload(augtmp4);
-       code.freeLocal(augtmp4);
-   }
+    static boolean checkOptimizeGlobals(boolean fast_locals, ScopeInfo scope) {
+        return fast_locals && !scope.exec && !scope.from_import_star;
+    }
 
-
-    public void parse(modType node, Code code,
-                      boolean fast_locals, String className,
-                      boolean classBody, ScopeInfo scope, CompilerFlags cflags)
-        throws Exception
-    {
+    void parse(mod node, Code code, boolean fast_locals, String className, Str classDoc,
+               boolean classBody, ScopeInfo scope, CompilerFlags cflags) throws Exception {
         this.fast_locals = fast_locals;
         this.className = className;
         this.code = code;
         this.cflags = cflags;
+        this.my_scope = scope;
+        this.tbl = scope.tbl;
 
-        my_scope = scope;
-        names = scope.names;
+        //BEGIN preparse
+        if (classBody) {
+            // Set the class's __module__ to __name__. fails when there's no __name__
+            loadFrame();
+            code.ldc("__module__");
 
-        tbl = scope.tbl;
-        optimizeGlobals = fast_locals&&!scope.exec&&!scope.from_import_star;
+            loadFrame();
+            code.ldc("__name__");
+            code.invokevirtual(p(PyFrame.class), "getname", sig(PyObject.class, String.class));
+            code.invokevirtual(p(PyFrame.class), "setlocal", sig(Void.TYPE, String.class,
+                                                                 PyObject.class));
+
+            if (classDoc != null) {
+                loadFrame();
+                code.ldc("__doc__");
+                visit(classDoc);
+                code.invokevirtual(p(PyFrame.class), "setlocal", sig(Void.TYPE, String.class,
+                                                                     PyObject.class));
+            }
+        }
+
+        Label genswitch = new Label();
+        if (my_scope.generator) {
+            code.goto_(genswitch);
+        }
+        Label start = new Label();
+        code.label(start);
+
+        int nparamcell = my_scope.jy_paramcells.size();
+        if (nparamcell > 0) {
+            java.util.List<String> paramcells = my_scope.jy_paramcells;
+            for (int i = 0; i < nparamcell; i++) {
+                code.aload(1);
+                SymInfo syminf = tbl.get(paramcells.get(i));
+                code.iconst(syminf.locals_index);
+                code.iconst(syminf.env_index);
+                code.invokevirtual(p(PyFrame.class), "to_cell", sig(Void.TYPE, Integer.TYPE,
+                        Integer.TYPE));
+            }
+        }
+        //END preparse
+
+        optimizeGlobals = checkOptimizeGlobals(fast_locals, my_scope);
+
+        if (my_scope.max_with_count > 0) {
+            // allocate for all the with-exits we will have in the frame;
+            // this allows yield and with to happily co-exist
+            loadFrame();
+            code.iconst(my_scope.max_with_count);
+            code.anewarray(p(PyObject.class));
+            code.putfield(p(PyFrame.class), "f_exits", ci(PyObject[].class));
+        }
 
         Object exit = visit(node);
-        //System.out.println("exit: "+exit+", "+(exit==null));
 
         if (classBody) {
             loadFrame();
-            code.invokevirtual("org/python/core/PyFrame", "getf_locals",
-                               "()" + $pyObj);
+            code.invokevirtual(p(PyFrame.class), "getf_locals", sig(PyObject.class));
             code.areturn();
         } else {
             if (exit == null) {
-                //System.out.println("no exit");
                 setLastI(-1);
 
                 getNone();
                 code.areturn();
             }
         }
+
+        //BEGIN postparse
+
+        // similar to visitResume code in pyasm.py
+        if (my_scope.generator) {
+            code.label(genswitch);
+
+            code.aload(1);
+            code.getfield(p(PyFrame.class), "f_lasti", "I");
+            Label[] y = new Label[yields.size() + 1];
+
+            y[0] = start;
+            for (int i = 1; i < y.length; i++) {
+                y[i] = yields.get(i - 1);
+            }
+            code.tableswitch(0, y.length - 1, start, y);
+        }
+        //END postparse
     }
 
+    @Override
     public Object visitInteractive(Interactive node) throws Exception {
         traverse(node);
         return null;
     }
 
-    public Object visitModule(org.python.parser.ast.Module suite)
-        throws Exception
-    {
-        if (mrefs.setglobal == 0) {
-            mrefs.setglobal = code.pool.Methodref(
-                "org/python/core/PyFrame", "setglobal",
-                "(" +$str + $pyObj + ")V");
-        }
-
-        if (suite.body.length > 0 &&
-            suite.body[0] instanceof Expr &&
-            ((Expr)suite.body[0]).value instanceof Str)
-        {
+    @Override
+    public Object visitModule(org.python.antlr.ast.Module suite) throws Exception {
+        Str docStr = getDocStr(suite.getInternalBody());
+        if (docStr != null) {
             loadFrame();
             code.ldc("__doc__");
-            visit(((Expr) suite.body[0]).value);
-            code.invokevirtual(mrefs.setglobal);
-        }
-        if (module.setFile) {
-            loadFrame();
-            code.ldc("__file__");
-            module.filename.get(code);
-            code.invokevirtual(mrefs.setglobal);
+            visit(docStr);
+            code.invokevirtual(p(PyFrame.class), "setglobal", sig(Void.TYPE, String.class,
+                                                                  PyObject.class));
         }
         traverse(suite);
         return null;
     }
 
+    @Override
     public Object visitExpression(Expression node) throws Exception {
-        if (my_scope.generator && node.body != null) {
+        if (my_scope.generator && node.getInternalBody() != null) {
             module.error("'return' with argument inside generator",
-                         true, node);
+                    true, node);
         }
-        return visitReturn(new Return(node.body, node), true);
+        return visitReturn(new Return(node, node.getInternalBody()), true);
     }
 
-    public int EmptyObjects;
-    public void makeArray(SimpleNode[] nodes) throws Exception {
+    public int makeArray(java.util.List<? extends PythonTree> nodes) throws Exception {
+        // XXX: This should produce an array on the stack (if possible) instead of a local
+        // the caller is responsible for freeing.
         int n;
 
-        if (nodes == null)
+        if (nodes == null) {
             n = 0;
-        else
-            n = nodes.length;
-
-        if (n == 0) {
-            if (mrefs.EmptyObjects == 0) {
-                mrefs.EmptyObjects = code.pool.Fieldref(
-                    "org/python/core/Py", "EmptyObjects", $pyObjArr);
-            }
-            code.getstatic(mrefs.EmptyObjects);
         } else {
-            int tmp = code.getLocal("[org/python/core/PyObject");
-            code.iconst(n);
-            code.anewarray(code.pool.Class("org/python/core/PyObject"));
-            code.astore(tmp);
+            n = nodes.size();
+        }
 
-            for(int i=0; i<n; i++) {
-                code.aload(tmp);
+        int array = code.getLocal(ci(PyObject[].class));
+        if (n == 0) {
+            code.getstatic(p(Py.class), "EmptyObjects", ci(PyObject[].class));
+            code.astore(array);
+        } else {
+            code.iconst(n);
+            code.anewarray(p(PyObject.class));
+            code.astore(array);
+
+            for (int i = 0; i < n; i++) {
+                visit(nodes.get(i));
+                code.aload(array);
+                code.swap();
                 code.iconst(i);
-                visit(nodes[i]);
+                code.swap();
                 code.aastore();
             }
-            code.aload(tmp);
-            code.freeLocal(tmp);
         }
+        return array;
     }
 
-    public void getDocString(stmtType[] suite) throws Exception {
-        //System.out.println("doc: "+suite.getChild(0));
-        if (suite.length > 0 && suite[0] instanceof Expr &&
-            ((Expr) suite[0]).value instanceof Str)
-        {
-            visit(((Expr) suite[0]).value);
-        } else {
-            code.aconst_null();
-        }
+    // nulls out an array of references
+    public void freeArray(int array) {
+        code.aload(array);
+        code.aconst_null();
+        code.invokestatic(p(Arrays.class), "fill", sig(Void.TYPE, Object[].class, Object.class));
+        code.freeLocal(array);
     }
 
-    int getclosure;
+    public void freeArrayRef(int array) {
+        code.aconst_null();
+        code.astore(array);
+        code.freeLocal(array);
+    }
+
+    public Str getDocStr(java.util.List<stmt> suite) {
+        if (suite.size() > 0) {
+            stmt stmt = suite.get(0);
+            if (stmt instanceof Expr && ((Expr) stmt).getInternalValue() instanceof Str) {
+                return (Str) ((Expr) stmt).getInternalValue();
+            }
+        }
+        return null;
+    }
 
     public boolean makeClosure(ScopeInfo scope) throws Exception {
-        if (scope == null || scope.freevars == null) return false;
+        if (scope == null || scope.freevars == null) {
+            return false;
+        }
         int n = scope.freevars.size();
-        if (n == 0) return false;
-
-        if (mrefs.getclosure == 0) {
-            mrefs.getclosure = code.pool.Methodref(
-            "org/python/core/PyFrame", "getclosure", "(I)" + $pyObj);
+        if (n == 0) {
+            return false;
         }
 
-        int tmp = code.getLocal("[org/python/core/PyObject");
+        int tmp = code.getLocal(ci(PyObject[].class));
         code.iconst(n);
-        code.anewarray(code.pool.Class("org/python/core/PyObject"));
+        code.anewarray(p(PyObject.class));
         code.astore(tmp);
-        Hashtable upTbl = scope.up.tbl;
-        for(int i=0; i<n; i++) {
+        Map<String, SymInfo> upTbl = scope.up.tbl;
+        for (int i = 0; i < n; i++) {
             code.aload(tmp);
             code.iconst(i);
             loadFrame();
-            for(int j = 1; j < scope.distance; j++) {
+            for (int j = 1; j < scope.distance; j++) {
                 loadf_back();
             }
-            SymInfo symInfo = (SymInfo)upTbl.get(scope.freevars.elementAt(i));
+            SymInfo symInfo = upTbl.get(scope.freevars.elementAt(i));
             code.iconst(symInfo.env_index);
-            code.invokevirtual(getclosure);
+            code.invokevirtual(p(PyFrame.class), "getclosure", sig(PyObject.class, Integer.TYPE));
             code.aastore();
         }
 
@@ -412,174 +462,161 @@ public class CodeCompiler extends Visitor
         return true;
     }
 
-
-
-    int f_globals, PyFunction_init, PyFunction_closure_init;
-
+    @Override
     public Object visitFunctionDef(FunctionDef node) throws Exception {
-        String name = getName(node.name);
+        String name = getName(node.getInternalName());
 
         setline(node);
-
-        code.new_(code.pool.Class("org/python/core/PyFunction"));
-        code.dup();
-        loadFrame();
-        if (mrefs.f_globals == 0) {
-            mrefs.f_globals = code.pool.Fieldref(
-                "org/python/core/PyFrame", "f_globals", $pyObj);
-        }
-        code.getfield(mrefs.f_globals);
 
         ScopeInfo scope = module.getScopeInfo(node);
 
-        makeArray(scope.ac.getDefaults());
+        // NOTE: this is attached to the constructed PyFunction, so it cannot be nulled out
+        // with freeArray, unlike other usages of makeArray here
+        int defaults = makeArray(scope.ac.getDefaults());
+
+        code.new_(p(PyFunction.class));
+        code.dup();
+        loadFrame();
+        code.getfield(p(PyFrame.class), "f_globals", ci(PyObject.class));
+        code.aload(defaults);
+        code.freeLocal(defaults);
 
         scope.setup_closure();
         scope.dump();
-        module.PyCode(new Suite(node.body, node), name, true,
-                      className, false, false,
-                      node.beginLine, scope, cflags).get(code);
+        module.codeConstant(new Suite(node, node.getInternalBody()), name, true,
+                className, false, false,
+                node.getLine(), scope, cflags).get(code);
 
-        getDocString(node.body);
-
-        if (!makeClosure(scope)) {
-            if (mrefs.PyFunction_init == 0) {
-                mrefs.PyFunction_init = code.pool.Methodref(
-                    "org/python/core/PyFunction", "<init>",
-                    "(" + $pyObj + $pyObjArr + $pyCode + $pyObj + ")V");
-            }
-            code.invokespecial(mrefs.PyFunction_init);
+        Str docStr = getDocStr(node.getInternalBody());
+        if (docStr != null) {
+            visit(docStr);
         } else {
-            if (mrefs.PyFunction_closure_init == 0) {
-                mrefs.PyFunction_closure_init = code.pool.Methodref(
-                    "org/python/core/PyFunction", "<init>",
-                    "(" + $pyObj + $pyObjArr + $pyCode + $pyObj + $pyObjArr +
-                    ")V");
-            }
-            code.invokespecial(mrefs.PyFunction_closure_init);
-
+            code.aconst_null();
         }
 
-        set(new Name(node.name, Name.Store, node));
+        if (!makeClosure(scope)) {
+            code.invokespecial(p(PyFunction.class), "<init>", sig(Void.TYPE, PyObject.class,
+                    PyObject[].class, PyCode.class, PyObject.class));
+        } else {
+            code.invokespecial(p(PyFunction.class), "<init>", sig(Void.TYPE, PyObject.class,
+                    PyObject[].class, PyCode.class, PyObject.class, PyObject[].class));
+        }
+
+        applyDecorators(node.getInternalDecorator_list());
+
+        set(new Name(node, node.getInternalName(), expr_contextType.Store));
         return null;
     }
 
-    public int printResult;
+    private void applyDecorators(java.util.List<expr> decorators) throws Exception {
+        if (decorators != null && !decorators.isEmpty()) {
+            int res = storeTop();
+            for (expr decorator : decorators) {
+                visit(decorator);
+                stackProduce();
+            }
+            for (int i = decorators.size(); i > 0; i--) {
+                stackConsume();
+                loadThreadState();
+                code.aload(res);
+                code.invokevirtual(p(PyObject.class), "__call__", sig(PyObject.class,
+                        ThreadState.class, PyObject.class));
+                code.astore(res);
+            }
+            code.aload(res);
+            code.freeLocal(res);
+        }
+    }
 
+    @Override
     public Object visitExpr(Expr node) throws Exception {
         setline(node);
-        visit(node.value);
+        visit(node.getInternalValue());
 
         if (print_results) {
-            if (mrefs.printResult == 0) {
-                mrefs.printResult = code.pool.Methodref(
-                    "org/python/core/Py",
-                    "printResult", "(" + $pyObj + ")V");
-            }
-            code.invokestatic(mrefs.printResult);
+            code.invokestatic(p(Py.class), "printResult", sig(Void.TYPE, PyObject.class));
         } else {
             code.pop();
         }
         return null;
     }
 
-    public Object visitAssign(Assign node) throws Exception  {
+    @Override
+    public Object visitAssign(Assign node) throws Exception {
         setline(node);
-        visit(node.value);
-        if (node.targets.length == 1) {
-            set(node.targets[0]);
-            return null;
+        visit(node.getInternalValue());
+        if (node.getInternalTargets().size() == 1) {
+            set(node.getInternalTargets().get(0));
+        } else {
+            int tmp = storeTop();
+            for (expr target : node.getInternalTargets()) {
+                set(target, tmp);
+            }
+            code.freeLocal(tmp);
         }
-        int tmp = storeTop();
-        for (int i=node.targets.length-1; i>=0; i--) {
-            set(node.targets[i], tmp);
-        }
-        code.freeLocal(tmp);
         return null;
     }
 
-    public int print1, print2, print3, print4, print5, print6;
-
+    @Override
     public Object visitPrint(Print node) throws Exception {
         setline(node);
         int tmp = -1;
-        int printcomma, printlnv, println;
 
-        if (node.dest != null) {
-            visit(node.dest);
+        if (node.getInternalDest() != null) {
+            visit(node.getInternalDest());
             tmp = storeTop();
-            if (mrefs.print4 == 0) {
-                mrefs.print4 = pool.Methodref(
-                    "org/python/core/Py", "printComma",
-                    "(" + $pyObj + $pyObj + ")V");
-            }
-            printcomma = mrefs.print4;
-            if (mrefs.print5 == 0) {
-                mrefs.print5 = pool.Methodref(
-                    "org/python/core/Py", "println",
-                    "(" + $pyObj + $pyObj + ")V");
-            }
-            println = mrefs.print5;
-            if (mrefs.print6 == 0) {
-                mrefs.print6 = pool.Methodref(
-                    "org/python/core/Py", "printlnv",
-                    "(" + $pyObj + ")V");
-            }
-            printlnv = mrefs.print6;
         }
-        else {
-            if (mrefs.print1 == 0) {
-                mrefs.print1 = pool.Methodref(
-                    "org/python/core/Py", "printComma",
-                    "(" + $pyObj + ")V");
-            }
-            printcomma = mrefs.print1;
-            if (mrefs.print2 == 0) {
-                mrefs.print2 = pool.Methodref(
-                    "org/python/core/Py", "println",
-                    "(" + $pyObj + ")V");
-            }
-            println = mrefs.print2;
-            if (mrefs.print3 == 0) {
-                mrefs.print3 = pool.Methodref(
-                    "org/python/core/Py",
-                    "println", "()V");
-            }
-            printlnv = mrefs.print3;
-        }
-
-        if (node.values == null || node.values.length == 0) {
-            if (node.dest != null)
+        if (node.getInternalValues() == null || node.getInternalValues().size() == 0) {
+            if (node.getInternalDest() != null) {
                 code.aload(tmp);
-            code.invokestatic(printlnv);
+                code.invokestatic(p(Py.class), "printlnv", sig(Void.TYPE, PyObject.class));
+            } else {
+                code.invokestatic(p(Py.class), "println", sig(Void.TYPE));
+            }
         } else {
-            for (int i = 0; i < node.values.length; i++) {
-                if (node.dest != null)
+            for (int i = 0; i < node.getInternalValues().size(); i++) {
+                if (node.getInternalDest() != null) {
                     code.aload(tmp);
-                visit(node.values[i]);
-                if (node.nl && i == node.values.length - 1) {
-                    code.invokestatic(println);
+                    visit(node.getInternalValues().get(i));
+                    if (node.getInternalNl() && i == node.getInternalValues().size() - 1) {
+                        code.invokestatic(p(Py.class), "println", sig(Void.TYPE, PyObject.class,
+                                PyObject.class));
+                    } else {
+                        code.invokestatic(p(Py.class), "printComma", sig(Void.TYPE, PyObject.class,
+                                PyObject.class));
+                    }
                 } else {
-                    code.invokestatic(printcomma);
+                    visit(node.getInternalValues().get(i));
+                    if (node.getInternalNl() && i == node.getInternalValues().size() - 1) {
+                        code.invokestatic(p(Py.class), "println", sig(Void.TYPE, PyObject.class));
+                    } else {
+                        code.invokestatic(p(Py.class), "printComma", sig(Void.TYPE,
+                                PyObject.class));
+                    }
+
                 }
             }
         }
-        if (node.dest != null)
+        if (node.getInternalDest() != null) {
             code.freeLocal(tmp);
+        }
         return null;
     }
 
+    @Override
     public Object visitDelete(Delete node) throws Exception {
         setline(node);
         traverse(node);
         return null;
     }
 
+    @Override
     public Object visitPass(Pass node) throws Exception {
         setline(node);
         return null;
     }
 
+    @Override
     public Object visitBreak(Break node) throws Exception {
         //setline(node); Not needed here...
         if (breakLabels.empty()) {
@@ -588,10 +625,11 @@ public class CodeCompiler extends Visitor
 
         doFinallysDownTo(bcfLevel);
 
-        code.goto_((Label)breakLabels.peek());
+        code.goto_(breakLabels.peek());
         return null;
     }
 
+    @Override
     public Object visitContinue(Continue node) throws Exception {
         //setline(node); Not needed here...
         if (continueLabels.empty()) {
@@ -600,72 +638,137 @@ public class CodeCompiler extends Visitor
 
         doFinallysDownTo(bcfLevel);
 
-        code.goto_((Label)continueLabels.peek());
+        code.goto_(continueLabels.peek());
         return Exit;
     }
 
-    int yield_count = 0;
-
-    int f_savedlocals;
-
+    @Override
     public Object visitYield(Yield node) throws Exception {
         setline(node);
         if (!fast_locals) {
             throw new ParseException("'yield' outside function", node);
         }
 
-        if (inFinallyBody()) {
-            throw new ParseException("'yield' not allowed in a 'try' "+
-                                     "block with a 'finally' clause", node);
+        int stackState = saveStack();
+
+        if (node.getInternalValue() != null) {
+            visit(node.getInternalValue());
+        } else {
+            getNone();
         }
 
-        saveLocals();
-        visit(node.value);
         setLastI(++yield_count);
+
+        saveLocals();
         code.areturn();
 
-        Label restart = code.getLabel();
+        Label restart = new Label();
         yields.addElement(restart);
-        restart.setPosition();
+        code.label(restart);
         restoreLocals();
+        restoreStack(stackState);
+
+        loadFrame();
+        code.invokevirtual(p(PyFrame.class), "getGeneratorInput", sig(Object.class));
+        code.dup();
+        code.instanceof_(p(PyException.class));
+        Label done2 = new Label();
+        code.ifeq(done2);
+        code.checkcast(p(Throwable.class));
+        code.athrow();
+        code.label(done2);
+        code.checkcast(p(PyObject.class));
+
         return null;
     }
 
-    private boolean inFinallyBody() {
-        for (int i = 0; i < exceptionHandlers.size(); ++i) {
-            ExceptionHandler handler = 
-                (ExceptionHandler)exceptionHandlers.elementAt(i);
-            if (handler.isFinallyHandler()) {
-                return true;
-            }
-        }
-        return false;
+    private void stackProduce() {
+        stackProduce(p(PyObject.class));
     }
- 
+
+    private void stackProduce(String signature) {
+        stack.push(signature);
+    }
+
+    private void stackConsume() {
+        stackConsume(1);
+    }
+
+    private void stackConsume(int numItems) {
+        for (int i = 0; i < numItems; i++) {
+            stack.pop();
+        }
+    }
+
+    private int saveStack() throws Exception {
+        if (stack.size() > 0) {
+            int array = code.getLocal(ci(Object[].class));
+            code.iconst(stack.size());
+            code.anewarray(p(Object.class));
+            code.astore(array);
+            ListIterator<String> content = stack.listIterator(stack.size());
+            for (int i = 0; content.hasPrevious(); i++) {
+                String signature = content.previous();
+                if (p(ThreadState.class).equals(signature)) {
+                    // Stack: ... threadstate
+                    code.pop();
+                    // Stack: ...
+                } else {
+                    code.aload(array);
+                    // Stack: |- ... value array
+                    code.swap();
+                    code.iconst(i++);
+                    code.swap();
+                    // Stack: |- ... array index value
+                    code.aastore();
+                    // Stack: |- ...
+                }
+            }
+            return array;
+        } else {
+            return -1;
+        }
+    }
+
+    private void restoreStack(int array) throws Exception {
+        if (stack.size() > 0) {
+            int i = stack.size() - 1;
+            for (String signature : stack) {
+                if (p(ThreadState.class).equals(signature)) {
+                    loadThreadState();
+                } else {
+                    code.aload(array);
+                    // Stack: |- ... array
+                    code.iconst(i--);
+                    code.aaload();
+                    // Stack: |- ... value
+                    code.checkcast(signature);
+                }
+            }
+            code.freeLocal(array);
+        }
+    }
+
     private void restoreLocals() throws Exception {
         endExceptionHandlers();
 
-        Vector v = code.getActiveLocals();
+        Vector<String> v = code.getActiveLocals();
 
         loadFrame();
-        if (mrefs.f_savedlocals == 0) {
-            mrefs.f_savedlocals = code.pool.Fieldref(
-                    "org/python/core/PyFrame", "f_savedlocals",
-                    "[Ljava/lang/Object;");
-        }
-        code.getfield(mrefs.f_savedlocals);
+        code.getfield(p(PyFrame.class), "f_savedlocals", ci(Object[].class));
 
-        int locals = code.getLocal("[java/lang/Object");
+        int locals = code.getLocal(ci(Object[].class));
         code.astore(locals);
 
         for (int i = 0; i < v.size(); i++) {
-            String type = (String) v.elementAt(i);
-            if (type == null)
+            String type = v.elementAt(i);
+            if (type == null) {
                 continue;
+            }
             code.aload(locals);
             code.iconst(i);
             code.aaload();
-            code.checkcast(code.pool.Class(type));
+            code.checkcast(type);
             code.astore(i);
         }
         code.freeLocal(locals);
@@ -680,62 +783,54 @@ public class CodeCompiler extends Visitor
      *  variables without the verifier thinking we might jump out of our
      *  handling with an exception.
      */
-    private void endExceptionHandlers()
-    {
-        Label end = code.getLabelAtPosition();
+    private void endExceptionHandlers() {
+        Label end = new Label();
+        code.label(end);
         for (int i = 0; i < exceptionHandlers.size(); ++i) {
-            ExceptionHandler handler = 
-                (ExceptionHandler)exceptionHandlers.elementAt(i);
+            ExceptionHandler handler = exceptionHandlers.elementAt(i);
             handler.exceptionEnds.addElement(end);
         }
     }
 
-    private void restartExceptionHandlers()
-    {
-        Label start = code.getLabelAtPosition();
+    private void restartExceptionHandlers() {
+        Label start = new Label();
+        code.label(start);
         for (int i = 0; i < exceptionHandlers.size(); ++i) {
-            ExceptionHandler handler = 
-                (ExceptionHandler)exceptionHandlers.elementAt(i);
+            ExceptionHandler handler = exceptionHandlers.elementAt(i);
             handler.exceptionStarts.addElement(start);
         }
     }
 
     private void saveLocals() throws Exception {
-        Vector v = code.getActiveLocals();
-//System.out.println("bs:" + bs);
+        Vector<String> v = code.getActiveLocals();
         code.iconst(v.size());
-        //code.anewarray(code.pool.Class("org/python/core/PyObject"));
-        code.anewarray(code.pool.Class("java/lang/Object"));
-        int locals = code.getLocal("[java/lang/Object");
+        code.anewarray(p(Object.class));
+        int locals = code.getLocal(ci(Object[].class));
         code.astore(locals);
 
         for (int i = 0; i < v.size(); i++) {
-            String type = (String) v.elementAt(i);
-            if (type == null)
+            String type = v.elementAt(i);
+            if (type == null) {
                 continue;
+            }
             code.aload(locals);
             code.iconst(i);
-            //code.checkcast(code.pool.Class("java/lang/Object"));
+            //code.checkcast(code.pool.Class(p(Object.class)));
             if (i == 2222) {
                 code.aconst_null();
-            } else
+            } else {
                 code.aload(i);
+            }
             code.aastore();
-        }
-
-        if (mrefs.f_savedlocals == 0) {
-            mrefs.f_savedlocals = code.pool.Fieldref(
-                    "org/python/core/PyFrame", "f_savedlocals",
-                    "[Ljava/lang/Object;");
         }
 
         loadFrame();
         code.aload(locals);
-        code.putfield(mrefs.f_savedlocals);
+        code.putfield(p(PyFrame.class), "f_savedlocals", ci(Object[].class));
         code.freeLocal(locals);
     }
 
-
+    @Override
     public Object visitReturn(Return node) throws Exception {
         return visitReturn(node, false);
     }
@@ -746,11 +841,12 @@ public class CodeCompiler extends Visitor
             throw new ParseException("'return' outside function", node);
         }
         int tmp = 0;
-        if (node.value != null) {
-            if (my_scope.generator)
+        if (node.getInternalValue() != null) {
+            if (my_scope.generator) {
                 throw new ParseException("'return' with argument " +
-                                         "inside generator", node);
-            visit(node.value);
+                        "inside generator", node);
+            }
+            visit(node.getInternalValue());
             tmp = code.getReturnLocal();
             code.astore(tmp);
         }
@@ -758,7 +854,7 @@ public class CodeCompiler extends Visitor
 
         setLastI(-1);
 
-        if (node.value != null) {
+        if (node.getInternalValue() != null) {
             code.aload(tmp);
         } else {
             getNone();
@@ -767,258 +863,290 @@ public class CodeCompiler extends Visitor
         return Exit;
     }
 
-    public int makeException0, makeException1, makeException2, makeException3;
-
+    @Override
     public Object visitRaise(Raise node) throws Exception {
         setline(node);
-        traverse(node);
-        if (node.type == null) {
-            if (mrefs.makeException0 == 0) {
-                mrefs.makeException0 = code.pool.Methodref(
-                    "org/python/core/Py", "makeException",
-                    "()" + $pyExc);
-            }
-            code.invokestatic(mrefs.makeException0);
-        } else if (node.inst == null) {
-            if (mrefs.makeException1 == 0) {
-                mrefs.makeException1 = code.pool.Methodref(
-                    "org/python/core/Py", "makeException",
-                    "(" + $pyObj + ")" + $pyExc);
-            }
-            code.invokestatic(mrefs.makeException1);
-        } else if (node.tback == null) {
-            if (mrefs.makeException2 == 0) {
-                mrefs.makeException2 = code.pool.Methodref(
-                    "org/python/core/Py", "makeException",
-                    "(" + $pyObj + $pyObj + ")" + $pyExc);
-            }
-            code.invokestatic(mrefs.makeException2);
+        if (node.getInternalType() != null) {
+            visit(node.getInternalType());
+            stackProduce();
+        }
+        if (node.getInternalInst() != null) {
+            visit(node.getInternalInst());
+            stackProduce();
+        }
+        if (node.getInternalTback() != null) {
+            visit(node.getInternalTback());
+            stackProduce();
+        }
+        if (node.getInternalType() == null) {
+            code.invokestatic(p(Py.class), "makeException", sig(PyException.class));
+        } else if (node.getInternalInst() == null) {
+            stackConsume();
+            code.invokestatic(p(Py.class), "makeException", sig(PyException.class, PyObject.class));
+        } else if (node.getInternalTback() == null) {
+            stackConsume(2);
+            code.invokestatic(p(Py.class), "makeException", sig(PyException.class, PyObject.class,
+                    PyObject.class));
         } else {
-            if (mrefs.makeException3 == 0) {
-                mrefs.makeException3 = code.pool.Methodref(
-                    "org/python/core/Py", "makeException",
-                    "(" + $pyObj + $pyObj + $pyObj + ")" + $pyExc);
-            }
-            code.invokestatic(mrefs.makeException3);
+            stackConsume(3);
+            code.invokestatic(p(Py.class), "makeException", sig(PyException.class, PyObject.class,
+                    PyObject.class, PyObject.class));
         }
         code.athrow();
         return Exit;
     }
 
-    public int importOne, importOneAs;
-
+    /**
+     * Push the import level <code>0</code> or <code>-1</code>. 
+     */
+    private void defaultImportLevel() {
+    	// already prepared for a future change of DEFAULT_LEVEL
+        if (module.getFutures().isAbsoluteImportOn() || imp.DEFAULT_LEVEL == 0) {
+            code.iconst_0();
+        } else {
+            code.iconst_m1();
+        }    	
+    }
+    
+    @Override
     public Object visitImport(Import node) throws Exception {
         setline(node);
-        for (int i = 0; i < node.names.length; i++) {
+        for (alias a : node.getInternalNames()) {
             String asname = null;
-            if (node.names[i].asname != null) {
-                String name = node.names[i].name;
-                asname = node.names[i].asname;
+            if (a.getInternalAsname() != null) {
+                String name = a.getInternalName();
+                asname = a.getInternalAsname();
                 code.ldc(name);
                 loadFrame();
-                if (mrefs.importOneAs == 0) {
-                     mrefs.importOneAs = code.pool.Methodref(
-                        "org/python/core/imp", "importOneAs",
-                        "(" + $str + $pyFrame + ")" + $pyObj);
-                }
-                code.invokestatic(mrefs.importOneAs);
+                defaultImportLevel();
+                code.invokestatic(p(imp.class), "importOneAs", sig(PyObject.class, String.class,
+                        PyFrame.class, Integer.TYPE));
             } else {
-                String name = node.names[i].name;
+                String name = a.getInternalName();
                 asname = name;
-                if (asname.indexOf('.') > 0)
+                if (asname.indexOf('.') > 0) {
                     asname = asname.substring(0, asname.indexOf('.'));
+                }
                 code.ldc(name);
                 loadFrame();
-                if (mrefs.importOne == 0) {
-                    mrefs.importOne = code.pool.Methodref(
-                        "org/python/core/imp", "importOne",
-                        "(" + $str + $pyFrame + ")" + $pyObj);
-                }
-                code.invokestatic(mrefs.importOne);
+                defaultImportLevel();
+                code.invokestatic(p(imp.class), "importOne", sig(PyObject.class, String.class,
+                        PyFrame.class, Integer.TYPE));
             }
-            set(new Name(asname, Name.Store, node));
+            set(new Name(a, asname, expr_contextType.Store));
         }
         return null;
     }
 
-
-    public int importAll, importFrom;
-
+    @Override
     public Object visitImportFrom(ImportFrom node) throws Exception {
         Future.checkFromFuture(node); // future stmt support
         setline(node);
-        code.ldc(node.module);
-        if (node.names.length > 0) {
-            String[] names = new String[node.names.length];
-            String[] asnames = new String[node.names.length];
-            for (int i = 0; i < node.names.length; i++) {
-                names[i] = node.names[i].name;
-                asnames[i] = node.names[i].asname;
-                if (asnames[i] == null)
-                    asnames[i] = names[i];
+        code.ldc(node.getInternalModule());
+        java.util.List<alias> aliases = node.getInternalNames();
+        if (aliases == null || aliases.size() == 0) {
+            throw new ParseException("Internel parser error", node);
+        } else if (aliases.size() == 1 && aliases.get(0).getInternalName().equals("*")) {
+            if (node.getInternalLevel() > 0) {
+                throw new ParseException("'import *' not allowed with 'from .'", node);
             }
-            makeStrings(code, names, names.length);
+            if (my_scope.func_level > 0) {
+                module.error("import * only allowed at module level", false, node);
+
+                if (my_scope.contains_ns_free_vars) {
+                    module.error("import * is not allowed in function '" +
+                            my_scope.scope_name +
+                            "' because it contains a nested function with free variables",
+                            true, node);
+                }
+            }
+            if (my_scope.func_level > 1) {
+                module.error("import * is not allowed in function '" +
+                        my_scope.scope_name +
+                        "' because it is a nested function",
+                        true, node);
+            }
 
             loadFrame();
-            if (mrefs.importFrom == 0) {
-                mrefs.importFrom = code.pool.Methodref(
-                    "org/python/core/imp", "importFrom",
-                    "(" + $str + $strArr + $pyFrame + ")" + $pyObjArr);
+            defaultImportLevel();
+            code.invokestatic(p(imp.class), "importAll", sig(Void.TYPE, String.class,
+                    PyFrame.class, Integer.TYPE));
+        } else {
+            java.util.List<String> fromNames = new ArrayList<String>();//[names.size()];
+            java.util.List<String> asnames = new ArrayList<String>();//[names.size()];
+            for (int i = 0; i < aliases.size(); i++) {
+                fromNames.add(aliases.get(i).getInternalName());
+                asnames.add(aliases.get(i).getInternalAsname());
+                if (asnames.get(i) == null) {
+                    asnames.set(i, fromNames.get(i));
+                }
             }
-            code.invokestatic(mrefs.importFrom);
+            int strArray = makeStrings(code, fromNames);
+            code.aload(strArray);
+            code.freeLocal(strArray);
+
+            loadFrame();
+
+            if (node.getInternalLevel() == 0) {
+                defaultImportLevel();
+            } else {
+                code.iconst(node.getInternalLevel());
+            }
+            code.invokestatic(p(imp.class), "importFrom", sig(PyObject[].class, String.class,
+                    String[].class, PyFrame.class, Integer.TYPE));
             int tmp = storeTop();
-            for (int i = 0; i < node.names.length; i++) {
+            for (int i = 0; i < aliases.size(); i++) {
                 code.aload(tmp);
                 code.iconst(i);
                 code.aaload();
-                set(new Name(asnames[i], Name.Store, node));
+                set(new Name(aliases.get(i), asnames.get(i), expr_contextType.Store));
             }
             code.freeLocal(tmp);
-        } else {
-            loadFrame();
-            if (mrefs.importAll == 0) {
-                mrefs.importAll = code.pool.Methodref(
-                    "org/python/core/imp", "importAll",
-                    "(" + $str + $pyFrame + ")V");
-            }
-            code.invokestatic(mrefs.importAll);
         }
         return null;
     }
 
+    @Override
     public Object visitGlobal(Global node) throws Exception {
         return null;
     }
 
-    public int exec;
+    @Override
     public Object visitExec(Exec node) throws Exception {
         setline(node);
-        visit(node.body);
+        visit(node.getInternalBody());
+        stackProduce();
 
-        if (node.globals != null) {
-            visit(node.globals);
+        if (node.getInternalGlobals() != null) {
+            visit(node.getInternalGlobals());
         } else {
             code.aconst_null();
         }
+        stackProduce();
 
-        if (node.locals != null) {
-            visit(node.locals);
+        if (node.getInternalLocals() != null) {
+            visit(node.getInternalLocals());
         } else {
             code.aconst_null();
         }
+        stackProduce();
 
         //do the real work here
-        if (mrefs.exec == 0) {
-            mrefs.exec = code.pool.Methodref(
-                "org/python/core/Py", "exec",
-                "(" + $pyObj + $pyObj + $pyObj + ")V");
-        }
-        code.invokestatic(mrefs.exec);
+        stackConsume(3);
+        code.invokestatic(p(Py.class), "exec", sig(Void.TYPE, PyObject.class, PyObject.class,
+                PyObject.class));
         return null;
     }
 
-    public int asserttype;
+    @Override
     public Object visitAssert(Assert node) throws Exception {
         setline(node);
-        Label end_of_assert = code.getLabel();
-        
-	/* First do an if __debug__: */
+        Label end_of_assert = new Label();
+
+        /* First do an if __debug__: */
         loadFrame();
         emitGetGlobal("__debug__");
 
-        if (mrefs.nonzero == 0) {
-            mrefs.nonzero = code.pool.Methodref("org/python/core/PyObject",
-                                                "__nonzero__", "()Z");
-        }
-        code.invokevirtual(mrefs.nonzero);
+        code.invokevirtual(p(PyObject.class), "__nonzero__", sig(Boolean.TYPE));
 
         code.ifeq(end_of_assert);
 
         /* Now do the body of the assert. If PyObject.__nonzero__ is true,
-	   then the assertion succeeded, the message portion should not be
-	   processed. Otherwise, the message will be processed. */
-        visit(node.test);
-	code.invokevirtual(mrefs.nonzero);
+        then the assertion succeeded, the message portion should not be
+        processed. Otherwise, the message will be processed. */
+        visit(node.getInternalTest());
+        code.invokevirtual(p(PyObject.class), "__nonzero__", sig(Boolean.TYPE));
 
-	/* If evaluation is false, then branch to end of method */
-	code.ifne(end_of_assert);
-	
-	/* Push exception type onto stack(Py.AssertionError) */
-        if (mrefs.asserttype == 0) {
-            mrefs.asserttype = code.pool.Fieldref(
-                "org/python/core/Py", "AssertionError",
-                "Lorg/python/core/PyObject;");
+        /* If evaluation is false, then branch to end of method */
+        code.ifne(end_of_assert);
+
+        /* Visit the message part of the assertion, or pass Py.None */
+        if (node.getInternalMsg() != null) {
+            visit(node.getInternalMsg());
+        } else {
+            getNone();
         }
 
-        code.getstatic(mrefs.asserttype);
+        /* Push exception type onto stack(AssertionError) */
+        loadFrame();
+        emitGetGlobal("AssertionError");
 
-	/* Visit the message part of the assertion, or pass Py.None */
-	if( node.msg != null ){
- 	    visit(node.msg);
-        } else{
-	    getNone(); 
-  	}
-	
-	if (mrefs.makeException2 == 0) {
-            mrefs.makeException2 = code.pool.Methodref(
-                    "org/python/core/Py", "makeException",
-                    "(" + $pyObj + $pyObj + ")" + $pyExc);
-        }
-        code.invokestatic(mrefs.makeException2);
-	
-	/* Raise assertion error. Only executes this logic if assertion
-	   failed */
+        code.swap(); // The type is the first argument, but the message could be a yield
+
+        code.invokestatic(p(Py.class), "makeException", sig(PyException.class, PyObject.class,
+                PyObject.class));
+        /* Raise assertion error. Only executes this logic if assertion failed */
         code.athrow();
- 
-	/* And finally set the label for the end of it all */
-        end_of_assert.setPosition();
+
+        /* And finally set the label for the end of it all */
+        code.label(end_of_assert);
 
         return null;
     }
 
-    public int nonzero;
     public Object doTest(Label end_of_if, If node, int index)
-        throws Exception
-    {
-        Label end_of_suite = code.getLabel();
+            throws Exception {
+        Label end_of_suite = new Label();
 
-        setline(node.test);
-        visit(node.test);
-        if (mrefs.nonzero == 0) {
-            mrefs.nonzero = code.pool.Methodref("org/python/core/PyObject",
-                                                "__nonzero__", "()Z");
-        }
-        code.invokevirtual(mrefs.nonzero);
+        setline(node.getInternalTest());
+        visit(node.getInternalTest());
+        code.invokevirtual(p(PyObject.class), "__nonzero__", sig(Boolean.TYPE));
+
         code.ifeq(end_of_suite);
 
-        Object exit = suite(node.body);
+        Object exit = suite(node.getInternalBody());
 
-        if (end_of_if != null && exit == null)
+        if (end_of_if != null && exit == null) {
             code.goto_(end_of_if);
+        }
 
-        end_of_suite.setPosition();
+        code.label(end_of_suite);
 
-        if (node.orelse != null) {
-            return suite(node.orelse) != null ? exit : null;
+        if (node.getInternalOrelse() != null) {
+            return suite(node.getInternalOrelse()) != null ? exit : null;
         } else {
             return null;
         }
     }
 
+    @Override
     public Object visitIf(If node) throws Exception {
         Label end_of_if = null;
-        if (node.orelse != null)
-            end_of_if = code.getLabel();
+        if (node.getInternalOrelse() != null) {
+            end_of_if = new Label();
+        }
 
         Object exit = doTest(end_of_if, node, 0);
-        if (end_of_if != null)
-            end_of_if.setPosition();
+        if (end_of_if != null) {
+            code.label(end_of_if);
+        }
         return exit;
     }
 
+    @Override
+    public Object visitIfExp(IfExp node) throws Exception {
+        setline(node.getInternalTest());
+        Label end = new Label();
+        Label end_of_else = new Label();
+
+        visit(node.getInternalTest());
+        code.invokevirtual(p(PyObject.class), "__nonzero__", sig(Boolean.TYPE));
+
+        code.ifeq(end_of_else);
+        visit(node.getInternalBody());
+        code.goto_(end);
+
+        code.label(end_of_else);
+        visit(node.getInternalOrelse());
+
+        code.label(end);
+
+        return null;
+    }
+
     public int beginLoop() {
-        continueLabels.push(code.getLabel());
-        breakLabels.push(code.getLabel());
+        continueLabels.push(new Label());
+        breakLabels.push(new Label());
         int savebcf = bcfLevel;
         bcfLevel = exceptionHandlers.size();
         return savebcf;
@@ -1030,93 +1158,78 @@ public class CodeCompiler extends Visitor
         bcfLevel = savebcf;
     }
 
-
+    @Override
     public Object visitWhile(While node) throws Exception {
         int savebcf = beginLoop();
-        Label continue_loop = (Label)continueLabels.peek();
-        Label break_loop = (Label)breakLabels.peek();
+        Label continue_loop = continueLabels.peek();
+        Label break_loop = breakLabels.peek();
 
-        Label start_loop = code.getLabel();
+        Label start_loop = new Label();
 
         code.goto_(continue_loop);
-        start_loop.setPosition();
+        code.label(start_loop);
 
         //Do suite
-        suite(node.body);
+        suite(node.getInternalBody());
 
-        continue_loop.setPosition();
+        code.label(continue_loop);
         setline(node);
 
         //Do test
-        visit(node.test);
-        if (mrefs.nonzero == 0) {
-            mrefs.nonzero = code.pool.Methodref("org/python/core/PyObject",
-                                                "__nonzero__", "()Z");
-        }
-        code.invokevirtual(mrefs.nonzero);
+        visit(node.getInternalTest());
+        code.invokevirtual(p(PyObject.class), "__nonzero__", sig(Boolean.TYPE));
         code.ifne(start_loop);
 
         finishLoop(savebcf);
 
-        if (node.orelse != null) {
+        if (node.getInternalOrelse() != null) {
             //Do else
-            suite(node.orelse);
+            suite(node.getInternalOrelse());
         }
-        break_loop.setPosition();
+        code.label(break_loop);
 
         // Probably need to detect "guaranteed exits"
         return null;
     }
 
-    public int iter=0;
-    public int iternext=0;
-
+    @Override
     public Object visitFor(For node) throws Exception {
         int savebcf = beginLoop();
-        Label continue_loop = (Label)continueLabels.peek();
-        Label break_loop = (Label)breakLabels.peek();
-        Label start_loop = code.getLabel();
-        Label next_loop = code.getLabel();
-
-        int iter_tmp = code.getLocal("org/python/core/PyObject");
-        int expr_tmp = code.getLocal("org/python/core/PyObject");
+        Label continue_loop = continueLabels.peek();
+        Label break_loop = breakLabels.peek();
+        Label start_loop = new Label();
+        Label next_loop = new Label();
 
         setline(node);
 
         //parse the list
-        visit(node.iter);
+        visit(node.getInternalIter());
+
+        int iter_tmp = code.getLocal(p(PyObject.class));
+        int expr_tmp = code.getLocal(p(PyObject.class));
 
         //set up the loop iterator
-        if (mrefs.iter == 0) {
-            mrefs.iter = code.pool.Methodref(
-                "org/python/core/PyObject",
-                "__iter__", "()" + $pyObj);
-        }
-        code.invokevirtual(mrefs.iter);
+        code.invokevirtual(p(PyObject.class), "__iter__", sig(PyObject.class));
         code.astore(iter_tmp);
 
         //do check at end of loop.  Saves one opcode ;-)
         code.goto_(next_loop);
 
-        start_loop.setPosition();
+        code.label(start_loop);
         //set iter variable to current entry in list
-        set(node.target, expr_tmp);
+        set(node.getInternalTarget(), expr_tmp);
 
         //evaluate for body
-        suite(node.body);
+        suite(node.getInternalBody());
 
-        continue_loop.setPosition();
+        code.label(continue_loop);
 
-        next_loop.setPosition();
+        code.label(next_loop);
         setline(node);
         //get the next element from the list
         code.aload(iter_tmp);
-        if (mrefs.iternext == 0) {
-            mrefs.iternext = code.pool.Methodref(
-                "org/python/core/PyObject",
-                "__iternext__", "()" + $pyObj);
-        }
-        code.invokevirtual(mrefs.iternext);
+        code.invokevirtual(p(PyObject.class), "__iternext__", sig(PyObject.class));
+
         code.astore(expr_tmp);
         code.aload(expr_tmp);
         //if no more elements then fall through
@@ -1124,12 +1237,12 @@ public class CodeCompiler extends Visitor
 
         finishLoop(savebcf);
 
-        if (node.orelse != null) {
+        if (node.getInternalOrelse() != null) {
             //Do else clause if provided
-            suite(node.orelse);
+            suite(node.getInternalOrelse());
         }
 
-        break_loop.setPosition();
+        code.label(break_loop);
 
         code.freeLocal(iter_tmp);
         code.freeLocal(expr_tmp);
@@ -1138,60 +1251,50 @@ public class CodeCompiler extends Visitor
         return null;
     }
 
-    public int match_exception;
-
     public void exceptionTest(int exc, Label end_of_exceptions,
-                              TryExcept node, int index)
-        throws Exception
-    {
-        for (int i = 0; i < node.handlers.length; i++) {
-            excepthandlerType handler = node.handlers[i];
+            TryExcept node, int index)
+            throws Exception {
+        for (int i = 0; i < node.getInternalHandlers().size(); i++) {
+            ExceptHandler handler = (ExceptHandler) node.getInternalHandlers().get(i);
 
             //setline(name);
-            Label end_of_self = code.getLabel();
+            Label end_of_self = new Label();
 
-            if (handler.type != null) {
+            if (handler.getInternalType() != null) {
                 code.aload(exc);
                 //get specific exception
-                visit(handler.type);
-                if (mrefs.match_exception == 0) {
-                    mrefs.match_exception = code.pool.Methodref(
-                        "org/python/core/Py", "matchException",
-                        "(" + $pyExc + $pyObj + ")Z");
-                }
-                code.invokestatic(mrefs.match_exception);
+                visit(handler.getInternalType());
+                code.invokevirtual(p(PyException.class), "match", sig(Boolean.TYPE,
+                        PyObject.class));
                 code.ifeq(end_of_self);
             } else {
-                if (i != node.handlers.length-1) {
+                if (i != node.getInternalHandlers().size() - 1) {
                     throw new ParseException(
-                        "bare except must be last except clause", handler.type);
+                            "default 'except:' must be last", handler);
                 }
             }
 
-            if (handler.name != null) {
+            if (handler.getInternalName() != null) {
                 code.aload(exc);
-                code.getfield(code.pool.Fieldref("org/python/core/PyException",
-                                                "value",
-                                                "Lorg/python/core/PyObject;"));
-                set(handler.name);
+                code.getfield(p(PyException.class), "value", ci(PyObject.class));
+                set(handler.getInternalName());
             }
 
             //do exception body
-            suite(handler.body);
+            suite(handler.getInternalBody());
             code.goto_(end_of_exceptions);
-            end_of_self.setPosition();
+            code.label(end_of_self);
         }
         code.aload(exc);
         code.athrow();
     }
 
-    public int add_traceback;
-    public Object visitTryFinally(TryFinally node) throws Exception
-    {
-        Label start = code.getLabel();
-        Label end = code.getLabel();
-        Label handlerStart = code.getLabel();
-        Label finallyEnd = code.getLabel();
+    @Override
+    public Object visitTryFinally(TryFinally node) throws Exception {
+        Label start = new Label();
+        Label end = new Label();
+        Label handlerStart = new Label();
+        Label finallyEnd = new Label();
 
         Object ret;
 
@@ -1200,16 +1303,16 @@ public class CodeCompiler extends Visitor
         // Do protected suite
         exceptionHandlers.push(inFinally);
 
-        int excLocal = code.getLocal("java/lang/Throwable");
+        int excLocal = code.getLocal(p(Throwable.class));
         code.aconst_null();
         code.astore(excLocal);
 
-        start.setPosition();
+        code.label(start);
         inFinally.exceptionStarts.addElement(start);
 
-        ret = suite(node.body);
+        ret = suite(node.getInternalBody());
 
-        end.setPosition();
+        code.label(end);
         inFinally.exceptionEnds.addElement(end);
         inFinally.bodyDone = true;
 
@@ -1221,26 +1324,21 @@ public class CodeCompiler extends Visitor
         }
 
         // Handle any exceptions that get thrown in suite
-        handlerStart.setPosition();
-        code.stack = 1;
+        code.label(handlerStart);
         code.astore(excLocal);
 
         code.aload(excLocal);
         loadFrame();
 
-        if (mrefs.add_traceback == 0) {
-            mrefs.add_traceback = code.pool.Methodref(
-                "org/python/core/Py", "addTraceback",
-                "(" + $throwable + $pyFrame + ")V");
-        }
-        code.invokestatic(mrefs.add_traceback);
+        code.invokestatic(p(Py.class), "addTraceback",
+                sig(Void.TYPE, Throwable.class, PyFrame.class));
 
         inlineFinally(inFinally);
         code.aload(excLocal);
-        code.checkcast(code.pool.Class("java/lang/Throwable"));
+        code.checkcast(p(Throwable.class));
         code.athrow();
 
-        finallyEnd.setPosition();
+        code.label(finallyEnd);
 
         code.freeLocal(excLocal);
 
@@ -1253,19 +1351,23 @@ public class CodeCompiler extends Visitor
         if (!handler.bodyDone) {
             // end the previous exception block so inlined finally code doesn't
             // get covered by our exception handler.
-            handler.exceptionEnds.addElement(code.getLabelAtPosition());
+            Label end = new Label();
+            code.label(end);
+            handler.exceptionEnds.addElement(end);
             // also exiting the try: portion of this particular finally
-         }
+        }
         if (handler.isFinallyHandler()) {
-            suite(handler.node.finalbody);
+            handler.finalBody(this);
         }
     }
-    
+
     private void reenterProtectedBody(ExceptionHandler handler) throws Exception {
-        // restart exception coverage 
-        handler.exceptionStarts.addElement(code.getLabelAtPosition());
+        // restart exception coverage
+        Label restart = new Label();
+        code.label(restart);
+        handler.exceptionStarts.addElement(restart);
     }
- 
+
     /**
      *  Inline the finally handling code for levels down to the levelth parent
      *  (0 means all).  This takes care to avoid having more nested finallys
@@ -1273,71 +1375,63 @@ public class CodeCompiler extends Visitor
      *  all the handlers above level temporarily.
      */
     private void doFinallysDownTo(int level) throws Exception {
-        Stack poppedHandlers = new Stack();
+        Stack<ExceptionHandler> poppedHandlers = new Stack<ExceptionHandler>();
         while (exceptionHandlers.size() > level) {
-            ExceptionHandler handler = 
-                (ExceptionHandler)exceptionHandlers.pop();
+            ExceptionHandler handler = exceptionHandlers.pop();
             inlineFinally(handler);
             poppedHandlers.push(handler);
         }
         while (poppedHandlers.size() > 0) {
-            ExceptionHandler handler = 
-                (ExceptionHandler)poppedHandlers.pop();
+            ExceptionHandler handler = poppedHandlers.pop();
             reenterProtectedBody(handler);
             exceptionHandlers.push(handler);
-         }
-     }
- 
-    public int set_exception;
+        }
+    }
+
+    @Override
     public Object visitTryExcept(TryExcept node) throws Exception {
-        Label start = code.getLabel();
-        Label end = code.getLabel();
-        Label handler_start = code.getLabel();
-        Label handler_end = code.getLabel();
+        Label start = new Label();
+        Label end = new Label();
+        Label handler_start = new Label();
+        Label handler_end = new Label();
         ExceptionHandler handler = new ExceptionHandler();
 
-        start.setPosition();
+        code.label(start);
         handler.exceptionStarts.addElement(start);
         exceptionHandlers.push(handler);
         //Do suite
-        Object exit = suite(node.body);
-        //System.out.println("exit: "+exit+", "+(exit != null));
+        Object exit = suite(node.getInternalBody());
         exceptionHandlers.pop();
-        end.setPosition();
+        code.label(end);
         handler.exceptionEnds.addElement(end);
 
-        if (exit == null)
+        if (exit == null) {
             code.goto_(handler_end);
+        }
 
-        handler_start.setPosition();
-        //Stack has eactly one item at start of handler
-        code.stack = 1;
+        code.label(handler_start);
 
         loadFrame();
 
-        if (mrefs.set_exception == 0) {
-            mrefs.set_exception = code.pool.Methodref(
-                "org/python/core/Py", "setException",
-                "(" + $throwable + $pyFrame + ")" + $pyExc);
-        }
-        code.invokestatic(mrefs.set_exception);
+        code.invokestatic(p(Py.class), "setException", sig(PyException.class, Throwable.class,
+                PyFrame.class));
 
-        int exc = code.getFinallyLocal("java/lang/Throwable");
+        int exc = code.getFinallyLocal(p(Throwable.class));
         code.astore(exc);
 
-        if (node.orelse == null) {
+        if (node.getInternalOrelse() == null) {
             //No else clause to worry about
             exceptionTest(exc, handler_end, node, 1);
-            handler_end.setPosition();
+            code.label(handler_end);
         } else {
             //Have else clause
-            Label else_end = code.getLabel();
+            Label else_end = new Label();
             exceptionTest(exc, else_end, node, 1);
-            handler_end.setPosition();
+            code.label(handler_end);
 
             //do else clause
-            suite(node.orelse);
-            else_end.setPosition();
+            suite(node.getInternalOrelse());
+            code.label(else_end);
         }
 
         code.freeFinallyLocal(exc);
@@ -1345,1078 +1439,1227 @@ public class CodeCompiler extends Visitor
         return null;
     }
 
+    @Override
     public Object visitSuite(Suite node) throws Exception {
-        return suite(node.body);
+        return suite(node.getInternalBody());
     }
 
-    public Object suite(stmtType[] stmts) throws Exception {
-        int n = stmts.length;
-        for(int i = 0; i < n; i++) {
-            Object exit = visit(stmts[i]);
-            //System.out.println("exit: "+exit+", "+n+", "+(exit != null));
-            if (exit != null)
+    public Object suite(java.util.List<stmt> stmts) throws Exception {
+        for (stmt s : stmts) {
+            Object exit = visit(s);
+            if (exit != null) {
                 return Exit;
+            }
         }
         return null;
     }
 
+    @Override
     public Object visitBoolOp(BoolOp node) throws Exception {
-        Label end = code.getLabel();
-        visit(node.values[0]);
-        for (int i = 1; i < node.values.length; i++) {
+        Label end = new Label();
+        visit(node.getInternalValues().get(0));
+        for (int i = 1; i < node.getInternalValues().size(); i++) {
             code.dup();
-            if (mrefs.nonzero == 0) {
-                mrefs.nonzero = code.pool.Methodref("org/python/core/PyObject",
-                                                    "__nonzero__", "()Z");
-            }
-            code.invokevirtual(mrefs.nonzero);
-            switch (node.op) {
-            case BoolOp.Or : 
-                code.ifne(end);
-                break;
-            case BoolOp.And : 
-                code.ifeq(end);
-                break;
+            code.invokevirtual(p(PyObject.class), "__nonzero__", sig(Boolean.TYPE));
+            switch (node.getInternalOp()) {
+                case Or:
+                    code.ifne(end);
+                    break;
+                case And:
+                    code.ifeq(end);
+                    break;
             }
             code.pop();
-            visit(node.values[i]);
+            visit(node.getInternalValues().get(i));
         }
-        end.setPosition();
+        code.label(end);
         return null;
     }
 
-
+    @Override
     public Object visitCompare(Compare node) throws Exception {
-        int tmp1 = code.getLocal("org/python/core/PyObject");
-        int tmp2 = code.getLocal("org/python/core/PyObject");
-        int op;
+        int last = code.getLocal(p(PyObject.class));
+        int result = code.getLocal(p(PyObject.class));
+        Label end = new Label();
 
-        if (mrefs.nonzero == 0) {
-            mrefs.nonzero = code.pool.Methodref("org/python/core/PyObject",
-                                                "__nonzero__", "()Z");
-        }
+        visit(node.getInternalLeft());
+        code.astore(last);
 
-        Label end = code.getLabel();
-
-        visit(node.left);
-
-        int n = node.ops.length;
-        for(int i = 0; i < n - 1; i++) {
-            visit(node.comparators[i]);
+        int n = node.getInternalOps().size();
+        for (int i = 0; i < n - 1; i++) {
+            visit(node.getInternalComparators().get(i));
+            code.aload(last);
+            code.swap();
             code.dup();
-            code.astore(tmp1);
-            code.invokevirtual(make_cmpop(node.ops[i]));
+            code.astore(last);
+            visitCmpop(node.getInternalOps().get(i));
             code.dup();
-            code.astore(tmp2);
-            code.invokevirtual(mrefs.nonzero);
+            code.astore(result);
+            code.invokevirtual(p(PyObject.class), "__nonzero__", sig(Boolean.TYPE));
             code.ifeq(end);
-            code.aload(tmp1);
         }
 
-        visit(node.comparators[n-1]);
-        code.invokevirtual(make_cmpop(node.ops[n-1]));
+        visit(node.getInternalComparators().get(n - 1));
+        code.aload(last);
+        code.swap();
+        visitCmpop(node.getInternalOps().get(n - 1));
 
         if (n > 1) {
-            code.astore(tmp2);
-            end.setPosition();
-            code.aload(tmp2);
+            code.astore(result);
+            code.label(end);
+            code.aload(result);
         }
-        code.freeLocal(tmp1);
-        code.freeLocal(tmp2);
+
+        code.aconst_null();
+        code.astore(last);
+        code.freeLocal(last);
+        code.freeLocal(result);
         return null;
     }
 
-    int[] compare_ops = new int[11];
-    public int make_cmpop(int op) throws Exception {
-        if (compare_ops[op] == 0) {
-            String name = null;
-            switch (op) {
-            case Compare.Eq:    name = "_eq"; break;
-            case Compare.NotEq: name = "_ne"; break;
-            case Compare.Lt:    name = "_lt"; break;
-            case Compare.LtE:   name = "_le"; break;
-            case Compare.Gt:    name = "_gt"; break;
-            case Compare.GtE:   name = "_ge"; break;
-            case Compare.Is:    name = "_is"; break;
-            case Compare.IsNot: name = "_isnot"; break;
-            case Compare.In:    name = "_in"; break;
-            case Compare.NotIn: name = "_notin"; break;
-            }
-            compare_ops[op] = code.pool.Methodref(
-                "org/python/core/PyObject", name,
-                "(" + $pyObj + ")" + $pyObj);
+    public void visitCmpop(cmpopType op) throws Exception {
+        String name = null;
+        switch (op) {
+            case Eq:
+                name = "_eq";
+                break;
+            case NotEq:
+                name = "_ne";
+                break;
+            case Lt:
+                name = "_lt";
+                break;
+            case LtE:
+                name = "_le";
+                break;
+            case Gt:
+                name = "_gt";
+                break;
+            case GtE:
+                name = "_ge";
+                break;
+            case Is:
+                name = "_is";
+                break;
+            case IsNot:
+                name = "_isnot";
+                break;
+            case In:
+                name = "_in";
+                break;
+            case NotIn:
+                name = "_notin";
+                break;
         }
-        return compare_ops[op];
+        code.invokevirtual(p(PyObject.class), name, sig(PyObject.class, PyObject.class));
     }
 
-    static String[] bin_methods = new String[] {
-        null,
-        "_add",
-        "_sub",
-        "_mul",
-        "_div",
-        "_mod",
-        "_pow",
-        "_lshift",
-        "_rshift",
-        "_or",
-        "_xor",
-        "_and",
-        "_floordiv",
-    };
-
-    int[] bin_ops = new int[13];
-    public int make_binop(int op) throws Exception {
-        if (bin_ops[op] == 0) {
-            String name = bin_methods[op];
-            if (op == BinOp.Div && module.getFutures().areDivisionOn()) {
-                name = "_truediv";
-            }
-            bin_ops[op] = code.pool.Methodref(
-                "org/python/core/PyObject", name,
-                "(" + $pyObj + ")" + $pyObj);
-        }
-        return bin_ops[op];
-    }
-
+    @Override
     public Object visitBinOp(BinOp node) throws Exception {
-        visit(node.left);
-        visit(node.right);
-        code.invokevirtual(make_binop(node.op));
+        visit(node.getInternalLeft());
+        stackProduce();
+        visit(node.getInternalRight());
+        stackConsume();
+        String name = null;
+        switch (node.getInternalOp()) {
+            case Add:
+                name = "_add";
+                break;
+            case Sub:
+                name = "_sub";
+                break;
+            case Mult:
+                name = "_mul";
+                break;
+            case Div:
+                name = "_div";
+                break;
+            case Mod:
+                name = "_mod";
+                break;
+            case Pow:
+                name = "_pow";
+                break;
+            case LShift:
+                name = "_lshift";
+                break;
+            case RShift:
+                name = "_rshift";
+                break;
+            case BitOr:
+                name = "_or";
+                break;
+            case BitXor:
+                name = "_xor";
+                break;
+            case BitAnd:
+                name = "_and";
+                break;
+            case FloorDiv:
+                name = "_floordiv";
+                break;
+        }
+
+        if (node.getInternalOp() == operatorType.Div && module.getFutures().areDivisionOn()) {
+            name = "_truediv";
+        }
+        code.invokevirtual(p(PyObject.class), name, sig(PyObject.class, PyObject.class));
         return null;
     }
 
-    
-    static String[] unary_methods = new String[] {
-        null,
-        "__invert__",
-        "__not__",
-        "__pos__",
-        "__neg__",
-    };
-
-    int[] unary_ops = new int[unary_methods.length];
-    public int make_unaryop(int op) throws Exception {
-        if (unary_ops[op] == 0) {
-            String name = unary_methods[op];
-            unary_ops[op] = code.pool.Methodref(
-                "org/python/core/PyObject", name, "()" + $pyObj);
-        }
-        return unary_ops[op];
-    }
-
+    @Override
     public Object visitUnaryOp(UnaryOp node) throws Exception {
-        visit(node.operand);
-        code.invokevirtual(make_unaryop(node.op));
+        visit(node.getInternalOperand());
+        String name = null;
+        switch (node.getInternalOp()) {
+            case Invert:
+                name = "__invert__";
+                break;
+            case Not:
+                name = "__not__";
+                break;
+            case UAdd:
+                name = "__pos__";
+                break;
+            case USub:
+                name = "__neg__";
+                break;
+        }
+        code.invokevirtual(p(PyObject.class), name, sig(PyObject.class));
         return null;
     }
 
-
-    static String[] aug_methods = new String[] {
-        null,
-        "__iadd__",
-        "__isub__",
-        "__imul__",
-        "__idiv__",
-        "__imod__",
-        "__ipow__",
-        "__ilshift__",
-        "__irshift__",
-        "__ior__",
-        "__ixor__",
-        "__iand__",
-        "__ifloordiv__",
-    };
-
-    int[] augbin_ops = new int[aug_methods.length];
-    public int make_augbinop(int op) throws Exception {
-        if (augbin_ops[op] == 0) {
-            String name = aug_methods[op];
-            if (op == BinOp.Div && module.getFutures().areDivisionOn()) {
-                name = "__itruediv__";
-            }
-            augbin_ops[op] = code.pool.Methodref(
-                "org/python/core/PyObject", name,
-                "(" + $pyObj + ")" + $pyObj);
-        }
-        return augbin_ops[op];
-    }
-
+    @Override
     public Object visitAugAssign(AugAssign node) throws Exception {
-        visit(node.value);
-        int tmp = storeTop();
+        setline(node);
 
         augmode = expr_contextType.Load;
-        visit(node.target);
+        visit(node.getInternalTarget());
+        int target = storeTop();
 
-        code.aload(tmp);
-        code.invokevirtual(make_augbinop(node.op));
-        code.freeLocal(tmp);
+        visit(node.getInternalValue());
+
+        code.aload(target);
+        code.swap();
+        String name = null;
+        switch (node.getInternalOp()) {
+            case Add:
+                name = "_iadd";
+                break;
+            case Sub:
+                name = "_isub";
+                break;
+            case Mult:
+                name = "_imul";
+                break;
+            case Div:
+                name = "_idiv";
+                break;
+            case Mod:
+                name = "_imod";
+                break;
+            case Pow:
+                name = "_ipow";
+                break;
+            case LShift:
+                name = "_ilshift";
+                break;
+            case RShift:
+                name = "_irshift";
+                break;
+            case BitOr:
+                name = "_ior";
+                break;
+            case BitXor:
+                name = "_ixor";
+                break;
+            case BitAnd:
+                name = "_iand";
+                break;
+            case FloorDiv:
+                name = "_ifloordiv";
+                break;
+        }
+        if (node.getInternalOp() == operatorType.Div && module.getFutures().areDivisionOn()) {
+            name = "_itruediv";
+        }
+        code.invokevirtual(p(PyObject.class), name, sig(PyObject.class, PyObject.class));
+        code.freeLocal(target);
 
         temporary = storeTop();
         augmode = expr_contextType.Store;
-        visit(node.target);
+        visit(node.getInternalTarget());
         code.freeLocal(temporary);
 
         return null;
     }
 
-
-    public static void makeStrings(Code c, String[] names, int n)
-        throws IOException
-    {
-        c.iconst(n);
-        c.anewarray(c.pool.Class("java/lang/String"));
-        int strings = c.getLocal("[java/lang/String");
-        c.astore(strings);
-        for (int i=0; i<n; i++) {
-            c.aload(strings);
-            c.iconst(i);
-            c.ldc(names[i]);
-            c.aastore();
-        }
-        c.aload(strings);
-        c.freeLocal(strings);
-    }
-
-    public int invokea0, invokea1, invokea2;
-    public int invoke2;
-    public Object Invoke(Attribute node, SimpleNode[] values)
-        throws Exception
-    {
-        String name = getName(node.attr);
-        visit(node.value);
-        code.ldc(name);
-
-        //System.out.println("invoke: "+name+": "+values.length);
-
-        switch (values.length) {
-        case 0:
-            if (mrefs.invokea0 == 0) {
-                mrefs.invokea0 = code.pool.Methodref(
-                    "org/python/core/PyObject", "invoke",
-                    "(" + $str + ")" + $pyObj);
-            }
-            code.invokevirtual(mrefs.invokea0);
-            break;
-        case 1:
-            if (mrefs.invokea1 == 0) {
-                mrefs.invokea1 = code.pool.Methodref(
-                    "org/python/core/PyObject", "invoke",
-                    "(" + $str + $pyObj + ")" + $pyObj);
-            }
-            visit(values[0]);
-            code.invokevirtual(mrefs.invokea1);
-            break;
-        case 2:
-            if (mrefs.invokea2 == 0) {
-                mrefs.invokea2 = code.pool.Methodref(
-                    "org/python/core/PyObject", "invoke",
-                    "(" + $str + $pyObj + $pyObj + ")" + $pyObj);
-            }
-            visit(values[0]);
-            visit(values[1]);
-            code.invokevirtual(mrefs.invokea2);
-            break;
-        default:
-            makeArray(values);
-            if (mrefs.invoke2 == 0) {
-                mrefs.invoke2 = code.pool.Methodref(
-                    "org/python/core/PyObject", "invoke",
-                    "(" + $str + $pyObjArr + ")" + $pyObj);
-            }
-            code.invokevirtual(mrefs.invoke2);
-            break;
-        }
-
-        return null;
-    }
-
-
-    public int callextra;
-    public int call1, call2;
-    public int calla0, calla1, calla2, calla3, calla4;
-    public Object visitCall(Call node) throws Exception {
-        String[] keys = new String[node.keywords.length];
-        exprType[] values = new exprType[node.args.length + keys.length];
-        for (int i = 0; i < node.args.length; i++) {
-            values[i] = node.args[i];
-        }
-        for (int i = 0; i < node.keywords.length; i++) {
-            keys[i] = node.keywords[i].arg;
-            values[node.args.length + i] = node.keywords[i].value;
-        }
-
-        // Detect a method invocation with no keywords
-        if ((node.keywords == null || node.keywords.length == 0)&& node.starargs == null &&
-            node.kwargs == null && node.func instanceof Attribute)
-        {
-            return Invoke((Attribute) node.func, values);
-        }
-
-        visit(node.func);
-
-        if (node.starargs != null || node.kwargs != null) {
-            makeArray(values);
-            makeStrings(code, keys, keys.length);
-            if (node.starargs == null)
-                code.aconst_null();
-            else
-                visit(node.starargs);
-            if (node.kwargs == null)
-                code.aconst_null();
-            else
-                visit(node.kwargs);
-
-            if (mrefs.callextra == 0) {
-                mrefs.callextra = code.pool.Methodref(
-                    "org/python/core/PyObject", "_callextra",
-                    "(" + $pyObjArr + $strArr + $pyObj + $pyObj + ")" +
-                    $pyObj);
-            }
-            code.invokevirtual(mrefs.callextra);
-        } else if (keys.length > 0) {
-            makeArray(values);
-            makeStrings(code, keys, keys.length);
-
-            if (mrefs.call1 == 0) {
-                mrefs.call1 = code.pool.Methodref(
-                    "org/python/core/PyObject", "__call__",
-                    "(" + $pyObjArr + $strArr + ")" + $pyObj);
-            }
-            code.invokevirtual(mrefs.call1);
+    static int makeStrings(Code c, Collection<String> names)
+            throws IOException {
+        if (names != null) {
+            c.iconst(names.size());
         } else {
-            switch (values.length) {
+            c.iconst_0();
+        }
+        c.anewarray(p(String.class));
+        int strings = c.getLocal(ci(String[].class));
+        c.astore(strings);
+        if (names != null) {
+            int i = 0;
+            for (String name : names) {
+                c.aload(strings);
+                c.iconst(i);
+                c.ldc(name);
+                c.aastore();
+                i++;
+            }
+        }
+        return strings;
+    }
+
+    public Object invokeNoKeywords(Attribute node, java.util.List<expr> values)
+            throws Exception {
+        String name = getName(node.getInternalAttr());
+        visit(node.getInternalValue());
+        stackProduce();
+        code.ldc(name);
+        code.invokevirtual(p(PyObject.class), "__getattr__", sig(PyObject.class, String.class));
+        loadThreadState();
+        stackProduce(p(ThreadState.class));
+
+        switch (values.size()) {
             case 0:
-                if (mrefs.calla0 == 0) {
-                    mrefs.calla0 = code.pool.Methodref(
-                        "org/python/core/PyObject", "__call__",
-                        "()" + $pyObj);
-                }
-                code.invokevirtual(mrefs.calla0);
+                stackConsume(2); // target + ts
+                code.invokevirtual(p(PyObject.class), "__call__", sig(PyObject.class,
+                        ThreadState.class));
                 break;
             case 1:
-                if (mrefs.calla1 == 0) {
-                    mrefs.calla1 = code.pool.Methodref(
-                        "org/python/core/PyObject", "__call__",
-                        "(" + $pyObj + ")" + $pyObj);
-                }
-                visit(values[0]);
-                code.invokevirtual(mrefs.calla1);
+                visit(values.get(0));
+                stackConsume(2); // target + ts
+                code.invokevirtual(p(PyObject.class), "__call__", sig(PyObject.class,
+                        ThreadState.class, PyObject.class));
                 break;
             case 2:
-                if (mrefs.calla2 == 0) {
-                    mrefs.calla2 = code.pool.Methodref(
-                        "org/python/core/PyObject", "__call__",
-                        "(" + $pyObj + $pyObj + ")" + $pyObj);
-                }
-                visit(values[0]);
-                visit(values[1]);
-                code.invokevirtual(mrefs.calla2);
+                visit(values.get(0));
+                stackProduce();
+                visit(values.get(1));
+                stackConsume(3); // target + ts + arguments
+                code.invokevirtual(p(PyObject.class), "__call__", sig(PyObject.class,
+                        ThreadState.class, PyObject.class, PyObject.class));
                 break;
             case 3:
-                if (mrefs.calla3 == 0) {
-                    mrefs.calla3 = code.pool.Methodref(
-                        "org/python/core/PyObject", "__call__",
-                        "(" + $pyObj + $pyObj + $pyObj + ")" + $pyObj);
-                }
-                visit(values[0]);
-                visit(values[1]);
-                visit(values[2]);
-                code.invokevirtual(mrefs.calla3);
+                visit(values.get(0));
+                stackProduce();
+                visit(values.get(1));
+                stackProduce();
+                visit(values.get(2));
+                stackConsume(4); // target + ts + arguments
+                code.invokevirtual(p(PyObject.class), "__call__", sig(PyObject.class,
+                        ThreadState.class, PyObject.class, PyObject.class, PyObject.class));
                 break;
             case 4:
-                if (mrefs.calla4 == 0) {
-                    mrefs.calla4 = code.pool.Methodref(
-                        "org/python/core/PyObject", "__call__",
-                        "(" + $pyObj + $pyObj + $pyObj + $pyObj + ")" +
-                            $pyObj);
-                }
-                visit(values[0]);
-                visit(values[1]);
-                visit(values[2]);
-                visit(values[3]);
-                code.invokevirtual(mrefs.calla4);
+                visit(values.get(0));
+                stackProduce();
+                visit(values.get(1));
+                stackProduce();
+                visit(values.get(2));
+                stackProduce();
+                visit(values.get(3));
+                stackConsume(5); // target + ts + arguments
+                code.invokevirtual(p(PyObject.class), "__call__", sig(PyObject.class,
+                        ThreadState.class, PyObject.class, PyObject.class, PyObject.class,
+                        PyObject.class));
                 break;
             default:
-                makeArray(values);
-                if (mrefs.call2 == 0) {
-                    mrefs.call2 = code.pool.Methodref(
-                        "org/python/core/PyObject", "__call__",
-                        "(" + $pyObjArr + ")" + $pyObj);
-                }
-                code.invokevirtual(mrefs.call2);
+                int argArray = makeArray(values);
+                code.aload(argArray);
+                code.freeLocal(argArray);
+                stackConsume(2); // target + ts
+                code.invokevirtual(p(PyObject.class), "__call__", sig(PyObject.class,
+                        ThreadState.class, PyObject[].class));
                 break;
+        }
+        return null;
+    }
+
+    @Override
+    public Object visitCall(Call node) throws Exception {
+        java.util.List<String> keys = new ArrayList<String>();
+        java.util.List<expr> values = new ArrayList<expr>();
+        for (int i = 0; i < node.getInternalArgs().size(); i++) {
+            values.add(node.getInternalArgs().get(i));
+        }
+        for (int i = 0; i < node.getInternalKeywords().size(); i++) {
+            keys.add(node.getInternalKeywords().get(i).getInternalArg());
+            values.add(node.getInternalKeywords().get(i).getInternalValue());
+        }
+
+        if ((node.getInternalKeywords() == null || node.getInternalKeywords().size() == 0) &&
+                node.getInternalStarargs() == null && node.getInternalKwargs() == null &&
+                node.getInternalFunc() instanceof Attribute) {
+            return invokeNoKeywords((Attribute) node.getInternalFunc(), values);
+        }
+
+        visit(node.getInternalFunc());
+        stackProduce();
+
+        if (node.getInternalStarargs() != null || node.getInternalKwargs() != null) {
+            int argArray = makeArray(values);
+            int strArray = makeStrings(code, keys);
+            if (node.getInternalStarargs() == null) {
+                code.aconst_null();
+            } else {
+                visit(node.getInternalStarargs());
+            }
+            stackProduce();
+            if (node.getInternalKwargs() == null) {
+                code.aconst_null();
+            } else {
+                visit(node.getInternalKwargs());
+            }
+            stackProduce();
+
+            code.aload(argArray);
+            code.aload(strArray);
+            code.freeLocal(strArray);
+            code.dup2_x2();
+            code.pop2();
+
+            stackConsume(3); // target + starargs + kwargs
+            code.invokevirtual(p(PyObject.class), "_callextra", sig(PyObject.class,
+                    PyObject[].class, String[].class, PyObject.class, PyObject.class));
+            freeArrayRef(argArray);
+        } else if (keys.size() > 0) {
+            loadThreadState();
+            stackProduce(p(ThreadState.class));
+            int argArray = makeArray(values);
+            int strArray = makeStrings(code, keys);
+            code.aload(argArray);
+            code.aload(strArray);
+            code.freeLocal(strArray);
+            stackConsume(2); // target + ts
+            code.invokevirtual(p(PyObject.class), "__call__", sig(PyObject.class, ThreadState.class,
+                    PyObject[].class, String[].class));
+            freeArrayRef(argArray);
+        } else {
+            loadThreadState();
+            stackProduce(p(ThreadState.class));
+            switch (values.size()) {
+                case 0:
+                    stackConsume(2); // target + ts
+                    code.invokevirtual(p(PyObject.class), "__call__", sig(PyObject.class,
+                            ThreadState.class));
+                    break;
+                case 1:
+                    visit(values.get(0));
+                    stackConsume(2); // target + ts
+                    code.invokevirtual(p(PyObject.class), "__call__", sig(PyObject.class,
+                            ThreadState.class, PyObject.class));
+                    break;
+                case 2:
+                    visit(values.get(0));
+                    stackProduce();
+                    visit(values.get(1));
+                    stackConsume(3); // target + ts + arguments
+                    code.invokevirtual(p(PyObject.class), "__call__", sig(PyObject.class,
+                            ThreadState.class, PyObject.class, PyObject.class));
+                    break;
+                case 3:
+                    visit(values.get(0));
+                    stackProduce();
+                    visit(values.get(1));
+                    stackProduce();
+                    visit(values.get(2));
+                    stackConsume(4); // target + ts + arguments
+                    code.invokevirtual(p(PyObject.class), "__call__", sig(PyObject.class,
+                            ThreadState.class, PyObject.class, PyObject.class, PyObject.class));
+                    break;
+                case 4:
+                    visit(values.get(0));
+                    stackProduce();
+                    visit(values.get(1));
+                    stackProduce();
+                    visit(values.get(2));
+                    stackProduce();
+                    visit(values.get(3));
+                    stackConsume(5); // target + ts + arguments
+                    code.invokevirtual(p(PyObject.class), "__call__", sig(PyObject.class,
+                            ThreadState.class, PyObject.class, PyObject.class, PyObject.class,
+                            PyObject.class));
+                    break;
+                default:
+                    int argArray = makeArray(values);
+                    code.aload(argArray);
+                    code.freeLocal(argArray);
+                    stackConsume(2); // target + ts
+                    code.invokevirtual(p(PyObject.class), "__call__", sig(PyObject.class,
+                            ThreadState.class, PyObject[].class));
+                    break;
             }
         }
         return null;
     }
 
-
-    public int getslice, setslice, delslice;
     public Object Slice(Subscript node, Slice slice) throws Exception {
-        int ctx = node.ctx;
-        if (ctx == node.AugStore && augmode == node.Store) {
+        expr_contextType ctx = node.getInternalCtx();
+        if (ctx == expr_contextType.AugStore && augmode == expr_contextType.Store) {
             restoreAugTmps(node, 4);
-            ctx = node.Store;
+            ctx = expr_contextType.Store;
         } else {
-            visit(node.value);
-            if (slice.lower != null)
-                visit(slice.lower);
-            else
+            visit(node.getInternalValue());
+            stackProduce();
+            if (slice.getInternalLower() != null) {
+                visit(slice.getInternalLower());
+            } else {
                 code.aconst_null();
-            if (slice.upper != null)
-                visit(slice.upper);
-            else
+            }
+            stackProduce();
+            if (slice.getInternalUpper() != null) {
+                visit(slice.getInternalUpper());
+            } else {
                 code.aconst_null();
-            if (slice.step != null)
-                visit(slice.step);
-            else
+            }
+            stackProduce();
+            if (slice.getInternalStep() != null) {
+                visit(slice.getInternalStep());
+            } else {
                 code.aconst_null();
+            }
+            stackProduce();
 
-            if (node.ctx == node.AugStore && augmode == node.Load) {
+            if (node.getInternalCtx() == expr_contextType.AugStore &&
+                    augmode == expr_contextType.Load) {
                 saveAugTmps(node, 4);
-                ctx = node.Load;
+                ctx = expr_contextType.Load;
             }
+            stackConsume(4);
         }
 
         switch (ctx) {
-        case Subscript.Del:
-            if (mrefs.delslice == 0) {
-                mrefs.delslice = code.pool.Methodref(
-                    "org/python/core/PyObject", "__delslice__",
-                    "(" + $pyObj + $pyObj + $pyObj + ")V");
-            }
-            code.invokevirtual(mrefs.delslice);
-            return null;
-        case Subscript.Load:
-            if (mrefs.getslice == 0) {
-                mrefs.getslice = code.pool.Methodref(
-                    "org/python/core/PyObject", "__getslice__",
-                    "(" + $pyObj + $pyObj + $pyObj + ")" + $pyObj);
-            }
-            code.invokevirtual(mrefs.getslice);
-            return null;
-        case Subscript.Store:
-            code.aload(temporary);
-            if (mrefs.setslice == 0) {
-                mrefs.setslice = code.pool.Methodref(
-                    "org/python/core/PyObject", "__setslice__",
-                    "(" + $pyObj + $pyObj + $pyObj + $pyObj + ")V");
-            }
-            code.invokevirtual(mrefs.setslice);
-            return null;
+            case Del:
+                code.invokevirtual(p(PyObject.class), "__delslice__", sig(Void.TYPE, PyObject.class,
+                        PyObject.class, PyObject.class));
+                return null;
+            case Load:
+                code.invokevirtual(p(PyObject.class), "__getslice__", sig(PyObject.class,
+                        PyObject.class, PyObject.class, PyObject.class));
+                return null;
+            case Param:
+            case Store:
+                code.aload(temporary);
+                code.invokevirtual(p(PyObject.class), "__setslice__", sig(Void.TYPE, PyObject.class,
+                        PyObject.class, PyObject.class, PyObject.class));
+                return null;
         }
         return null;
 
     }
 
-    public int getitem, delitem, setitem;
+    @Override
     public Object visitSubscript(Subscript node) throws Exception {
-        if (node.slice instanceof Slice) {
-            return Slice(node, (Slice) node.slice);
+        if (node.getInternalSlice() instanceof Slice) {
+            return Slice(node, (Slice) node.getInternalSlice());
         }
 
-        int ctx = node.ctx;
-        if (node.ctx == node.AugStore && augmode == node.Store) {
+        int value = temporary;
+        expr_contextType ctx = node.getInternalCtx();
+        if (node.getInternalCtx() == expr_contextType.AugStore &&
+                augmode == expr_contextType.Store) {
             restoreAugTmps(node, 2);
-            ctx = node.Store;
+            ctx = expr_contextType.Store;
         } else {
-            visit(node.value);
-            visit(node.slice);
+            visit(node.getInternalValue());
+            stackProduce();
+            visit(node.getInternalSlice());
+            stackConsume();
 
-            if (node.ctx == node.AugStore && augmode == node.Load) {
+            if (node.getInternalCtx() == expr_contextType.AugStore &&
+                    augmode == expr_contextType.Load) {
                 saveAugTmps(node, 2);
-                ctx = node.Load;
+                ctx = expr_contextType.Load;
             }
         }
 
         switch (ctx) {
-        case Subscript.Del:
-            if (mrefs.delitem == 0) {
-                mrefs.delitem = code.pool.Methodref(
-                    "org/python/core/PyObject", "__delitem__",
-                    "(" + $pyObj + ")V");
-            }
-            code.invokevirtual(mrefs.delitem);
-            return null;
-        case Subscript.Load:
-            if (mrefs.getitem == 0) {
-                mrefs.getitem = code.pool.Methodref(
-                    "org/python/core/PyObject", "__getitem__",
-                    "(" + $pyObj + ")" + $pyObj);
-            }
-            code.invokevirtual(mrefs.getitem);
-            return null;
-        case Subscript.Store:
-            code.aload(temporary);
-            if (mrefs.setitem == 0) {
-                mrefs.setitem = code.pool.Methodref(
-                    "org/python/core/PyObject", "__setitem__",
-                    "(" + $pyObj + $pyObj + ")V");
-            }
-            code.invokevirtual(mrefs.setitem);
-            return null;
+            case Del:
+                code.invokevirtual(p(PyObject.class), "__delitem__",
+                        sig(Void.TYPE, PyObject.class));
+                return null;
+            case Load:
+                code.invokevirtual(p(PyObject.class), "__getitem__",
+                        sig(PyObject.class, PyObject.class));
+                return null;
+            case Param:
+            case Store:
+                code.aload(value);
+                code.invokevirtual(p(PyObject.class), "__setitem__",
+                        sig(Void.TYPE, PyObject.class, PyObject.class));
+                return null;
         }
         return null;
     }
 
+    @Override
     public Object visitIndex(Index node) throws Exception {
         traverse(node);
         return null;
     }
 
+    @Override
     public Object visitExtSlice(ExtSlice node) throws Exception {
-        code.new_(code.pool.Class("org/python/core/PyTuple"));
+        int dims = makeArray(node.getInternalDims());
+        code.new_(p(PyTuple.class));
         code.dup();
-        makeArray(node.dims);
-        if (mrefs.PyTuple_init == 0) {
-            mrefs.PyTuple_init = code.pool.Methodref(
-                "org/python/core/PyTuple", "<init>",
-                "(" + $pyObjArr + ")V");
-        }
-        code.invokespecial(mrefs.PyTuple_init);
+        code.aload(dims);
+        code.invokespecial(p(PyTuple.class), "<init>", sig(Void.TYPE, PyObject[].class));
+        freeArray(dims);
         return null;
     }
 
-    public int getattr, delattr, setattr;
+    @Override
     public Object visitAttribute(Attribute node) throws Exception {
 
-        int ctx = node.ctx;
-        if (node.ctx == node.AugStore && augmode == node.Store) {
+        expr_contextType ctx = node.getInternalCtx();
+        if (node.getInternalCtx() == expr_contextType.AugStore &&
+                augmode == expr_contextType.Store) {
             restoreAugTmps(node, 2);
-            ctx = node.Store;
+            ctx = expr_contextType.Store;
         } else {
-            visit(node.value);
-            code.ldc(getName(node.attr));
+            visit(node.getInternalValue());
+            code.ldc(getName(node.getInternalAttr()));
 
-            if (node.ctx == node.AugStore && augmode == node.Load) {
+            if (node.getInternalCtx() == expr_contextType.AugStore &&
+                    augmode == expr_contextType.Load) {
                 saveAugTmps(node, 2);
-                ctx = node.Load;
+                ctx = expr_contextType.Load;
             }
         }
 
         switch (ctx) {
-        case Attribute.Del:
-            if (mrefs.delattr == 0) {
-                mrefs.delattr = code.pool.Methodref(
-                    "org/python/core/PyObject", "__delattr__",
-                    "(" + $str + ")V");
-            }
-            code.invokevirtual(mrefs.delattr);
-            return null;
-        case Attribute.Load:
-            if (mrefs.getattr == 0) {
-                mrefs.getattr = code.pool.Methodref(
-                    "org/python/core/PyObject", "__getattr__",
-                    "(" + $str + ")" + $pyObj);
-            }
-            code.invokevirtual(mrefs.getattr);
-            return null;
-        case Attribute.Store:
-            code.aload(temporary);
-            if (mrefs.setattr == 0) {
-                mrefs.setattr = code.pool.Methodref(
-                    "org/python/core/PyObject", "__setattr__",
-                    "(" + $str + $pyObj + ")V");
-            }
-            code.invokevirtual(mrefs.setattr);
-            return null;
+            case Del:
+                code.invokevirtual(p(PyObject.class), "__delattr__", sig(Void.TYPE, String.class));
+                return null;
+            case Load:
+                code.invokevirtual(p(PyObject.class), "__getattr__",
+                        sig(PyObject.class, String.class));
+                return null;
+            case Param:
+            case Store:
+                code.aload(temporary);
+                code.invokevirtual(p(PyObject.class), "__setattr__",
+                        sig(Void.TYPE, String.class, PyObject.class));
+                return null;
         }
         return null;
     }
 
-    public int getitem2, unpackSequence;
-    public Object seqSet(exprType[] nodes) throws Exception {
-        if (mrefs.unpackSequence == 0) {
-            mrefs.unpackSequence = code.pool.Methodref(
-                "org/python/core/Py",
-                "unpackSequence",
-                "(" + $pyObj + "I)" + $pyObjArr);
-        }
-
+    public Object seqSet(java.util.List<expr> nodes) throws Exception {
         code.aload(temporary);
-        code.iconst(nodes.length);
-        code.invokestatic(mrefs.unpackSequence);
+        code.iconst(nodes.size());
+        code.invokestatic(p(Py.class), "unpackSequence",
+                sig(PyObject[].class, PyObject.class, Integer.TYPE));
 
         int tmp = code.getLocal("[org/python/core/PyObject");
         code.astore(tmp);
 
-        for (int i = 0; i < nodes.length; i++) {
+        for (int i = 0; i < nodes.size(); i++) {
             code.aload(tmp);
             code.iconst(i);
             code.aaload();
-            set(nodes[i]);
+            set(nodes.get(i));
         }
         code.freeLocal(tmp);
 
         return null;
     }
 
-    public Object seqDel(exprType[] nodes) throws Exception {
-        for (int i = 0; i < nodes.length; i++) {
-            visit(nodes[i]);
+    public Object seqDel(java.util.List<expr> nodes) throws Exception {
+        for (expr e : nodes) {
+            visit(e);
         }
         return null;
     }
 
-    public int PyTuple_init, PyList_init, PyDictionary_init;
+    @Override
     public Object visitTuple(Tuple node) throws Exception {
-        /* if (mode ==AUGSET)
-            throw new ParseException(
-                      "augmented assign to tuple not possible", node); */
-        if (node.ctx == node.Store) return seqSet(node.elts);
-        if (node.ctx == node.Del) return seqDel(node.elts);
-
-        code.new_(code.pool.Class("org/python/core/PyTuple"));
-        code.dup();
-        makeArray(node.elts);
-        if (mrefs.PyTuple_init == 0) {
-            mrefs.PyTuple_init = code.pool.Methodref(
-                "org/python/core/PyTuple", "<init>",
-                "(" + $pyObjArr + ")V");
+        if (node.getInternalCtx() == expr_contextType.Store) {
+            return seqSet(node.getInternalElts());
         }
-        code.invokespecial(mrefs.PyTuple_init);
+        if (node.getInternalCtx() == expr_contextType.Del) {
+            return seqDel(node.getInternalElts());
+        }
+
+        int content = makeArray(node.getInternalElts());
+
+        code.new_(p(PyTuple.class));
+
+        code.dup();
+        code.aload(content);
+        code.invokespecial(p(PyTuple.class), "<init>", sig(Void.TYPE, PyObject[].class));
+        freeArray(content);
         return null;
     }
 
-/*
-    public Object fplist(SimpleNode node) throws Exception {
-        if (mode == SET) return seqSet(node);
-        throw new ParseException("in fplist node", node);
-    }
-*/
-
+    @Override
     public Object visitList(List node) throws Exception {
-        /* if (mode ==AUGSET)
-            throw new ParseException(
-                      "augmented assign to list not possible", node); */
-
-        if (node.ctx == node.Store) return seqSet(node.elts);
-        if (node.ctx == node.Del) return seqDel(node.elts);
-
-        code.new_(code.pool.Class("org/python/core/PyList"));
-        code.dup();
-        makeArray(node.elts);
-        if (mrefs.PyList_init == 0) {
-            mrefs.PyList_init = code.pool.Methodref(
-                "org/python/core/PyList", "<init>",
-                "(" + $pyObjArr + ")V");
+        if (node.getInternalCtx() == expr_contextType.Store) {
+            return seqSet(node.getInternalElts());
         }
-        code.invokespecial(mrefs.PyList_init);
+        if (node.getInternalCtx() == expr_contextType.Del) {
+            return seqDel(node.getInternalElts());
+        }
+
+        int content = makeArray(node.getInternalElts());
+
+        code.new_(p(PyList.class));
+        code.dup();
+        code.aload(content);
+        code.invokespecial(p(PyList.class), "<init>", sig(Void.TYPE, PyObject[].class));
+        freeArray(content);
         return null;
     }
 
-    int list_comprehension_count = 0;
-
-    public int PyList_init2;
+    @Override
     public Object visitListComp(ListComp node) throws Exception {
-        code.new_(code.pool.Class("org/python/core/PyList"));
+        code.new_(p(PyList.class));
+
         code.dup();
-        if (mrefs.PyList_init2 == 0) {
-            mrefs.PyList_init2 = code.pool.Methodref(
-                "org/python/core/PyList", "<init>", "()V");
-        }
-        code.invokespecial(mrefs.PyList_init2);
+        code.invokespecial(p(PyList.class), "<init>", sig(Void.TYPE));
 
         code.dup();
 
         code.ldc("append");
 
-        if (mrefs.getattr == 0) {
-            mrefs.getattr = code.pool.Methodref(
-                "org/python/core/PyObject", "__getattr__",
-                "(" + $str + ")" + $pyObj);
-        }
-        code.invokevirtual(mrefs.getattr);
+        code.invokevirtual(p(PyObject.class), "__getattr__", sig(PyObject.class, String.class));
+        String tmp_append = "_[" + node.getLine() + "_" + node.getCharPositionInLine() + "]";
 
-        String tmp_append = "_[" + node.beginLine + "_" + node.beginColumn + "]";
-            
-        set(new Name(tmp_append, Name.Store, node));
+        set(new Name(node, tmp_append, expr_contextType.Store));
 
-        stmtType n = new Expr(new Call(new Name(tmp_append, Name.Load, node), 
-                                       new exprType[] { node.elt },
-                                       new keywordType[0], null, null, node),
-                                            node);
+        java.util.List<expr> args = new ArrayList<expr>();
+        args.add(node.getInternalElt());
+        stmt n = new Expr(node, new Call(node, new Name(node, tmp_append, expr_contextType.Load),
+                args,
+                new ArrayList<keyword>(), null, null));
 
-        for (int i = node.generators.length - 1; i >= 0; i--) {
-            listcompType lc = node.generators[i];
-            for (int j = lc.ifs.length - 1; j >= 0; j--) {
-                n = new If(lc.ifs[j], new stmtType[] { n }, null, lc.ifs[j]);
+        for (int i = node.getInternalGenerators().size() - 1; i >= 0; i--) {
+            comprehension lc = node.getInternalGenerators().get(i);
+            for (int j = lc.getInternalIfs().size() - 1; j >= 0; j--) {
+                java.util.List<stmt> body = new ArrayList<stmt>();
+                body.add(n);
+                n = new If(lc.getInternalIfs().get(j), lc.getInternalIfs().get(j), body,
+                        new ArrayList<stmt>());
             }
-            n = new For(lc.target, lc.iter, new stmtType[] { n }, null, lc);
+            java.util.List<stmt> body = new ArrayList<stmt>();
+            body.add(n);
+            n = new For(lc, lc.getInternalTarget(), lc.getInternalIter(), body,
+                    new ArrayList<stmt>());
         }
         visit(n);
-        visit(new Delete(new exprType[] { new Name(tmp_append, Name.Del) }));
+        java.util.List<expr> targets = new ArrayList<expr>();
+        targets.add(new Name(n, tmp_append, expr_contextType.Del));
+        visit(new Delete(n, targets));
 
         return null;
     }
 
+    @Override
     public Object visitDict(Dict node) throws Exception {
-        code.new_(code.pool.Class("org/python/core/PyDictionary"));
+        java.util.List<PythonTree> elts = new ArrayList<PythonTree>();
+        for (int i = 0; i < node.getInternalKeys().size(); i++) {
+            elts.add(node.getInternalKeys().get(i));
+            elts.add(node.getInternalValues().get(i));
+        }
+        int content = makeArray(elts);
+
+        code.new_(p(PyDictionary.class));
         code.dup();
-        SimpleNode[] elts = new SimpleNode[node.keys.length * 2];
-        for (int i = 0; i < node.keys.length; i++) {
-            elts[i * 2] = node.keys[i];
-            elts[i * 2 + 1] = node.values[i];
-        }
-        makeArray(elts);
-        if (mrefs.PyDictionary_init == 0) {
-            mrefs.PyDictionary_init = code.pool.Methodref(
-                "org/python/core/PyDictionary", "<init>",
-                "(" + $pyObjArr + ")V");
-        }
-        code.invokespecial(mrefs.PyDictionary_init);
+        code.aload(content);
+        code.invokespecial(p(PyDictionary.class), "<init>", sig(Void.TYPE, PyObject[].class));
+        freeArray(content);
         return null;
     }
 
+    @Override
     public Object visitRepr(Repr node) throws Exception {
-        visit(node.value);
-        code.invokevirtual("org/python/core/PyObject", "__repr__",
-                           "()" + $pyStr);
+        visit(node.getInternalValue());
+        code.invokevirtual(p(PyObject.class), "__repr__", sig(PyString.class));
         return null;
     }
 
-    public int PyFunction_init1,PyFunction_closure_init1;
+    @Override
     public Object visitLambda(Lambda node) throws Exception {
         String name = "<lambda>";
 
         //Add a return node onto the outside of suite;
-        modType retSuite = new Suite(new stmtType[] {
-            new Return(node.body, node) }, node);
+        java.util.List<stmt> bod = new ArrayList<stmt>();
+        bod.add(new Return(node, node.getInternalBody()));
+        mod retSuite = new Suite(node, bod);
 
         setline(node);
-
-        code.new_(code.pool.Class("org/python/core/PyFunction"));
-        code.dup();
-        loadFrame();
-        if (mrefs.f_globals == 0) {
-            mrefs.f_globals = code.pool.Fieldref("org/python/core/PyFrame",
-                                                 "f_globals", $pyObj);
-        }
-        code.getfield(mrefs.f_globals);
 
         ScopeInfo scope = module.getScopeInfo(node);
 
-        makeArray(scope.ac.getDefaults());
+        int defaultsArray = makeArray(scope.ac.getDefaults());
+
+        code.new_(p(PyFunction.class));
+
+        code.dup();
+        code.aload(defaultsArray);
+        code.freeLocal(defaultsArray);
+
+        loadFrame();
+        code.getfield(p(PyFrame.class), "f_globals", ci(PyObject.class));
+
+        code.swap();
 
         scope.setup_closure();
         scope.dump();
-        module.PyCode(retSuite, name, true, className,
-                      false, false, node.beginLine, scope, cflags).get(code);
+        module.codeConstant(retSuite, name, true, className,
+                false, false, node.getLine(), scope, cflags).get(code);
 
         if (!makeClosure(scope)) {
-            if (mrefs.PyFunction_init1 == 0) {
-                mrefs.PyFunction_init1 = code.pool.Methodref(
-                "org/python/core/PyFunction", "<init>",
-                "(" + $pyObj + $pyObjArr + $pyCode + ")V");
-            }
-            code.invokespecial(mrefs.PyFunction_init1);
+            code.invokespecial(p(PyFunction.class), "<init>", sig(Void.TYPE, PyObject.class,
+                    PyObject[].class, PyCode.class));
         } else {
-            if (mrefs.PyFunction_closure_init1 == 0) {
-                mrefs.PyFunction_closure_init1 = code.pool.Methodref(
-                "org/python/core/PyFunction", "<init>",
-                "(" + $pyObj + $pyObjArr + $pyCode + $pyObjArr + ")V");
-            }
-            code.invokespecial(mrefs.PyFunction_closure_init1);
+            code.invokespecial(p(PyFunction.class), "<init>", sig(Void.TYPE, PyObject.class,
+                    PyObject[].class, PyCode.class, PyObject[].class));
         }
-
         return null;
     }
 
-
-    public int Ellipsis;
+    @Override
     public Object visitEllipsis(Ellipsis node) throws Exception {
-        if (mrefs.Ellipsis == 0) {
-            mrefs.Ellipsis = code.pool.Fieldref(
-                "org/python/core/Py", "Ellipsis",
-                "Lorg/python/core/PyObject;");
-        }
-        code.getstatic(mrefs.Ellipsis);
+        code.getstatic(p(Py.class), "Ellipsis", ci(PyObject.class));
         return null;
     }
 
-    public int PySlice_init;
+    @Override
     public Object visitSlice(Slice node) throws Exception {
-        code.new_(code.pool.Class("org/python/core/PySlice"));
-        code.dup();
-        if (node.lower == null) getNone(); else visit(node.lower);
-        if (node.upper == null) getNone(); else visit(node.upper);
-        if (node.step == null) getNone(); else visit(node.step);
-        if (mrefs.PySlice_init == 0) {
-            mrefs.PySlice_init = code.pool.Methodref(
-                "org/python/core/PySlice", "<init>",
-                "(" + $pyObj + $pyObj + $pyObj + ")V");
+        if (node.getInternalLower() == null) {
+            getNone();
+        } else {
+            visit(node.getInternalLower());
         }
-        code.invokespecial(mrefs.PySlice_init);
+        stackProduce();
+        if (node.getInternalUpper() == null) {
+            getNone();
+        } else {
+            visit(node.getInternalUpper());
+        }
+        stackProduce();
+        if (node.getInternalStep() == null) {
+            getNone();
+        } else {
+            visit(node.getInternalStep());
+        }
+        int step = storeTop();
+        stackConsume(2);
+
+        code.new_(p(PySlice.class));
+        code.dup();
+        code.dup2_x2();
+        code.pop2();
+
+        code.aload(step);
+        code.freeLocal(step);
+
+        code.invokespecial(p(PySlice.class), "<init>", sig(Void.TYPE, PyObject.class,
+                PyObject.class, PyObject.class));
         return null;
     }
 
-    public int makeClass,makeClass_closure;
+    @Override
     public Object visitClassDef(ClassDef node) throws Exception {
         setline(node);
 
+        int baseArray = makeArray(node.getInternalBases());
+
         //Get class name
-        String name = getName(node.name);
-        //System.out.println("name: "+name);
+        String name = getName(node.getInternalName());
         code.ldc(name);
 
-        makeArray(node.bases);
+        code.aload(baseArray);
 
         ScopeInfo scope = module.getScopeInfo(node);
 
         scope.setup_closure();
         scope.dump();
         //Make code object out of suite
-        module.PyCode(new Suite(node.body, node), name, false, name,
-                      true, false, node.beginLine, scope, cflags).get(code);
 
-        //Get doc string (if there)
-        getDocString(node.body);
+        module.codeConstant(new Suite(node, node.getInternalBody()), name, false, name,
+                            getDocStr(node.getInternalBody()), true, false, node.getLine(), scope,
+                            cflags).get(code);
 
         //Make class out of name, bases, and code
         if (!makeClosure(scope)) {
-            if (mrefs.makeClass == 0) {
-                mrefs.makeClass = code.pool.Methodref(
-                "org/python/core/Py", "makeClass",
-                "(" + $str + $pyObjArr + $pyCode + $pyObj + ")" + $pyObj);
-            }
-            code.invokestatic(mrefs.makeClass);
+            code.invokestatic(p(Py.class), "makeClass", sig(PyObject.class, String.class,
+                    PyObject[].class, PyCode.class));
         } else {
-            if (mrefs.makeClass_closure == 0) {
-                mrefs.makeClass_closure = code.pool.Methodref(
-                "org/python/core/Py", "makeClass",
-                "(" + $str + $pyObjArr + $pyCode + $pyObj + $pyObjArr + ")" +
-                    $pyObj);
-            }
-            code.invokestatic(mrefs.makeClass_closure);
+            code.invokestatic(p(Py.class), "makeClass", sig(PyObject.class, String.class,
+                    PyObject[].class, PyCode.class, PyObject[].class));
         }
 
+        applyDecorators(node.getInternalDecorator_list());
+
         //Assign this new class to the given name
-        set(new Name(node.name, Name.Store, node));
+        set(new Name(node, node.getInternalName(), expr_contextType.Store));
+        freeArray(baseArray);
         return null;
     }
 
+    @Override
     public Object visitNum(Num node) throws Exception {
-        if (node.n instanceof PyInteger) {
-            module.PyInteger(((PyInteger) node.n).getValue()).get(code);
-        } else if (node.n instanceof PyLong) {
-            module.PyLong(((PyObject)node.n).__str__().toString()).get(code);
-        } else if (node.n instanceof PyFloat) {
-            module.PyFloat(((PyFloat) node.n).getValue()).get(code);
-        } else if (node.n instanceof PyComplex) {
-            module.PyComplex(((PyComplex) node.n).imag).get(code);
+        if (node.getInternalN() instanceof PyInteger) {
+            module.integerConstant(((PyInteger) node.getInternalN()).getValue()).get(code);
+        } else if (node.getInternalN() instanceof PyLong) {
+            module.longConstant(((PyObject) node.getInternalN()).__str__().toString()).get(code);
+        } else if (node.getInternalN() instanceof PyFloat) {
+            module.floatConstant(((PyFloat) node.getInternalN()).getValue()).get(code);
+        } else if (node.getInternalN() instanceof PyComplex) {
+            module.complexConstant(((PyComplex) node.getInternalN()).imag).get(code);
         }
         return null;
     }
 
     private String getName(String name) {
         if (className != null && name.startsWith("__") &&
-            !name.endsWith("__"))
-        {
+                !name.endsWith("__")) {
             //remove leading '_' from classname
             int i = 0;
-            while (className.charAt(i) == '_')
+            while (className.charAt(i) == '_') {
                 i++;
-            return "_"+className.substring(i)+name;
+            }
+            return "_" + className.substring(i) + name;
         }
         return name;
     }
 
-    int getglobal, getlocal1, getlocal2;
-    int setglobal, setlocal1, setlocal2;
-    int delglobal, dellocal1, dellocal2;
-    int getderef,setderef;
-
     void emitGetGlobal(String name) throws Exception {
         code.ldc(name);
-        if (mrefs.getglobal == 0) {
-            mrefs.getglobal = code.pool.Methodref(
-            "org/python/core/PyFrame", "getglobal",
-            "(" + $str + ")" + $pyObj);
-        }
-        code.invokevirtual(mrefs.getglobal);
+        code.invokevirtual(p(PyFrame.class), "getglobal", sig(PyObject.class, String.class));
     }
 
+    @Override
     public Object visitName(Name node) throws Exception {
         String name;
-        if (fast_locals)
-            name = node.id;
-        else
-            name = getName(node.id);
+        if (fast_locals) {
+            name = node.getInternalId();
+        } else {
+            name = getName(node.getInternalId());
+        }
 
-        SymInfo syminf = (SymInfo)tbl.get(name);
+        SymInfo syminf = tbl.get(name);
 
-        int ctx = node.ctx;
-        if (ctx == node.AugStore) {
+        expr_contextType ctx = node.getInternalCtx();
+        if (ctx == expr_contextType.AugStore) {
             ctx = augmode;
-        }        
+        }
 
         switch (ctx) {
-        case Name.Load:
-            loadFrame();
-            if (syminf != null) {
-                int flags = syminf.flags;
-                if ((flags&ScopeInfo.GLOBAL) !=0 || optimizeGlobals&&
-                        (flags&(ScopeInfo.BOUND|ScopeInfo.CELL|
-                                                        ScopeInfo.FREE))==0) {
-                    emitGetGlobal(name);
-                    return null;
-                }
-                if (fast_locals) {
-                    if ((flags&ScopeInfo.CELL) != 0) {
+            case Load:
+                loadFrame();
+                if (syminf != null) {
+                    int flags = syminf.flags;
+                    if ((flags & ScopeInfo.GLOBAL) != 0 || optimizeGlobals &&
+                            (flags & (ScopeInfo.BOUND | ScopeInfo.CELL |
+                            ScopeInfo.FREE)) == 0) {
+                        emitGetGlobal(name);
+                        return null;
+                    }
+                    if (fast_locals) {
+                        if ((flags & ScopeInfo.CELL) != 0) {
+                            code.iconst(syminf.env_index);
+                            code.invokevirtual(p(PyFrame.class), "getderef", sig(PyObject.class,
+                                    Integer.TYPE));
+                            return null;
+                        }
+                        if ((flags & ScopeInfo.BOUND) != 0) {
+                            code.iconst(syminf.locals_index);
+                            code.invokevirtual(p(PyFrame.class), "getlocal", sig(PyObject.class,
+                                    Integer.TYPE));
+                            return null;
+                        }
+                    }
+                    if ((flags & ScopeInfo.FREE) != 0 &&
+                            (flags & ScopeInfo.BOUND) == 0) {
                         code.iconst(syminf.env_index);
-                        if (mrefs.getderef == 0) {
-                            mrefs.getderef = code.pool.Methodref(
-                            "org/python/core/PyFrame", "getderef",
-                            "(I)" + $pyObj);
-                        }
-                        code.invokevirtual(mrefs.getderef);
-                        return null;
-                    }
-                    if ((flags&ScopeInfo.BOUND) != 0) {
-                        code.iconst(syminf.locals_index);
-                        if (mrefs.getlocal2 == 0) {
-                            mrefs.getlocal2 = code.pool.Methodref(
-                            "org/python/core/PyFrame", "getlocal",
-                            "(I)" + $pyObj);
-                        }
-                        code.invokevirtual(mrefs.getlocal2);
+                        code.invokevirtual(p(PyFrame.class), "getderef", sig(PyObject.class,
+                                Integer.TYPE));
                         return null;
                     }
                 }
-                if ((flags&ScopeInfo.FREE) != 0 &&
-                            (flags&ScopeInfo.BOUND) == 0) {
-                    code.iconst(syminf.env_index);
-                    if (mrefs.getderef == 0) {
-                        mrefs.getderef = code.pool.Methodref(
-                        "org/python/core/PyFrame", "getderef",
-                        "(I)" + $pyObj);
-                    }
-                    code.invokevirtual(mrefs.getderef);
-                    return null;
-                }
-            }
-            code.ldc(name);
-            if (mrefs.getlocal1 == 0) {
-                mrefs.getlocal1 = code.pool.Methodref(
-                    "org/python/core/PyFrame", "getname",
-                    "(" + $str + ")" + $pyObj);
-            }
-            code.invokevirtual(mrefs.getlocal1);
-            return null;
-
-        case Name.Store:
-            loadFrame();
-            if (syminf != null && (syminf.flags&ScopeInfo.GLOBAL) != 0) {
                 code.ldc(name);
-                code.aload(temporary);
-                if (mrefs.setglobal == 0) {
-                    mrefs.setglobal = code.pool.Methodref(
-                        "org/python/core/PyFrame", "setglobal",
-                        "(" + $str + $pyObj + ")V");
-                }
-                code.invokevirtual(mrefs.setglobal);
-            } else {
-                if (!fast_locals) {
+                code.invokevirtual(p(PyFrame.class), "getname", sig(PyObject.class, String.class));
+                return null;
+
+            case Param:
+            case Store:
+                loadFrame();
+                if (syminf != null && (syminf.flags & ScopeInfo.GLOBAL) != 0) {
                     code.ldc(name);
                     code.aload(temporary);
-                    if (mrefs.setlocal1 == 0) {
-                        mrefs.setlocal1 = code.pool.Methodref(
-                            "org/python/core/PyFrame", "setlocal",
-                            "(" + $str + $pyObj + ")V");
-                    }
-                    code.invokevirtual(mrefs.setlocal1);
+                    code.invokevirtual(p(PyFrame.class), "setglobal", sig(Void.TYPE, String.class,
+                            PyObject.class));
                 } else {
-                    if (syminf == null) {
-                        System.err.println("internal compiler error: "+node);
-                    }
-                    if ((syminf.flags&ScopeInfo.CELL) != 0) {
-                        code.iconst(syminf.env_index);
+                    if (!fast_locals) {
+                        code.ldc(name);
                         code.aload(temporary);
-                        if (mrefs.setderef == 0) {
-                            mrefs.setderef = code.pool.Methodref(
-                            "org/python/core/PyFrame", "setderef",
-                            "(I" + $pyObj + ")V");
-                        }
-                        code.invokevirtual(mrefs.setderef);
+                        code.invokevirtual(p(PyFrame.class), "setlocal",
+                                sig(Void.TYPE, String.class, PyObject.class));
                     } else {
-                        code.iconst(syminf.locals_index);
-                        code.aload(temporary);
-                        if (mrefs.setlocal2 == 0) {
-                            mrefs.setlocal2 = code.pool.Methodref(
-                            "org/python/core/PyFrame", "setlocal",
-                            "(I" + $pyObj + ")V");
+                        if (syminf == null) {
+                            throw new ParseException("internal compiler error", node);
                         }
-                        code.invokevirtual(mrefs.setlocal2);
+                        if ((syminf.flags & ScopeInfo.CELL) != 0) {
+                            code.iconst(syminf.env_index);
+                            code.aload(temporary);
+                            code.invokevirtual(p(PyFrame.class), "setderef", sig(Void.TYPE,
+                                    Integer.TYPE, PyObject.class));
+                        } else {
+                            code.iconst(syminf.locals_index);
+                            code.aload(temporary);
+                            code.invokevirtual(p(PyFrame.class), "setlocal", sig(Void.TYPE,
+                                    Integer.TYPE, PyObject.class));
+                        }
                     }
                 }
-            }
-            return null;
-        case Name.Del: {
-            loadFrame();
-            if (syminf != null && (syminf.flags&ScopeInfo.GLOBAL) != 0) {
-                code.ldc(name);
-                if (mrefs.delglobal == 0) {
-                    mrefs.delglobal = code.pool.Methodref(
-                        "org/python/core/PyFrame", "delglobal",
-                        "(" + $str + ")V");
-                }
-                code.invokevirtual(mrefs.delglobal);
-            } else {
-                if (!fast_locals) {
+                return null;
+            case Del: {
+                loadFrame();
+                if (syminf != null && (syminf.flags & ScopeInfo.GLOBAL) != 0) {
                     code.ldc(name);
-                    if (mrefs.dellocal1 == 0) {
-                        mrefs.dellocal1 = code.pool.Methodref(
-                            "org/python/core/PyFrame", "dellocal",
-                            "(" + $str + ")V");
-                    }
-                    code.invokevirtual(mrefs.dellocal1);
+                    code.invokevirtual(p(PyFrame.class), "delglobal", sig(Void.TYPE, String.class));
                 } else {
-                    if (syminf == null) {
-                        System.err.println("internal compiler error: "+node);
+                    if (!fast_locals) {
+                        code.ldc(name);
+                        code.invokevirtual(p(PyFrame.class), "dellocal",
+                                sig(Void.TYPE, String.class));
+                    } else {
+                        if (syminf == null) {
+                            throw new ParseException("internal compiler error", node);
+                        }
+                        if ((syminf.flags & ScopeInfo.CELL) != 0) {
+                            module.error("can not delete variable '" + name +
+                                    "' referenced in nested scope", true, node);
+                        }
+                        code.iconst(syminf.locals_index);
+                        code.invokevirtual(p(PyFrame.class), "dellocal",
+                                sig(Void.TYPE, Integer.TYPE));
                     }
-                    if ((syminf.flags&ScopeInfo.CELL) != 0) {
-                        module.error("can not delete variable '"+name+
-                              "' referenced in nested scope",true,node);
-                    }
-                    code.iconst(syminf.locals_index);
-                    if (mrefs.dellocal2 == 0) {
-                        mrefs.dellocal2 = code.pool.Methodref(
-                            "org/python/core/PyFrame", "dellocal",
-                            "(I)V");
-                    }
-                    code.invokevirtual(mrefs.dellocal2);
                 }
+                return null;
             }
-            return null; }
         }
         return null;
     }
 
-    public Object visitUnicode(Unicode node) throws Exception {
-        String s = node.s;
-        if (s.length() > 32767) {
-            throw new ParseException(
-                "string constant too large (more than 32767 characters)",
-                node);
-        }
-        module.PyUnicode(s).get(code);
-        return null;
-    }
-
+    @Override
     public Object visitStr(Str node) throws Exception {
-        String s = node.s;
-        if (s.length() > 32767) {
-            throw new ParseException(
-                "string constant too large (more than 32767 characters)",
-                node);
+        PyString s = (PyString) node.getInternalS();
+        if (s instanceof PyUnicode) {
+            module.unicodeConstant(s.asString()).get(code);
+        } else {
+            module.stringConstant(s.asString()).get(code);
         }
-        module.PyString(s).get(code);
         return null;
     }
 
-    protected Object unhandled_node(SimpleNode node) throws Exception {
+    @Override
+    public Object visitGeneratorExp(GeneratorExp node) throws Exception {
+        String bound_exp = "_(x)";
+
+        setline(node);
+
+        code.new_(p(PyFunction.class));
+        code.dup();
+        loadFrame();
+        code.getfield(p(PyFrame.class), "f_globals", ci(PyObject.class));
+
+        ScopeInfo scope = module.getScopeInfo(node);
+
+        int emptyArray = makeArray(new ArrayList<expr>());
+        code.aload(emptyArray);
+        scope.setup_closure();
+        scope.dump();
+
+        stmt n = new Expr(node, new Yield(node, node.getInternalElt()));
+
+        expr iter = null;
+        for (int i = node.getInternalGenerators().size() - 1; i >= 0; i--) {
+            comprehension comp = node.getInternalGenerators().get(i);
+            for (int j = comp.getInternalIfs().size() - 1; j >= 0; j--) {
+                java.util.List<stmt> bod = new ArrayList<stmt>();
+                bod.add(n);
+                n = new If(comp.getInternalIfs().get(j), comp.getInternalIfs().get(j), bod,
+                        new ArrayList<stmt>());
+            }
+            java.util.List<stmt> bod = new ArrayList<stmt>();
+            bod.add(n);
+            if (i != 0) {
+                n = new For(comp, comp.getInternalTarget(), comp.getInternalIter(), bod,
+                        new ArrayList<stmt>());
+            } else {
+                n = new For(comp, comp.getInternalTarget(), new Name(node, bound_exp,
+                        expr_contextType.Load), bod, new ArrayList<stmt>());
+                iter = comp.getInternalIter();
+            }
+        }
+
+        java.util.List<stmt> bod = new ArrayList<stmt>();
+        bod.add(n);
+        module.codeConstant(new Suite(node, bod), "<genexpr>", true,
+                className, false, false,
+                node.getLine(), scope, cflags).get(code);
+
+        code.aconst_null();
+        if (!makeClosure(scope)) {
+            code.invokespecial(p(PyFunction.class), "<init>", sig(Void.TYPE, PyObject.class,
+                    PyObject[].class, PyCode.class, PyObject.class));
+        } else {
+            code.invokespecial(p(PyFunction.class), "<init>", sig(Void.TYPE, PyObject.class,
+                    PyObject[].class, PyCode.class, PyObject.class, PyObject[].class));
+        }
+        int genExp = storeTop();
+
+        visit(iter);
+        code.aload(genExp);
+        code.freeLocal(genExp);
+        code.swap();
+        code.invokevirtual(p(PyObject.class), "__iter__", sig(PyObject.class));
+        loadThreadState();
+        code.swap();
+        code.invokevirtual(p(PyObject.class), "__call__",
+                sig(PyObject.class, ThreadState.class, PyObject.class));
+        freeArray(emptyArray);
+
+        return null;
+    }
+
+    @Override
+    public Object visitWith(With node) throws Exception {
+        if (!module.getFutures().withStatementSupported()) {
+            throw new ParseException("'with' will become a reserved keyword in Python 2.6", node);
+        }
+
+        final Label label_body_start = new Label();
+        final Label label_body_end = new Label();
+        final Label label_catch = new Label();
+        final Label label_end = new Label();
+
+        final Method contextGuard_getManager = Method.getMethod(
+                "org.python.core.ContextManager getManager (org.python.core.PyObject)");
+        final Method __enter__ = Method.getMethod(
+                "org.python.core.PyObject __enter__ (org.python.core.ThreadState)");
+        final Method __exit__ = Method.getMethod(
+                "boolean __exit__ (org.python.core.ThreadState,org.python.core.PyException)");
+
+        // mgr = (EXPR)
+        visit(node.getInternalContext_expr());
+
+        // wrap the manager with the ContextGuard (or get it directly if it
+        // supports the ContextManager interface)
+        code.invokestatic(Type.getType(ContextGuard.class).getInternalName(),
+                contextGuard_getManager.getName(), contextGuard_getManager.getDescriptor());
+        code.dup();
+
+
+        final int mgr_tmp = code.getLocal(Type.getType(ContextManager.class).getInternalName());
+        code.astore(mgr_tmp);
+
+        // value = mgr.__enter__()
+        loadThreadState();
+        code.invokeinterface(Type.getType(ContextManager.class).getInternalName(),
+                __enter__.getName(), __enter__.getDescriptor());
+        int value_tmp = code.getLocal(p(PyObject.class));
+        code.astore(value_tmp);
+
+        // exc = True # not necessary, since we don't exec finally if exception
+
+        // FINALLY (preparation)
+        // ordinarily with a finally, we need to duplicate the code. that's not the case
+        // here
+        // # The normal and non-local-goto cases are handled here
+        // if exc: # implicit
+        //     exit(None, None, None)
+        ExceptionHandler normalExit = new ExceptionHandler() {
+
+            @Override
+            public boolean isFinallyHandler() {
+                return true;
+            }
+
+            @Override
+            public void finalBody(CodeCompiler compiler) throws Exception {
+                compiler.code.aload(mgr_tmp);
+                loadThreadState();
+                compiler.code.aconst_null();
+                compiler.code.invokeinterface(Type.getType(ContextManager.class).getInternalName(),
+                        __exit__.getName(), __exit__.getDescriptor());
+                compiler.code.pop();
+            }
+        };
+        exceptionHandlers.push(normalExit);
+
+        // try-catch block here
+        ExceptionHandler handler = new ExceptionHandler();
+        exceptionHandlers.push(handler);
+        handler.exceptionStarts.addElement(label_body_start);
+
+        // VAR = value  # Only if "as VAR" is present
+        code.label(label_body_start);
+        if (node.getInternalOptional_vars() != null) {
+            set(node.getInternalOptional_vars(), value_tmp);
+        }
+        code.freeLocal(value_tmp);
+
+        // BLOCK + FINALLY if non-local-goto
+        Object blockResult = suite(node.getInternalBody());
+        normalExit.bodyDone = true;
+        exceptionHandlers.pop();
+        exceptionHandlers.pop();
+        code.label(label_body_end);
+        handler.exceptionEnds.addElement(label_body_end);
+
+        // FINALLY if *not* non-local-goto
+        if (blockResult == NoExit) {
+            // BLOCK would have generated FINALLY for us if it exited (due to a break,
+            // continue or return)
+            inlineFinally(normalExit);
+            code.goto_(label_end);
+        }
+
+        // CATCH
+        code.label(label_catch);
+
+        loadFrame();
+        code.invokestatic(p(Py.class), "setException", sig(PyException.class, Throwable.class,
+                PyFrame.class));
+        code.aload(mgr_tmp);
+        code.swap();
+        loadThreadState();
+        code.swap();
+        code.invokeinterface(Type.getType(ContextManager.class).getInternalName(),
+                __exit__.getName(), __exit__.getDescriptor());
+
+        // # The exceptional case is handled here
+        // exc = False # implicit
+        // if not exit(*sys.exc_info()):
+        code.ifne(label_end);
+        //    raise
+        // # The exception is swallowed if exit() returns true
+        code.invokestatic(p(Py.class), "makeException", sig(PyException.class));
+        code.checkcast(p(Throwable.class));
+        code.athrow();
+
+        code.label(label_end);
+        code.freeLocal(mgr_tmp);
+
+        handler.addExceptionHandlers(label_catch);
+        return null;
+    }
+
+    @Override
+    protected Object unhandled_node(PythonTree node) throws Exception {
         throw new Exception("Unhandled node " + node);
     }
 
@@ -2426,11 +2669,12 @@ public class CodeCompiler extends Visitor
      *  each exit of the try: section, so we carry around that data for it.
      *  
      *  Both of these need to stop exception coverage of an area that is either
-     *  the inlined finally of a parent try:finally: or the reentry block after
+     *  the inlined fin ally of a parent try:finally: or the reentry block after
      *  a yield.  Thus we keep around a set of exception ranges that the
      *  catch block will eventually handle.
      */
     class ExceptionHandler {
+
         /**
          *  Each handler gets several exception ranges, this is because inlined
          *  finally exit code shouldn't be covered by the exception handler of
@@ -2440,17 +2684,15 @@ public class CodeCompiler extends Visitor
          *  We also need to stop coverage for the recovery of the locals after
          *  a yield.
          */
-        public Vector exceptionStarts = new Vector();
-        public Vector exceptionEnds = new Vector();
-
+        public Vector<Label> exceptionStarts = new Vector<Label>();
+        public Vector<Label> exceptionEnds = new Vector<Label>();
         public boolean bodyDone = false;
-
-        public TryFinally node = null;
+        public PythonTree node = null;
 
         public ExceptionHandler() {
         }
 
-        public ExceptionHandler(TryFinally n) {
+        public ExceptionHandler(PythonTree n) {
             node = n;
         }
 
@@ -2459,17 +2701,23 @@ public class CodeCompiler extends Visitor
         }
 
         public void addExceptionHandlers(Label handlerStart) throws Exception {
-            int throwable = code.pool.Class("java/lang/Throwable");
             for (int i = 0; i < exceptionStarts.size(); ++i) {
-                Label start = (Label)exceptionStarts.elementAt(i);
-                Label end = (Label)exceptionEnds.elementAt(i);
-                if (start.getPosition() != end.getPosition()) {
-                    code.addExceptionHandler(
-                        (Label)exceptionStarts.elementAt(i),
-                        (Label)exceptionEnds.elementAt(i),
-                        handlerStart,
-                        throwable);
+                Label start = exceptionStarts.elementAt(i);
+                Label end = exceptionEnds.elementAt(i);
+                //FIXME: not at all sure that getOffset() test is correct or necessary.
+                if (start.getOffset() != end.getOffset()) {
+                    code.trycatch(
+                            exceptionStarts.elementAt(i),
+                            exceptionEnds.elementAt(i),
+                            handlerStart,
+                            p(Throwable.class));
                 }
+            }
+        }
+
+        public void finalBody(CodeCompiler compiler) throws Exception {
+            if (node instanceof TryFinally) {
+                suite(((TryFinally) node).getInternalFinalbody());
             }
         }
     }

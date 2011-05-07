@@ -1,760 +1,30 @@
-// Copyright (c) Corporation for National Research Initiatives
+/*
+ * Copyright (c) Corporation for National Research Initiatives
+ * Copyright (c) Jython Developers
+ */
 package org.python.core;
+
+import org.python.expose.ExposedGet;
+import org.python.expose.ExposedMethod;
+import org.python.expose.ExposedNew;
+import org.python.expose.ExposedType;
+import org.python.expose.MethodType;
 
 /**
  * A builtin python complex number
  */
-
+@ExposedType(name = "complex", doc = BuiltinDocs.complex_doc)
 public class PyComplex extends PyObject {
-    public double real, imag;
+
+    public static final PyType TYPE = PyType.fromClass(PyComplex.class);
 
     static PyComplex J = new PyComplex(0, 1.);
 
-    //~ BEGIN GENERATED REGION -- DO NOT EDIT SEE gexpose.py
-    /* type info */
-
-    public static final String exposed_name="complex";
-
-    public static void typeSetup(PyObject dict,PyType.Newstyle marker) {
-        dict.__setitem__("imag",new PyGetSetDescr("imag",PyComplex.class,"getImag",null,null));
-        dict.__setitem__("real",new PyGetSetDescr("real",PyComplex.class,"getReal",null,null));
-        class exposed___abs__ extends PyBuiltinMethodNarrow {
-
-            exposed___abs__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___abs__(self,info);
-            }
-
-            public PyObject __call__() {
-                return((PyComplex)self).complex___abs__();
-            }
-
-        }
-        dict.__setitem__("__abs__",new PyMethodDescr("__abs__",PyComplex.class,0,0,new exposed___abs__(null,null)));
-        class exposed___float__ extends PyBuiltinMethodNarrow {
-
-            exposed___float__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___float__(self,info);
-            }
-
-            public PyObject __call__() {
-                return((PyComplex)self).complex___float__();
-            }
-
-        }
-        dict.__setitem__("__float__",new PyMethodDescr("__float__",PyComplex.class,0,0,new exposed___float__(null,null)));
-        class exposed___int__ extends PyBuiltinMethodNarrow {
-
-            exposed___int__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___int__(self,info);
-            }
-
-            public PyObject __call__() {
-                return((PyComplex)self).complex___int__();
-            }
-
-        }
-        dict.__setitem__("__int__",new PyMethodDescr("__int__",PyComplex.class,0,0,new exposed___int__(null,null)));
-        class exposed___long__ extends PyBuiltinMethodNarrow {
-
-            exposed___long__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___long__(self,info);
-            }
-
-            public PyObject __call__() {
-                return((PyComplex)self).complex___long__();
-            }
-
-        }
-        dict.__setitem__("__long__",new PyMethodDescr("__long__",PyComplex.class,0,0,new exposed___long__(null,null)));
-        class exposed___neg__ extends PyBuiltinMethodNarrow {
-
-            exposed___neg__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___neg__(self,info);
-            }
-
-            public PyObject __call__() {
-                return((PyComplex)self).complex___neg__();
-            }
-
-        }
-        dict.__setitem__("__neg__",new PyMethodDescr("__neg__",PyComplex.class,0,0,new exposed___neg__(null,null)));
-        class exposed___pos__ extends PyBuiltinMethodNarrow {
-
-            exposed___pos__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___pos__(self,info);
-            }
-
-            public PyObject __call__() {
-                return((PyComplex)self).complex___pos__();
-            }
-
-        }
-        dict.__setitem__("__pos__",new PyMethodDescr("__pos__",PyComplex.class,0,0,new exposed___pos__(null,null)));
-        class exposed___add__ extends PyBuiltinMethodNarrow {
-
-            exposed___add__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___add__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyComplex)self).complex___add__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__add__",new PyMethodDescr("__add__",PyComplex.class,1,1,new exposed___add__(null,null)));
-        class exposed___div__ extends PyBuiltinMethodNarrow {
-
-            exposed___div__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___div__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyComplex)self).complex___div__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__div__",new PyMethodDescr("__div__",PyComplex.class,1,1,new exposed___div__(null,null)));
-        class exposed___divmod__ extends PyBuiltinMethodNarrow {
-
-            exposed___divmod__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___divmod__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyComplex)self).complex___divmod__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__divmod__",new PyMethodDescr("__divmod__",PyComplex.class,1,1,new exposed___divmod__(null,null)));
-        class exposed___floordiv__ extends PyBuiltinMethodNarrow {
-
-            exposed___floordiv__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___floordiv__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyComplex)self).complex___floordiv__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__floordiv__",new PyMethodDescr("__floordiv__",PyComplex.class,1,1,new exposed___floordiv__(null,null)));
-        class exposed___mod__ extends PyBuiltinMethodNarrow {
-
-            exposed___mod__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___mod__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyComplex)self).complex___mod__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__mod__",new PyMethodDescr("__mod__",PyComplex.class,1,1,new exposed___mod__(null,null)));
-        class exposed___mul__ extends PyBuiltinMethodNarrow {
-
-            exposed___mul__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___mul__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyComplex)self).complex___mul__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__mul__",new PyMethodDescr("__mul__",PyComplex.class,1,1,new exposed___mul__(null,null)));
-        class exposed___radd__ extends PyBuiltinMethodNarrow {
-
-            exposed___radd__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___radd__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyComplex)self).complex___radd__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__radd__",new PyMethodDescr("__radd__",PyComplex.class,1,1,new exposed___radd__(null,null)));
-        class exposed___rdiv__ extends PyBuiltinMethodNarrow {
-
-            exposed___rdiv__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___rdiv__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyComplex)self).complex___rdiv__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__rdiv__",new PyMethodDescr("__rdiv__",PyComplex.class,1,1,new exposed___rdiv__(null,null)));
-        class exposed___rdivmod__ extends PyBuiltinMethodNarrow {
-
-            exposed___rdivmod__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___rdivmod__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyComplex)self).complex___rdivmod__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__rdivmod__",new PyMethodDescr("__rdivmod__",PyComplex.class,1,1,new exposed___rdivmod__(null,null)));
-        class exposed___rfloordiv__ extends PyBuiltinMethodNarrow {
-
-            exposed___rfloordiv__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___rfloordiv__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyComplex)self).complex___rfloordiv__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__rfloordiv__",new PyMethodDescr("__rfloordiv__",PyComplex.class,1,1,new exposed___rfloordiv__(null,null)));
-        class exposed___rmod__ extends PyBuiltinMethodNarrow {
-
-            exposed___rmod__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___rmod__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyComplex)self).complex___rmod__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__rmod__",new PyMethodDescr("__rmod__",PyComplex.class,1,1,new exposed___rmod__(null,null)));
-        class exposed___rmul__ extends PyBuiltinMethodNarrow {
-
-            exposed___rmul__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___rmul__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyComplex)self).complex___rmul__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__rmul__",new PyMethodDescr("__rmul__",PyComplex.class,1,1,new exposed___rmul__(null,null)));
-        class exposed___rpow__ extends PyBuiltinMethodNarrow {
-
-            exposed___rpow__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___rpow__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyComplex)self).complex___rpow__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__rpow__",new PyMethodDescr("__rpow__",PyComplex.class,1,1,new exposed___rpow__(null,null)));
-        class exposed___rsub__ extends PyBuiltinMethodNarrow {
-
-            exposed___rsub__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___rsub__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyComplex)self).complex___rsub__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__rsub__",new PyMethodDescr("__rsub__",PyComplex.class,1,1,new exposed___rsub__(null,null)));
-        class exposed___rtruediv__ extends PyBuiltinMethodNarrow {
-
-            exposed___rtruediv__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___rtruediv__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyComplex)self).complex___rtruediv__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__rtruediv__",new PyMethodDescr("__rtruediv__",PyComplex.class,1,1,new exposed___rtruediv__(null,null)));
-        class exposed___sub__ extends PyBuiltinMethodNarrow {
-
-            exposed___sub__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___sub__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyComplex)self).complex___sub__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__sub__",new PyMethodDescr("__sub__",PyComplex.class,1,1,new exposed___sub__(null,null)));
-        class exposed___truediv__ extends PyBuiltinMethodNarrow {
-
-            exposed___truediv__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___truediv__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyComplex)self).complex___truediv__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__truediv__",new PyMethodDescr("__truediv__",PyComplex.class,1,1,new exposed___truediv__(null,null)));
-        class exposed___eq__ extends PyBuiltinMethodNarrow {
-
-            exposed___eq__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___eq__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyComplex)self).complex___eq__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__eq__",new PyMethodDescr("__eq__",PyComplex.class,1,1,new exposed___eq__(null,null)));
-        class exposed___ne__ extends PyBuiltinMethodNarrow {
-
-            exposed___ne__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___ne__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyComplex)self).complex___ne__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__ne__",new PyMethodDescr("__ne__",PyComplex.class,1,1,new exposed___ne__(null,null)));
-        class exposed___ge__ extends PyBuiltinMethodNarrow {
-
-            exposed___ge__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___ge__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyComplex)self).complex___ge__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__ge__",new PyMethodDescr("__ge__",PyComplex.class,1,1,new exposed___ge__(null,null)));
-        class exposed___le__ extends PyBuiltinMethodNarrow {
-
-            exposed___le__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___le__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyComplex)self).complex___le__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__le__",new PyMethodDescr("__le__",PyComplex.class,1,1,new exposed___le__(null,null)));
-        class exposed___gt__ extends PyBuiltinMethodNarrow {
-
-            exposed___gt__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___gt__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyComplex)self).complex___gt__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__gt__",new PyMethodDescr("__gt__",PyComplex.class,1,1,new exposed___gt__(null,null)));
-        class exposed___lt__ extends PyBuiltinMethodNarrow {
-
-            exposed___lt__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___lt__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyComplex)self).complex___lt__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__lt__",new PyMethodDescr("__lt__",PyComplex.class,1,1,new exposed___lt__(null,null)));
-        class exposed___pow__ extends PyBuiltinMethodNarrow {
-
-            exposed___pow__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___pow__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0,PyObject arg1) {
-                PyObject ret=((PyComplex)self).complex___pow__(arg0,arg1);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyComplex)self).complex___pow__(arg0,null);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__pow__",new PyMethodDescr("__pow__",PyComplex.class,1,2,new exposed___pow__(null,null)));
-        class exposed_conjugate extends PyBuiltinMethodNarrow {
-
-            exposed_conjugate(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_conjugate(self,info);
-            }
-
-            public PyObject __call__() {
-                return((PyComplex)self).complex_conjugate();
-            }
-
-        }
-        dict.__setitem__("conjugate",new PyMethodDescr("conjugate",PyComplex.class,0,0,new exposed_conjugate(null,null)));
-        class exposed___nonzero__ extends PyBuiltinMethodNarrow {
-
-            exposed___nonzero__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___nonzero__(self,info);
-            }
-
-            public PyObject __call__() {
-                return Py.newBoolean(((PyComplex)self).complex___nonzero__());
-            }
-
-        }
-        dict.__setitem__("__nonzero__",new PyMethodDescr("__nonzero__",PyComplex.class,0,0,new exposed___nonzero__(null,null)));
-        class exposed___reduce__ extends PyBuiltinMethodNarrow {
-
-            exposed___reduce__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___reduce__(self,info);
-            }
-
-            public PyObject __call__() {
-                return((PyComplex)self).complex___reduce__();
-            }
-
-        }
-        dict.__setitem__("__reduce__",new PyMethodDescr("__reduce__",PyComplex.class,0,0,new exposed___reduce__(null,null)));
-        class exposed___repr__ extends PyBuiltinMethodNarrow {
-
-            exposed___repr__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___repr__(self,info);
-            }
-
-            public PyObject __call__() {
-                return new PyString(((PyComplex)self).complex_toString());
-            }
-
-        }
-        dict.__setitem__("__repr__",new PyMethodDescr("__repr__",PyComplex.class,0,0,new exposed___repr__(null,null)));
-        class exposed___str__ extends PyBuiltinMethodNarrow {
-
-            exposed___str__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___str__(self,info);
-            }
-
-            public PyObject __call__() {
-                return new PyString(((PyComplex)self).complex_toString());
-            }
-
-        }
-        dict.__setitem__("__str__",new PyMethodDescr("__str__",PyComplex.class,0,0,new exposed___str__(null,null)));
-        class exposed___hash__ extends PyBuiltinMethodNarrow {
-
-            exposed___hash__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___hash__(self,info);
-            }
-
-            public PyObject __call__() {
-                return Py.newInteger(((PyComplex)self).complex_hashCode());
-            }
-
-        }
-        dict.__setitem__("__hash__",new PyMethodDescr("__hash__",PyComplex.class,0,0,new exposed___hash__(null,null)));
-        dict.__setitem__("__new__",new PyNewWrapper(PyComplex.class,"__new__",-1,-1) {
-
-                                                                                         public PyObject new_impl(boolean init,PyType subtype,PyObject[]args,String[]keywords) {
-                                                                                             return complex_new(this,init,subtype,args,keywords);
-                                                                                         }
-
-                                                                                     });
-    }
-    //~ END GENERATED REGION -- DO NOT EDIT SEE gexpose.py
-
-    public static PyObject complex_new(PyNewWrapper new_, boolean init, PyType subtype,
-            PyObject[] args, String[] keywords) {
-        if (args.length == 0) {
-            if (new_.for_type == subtype) {
-                return new PyComplex(0, 0);
-            }
-            return new PyComplexDerived(subtype, 0, 0);
-        }
-
-        if (args.length > 2)
-            throw Py.TypeError("complex() "+"takes at most 2 arguments (" +
-                               args.length + " given)");
-
-        // optimize complex(int, int) here?
-
-        ArgParser ap = new ArgParser("complex", args, keywords, "real", "imag");
-        PyObject real = ap.getPyObject(0, Py.Zero);
-        PyObject imag = ap.getPyObject(1, null);
-
-        if (imag != null) {
-            if (real instanceof PyString)
-                throw Py.TypeError("complex() " +
-                        "can't take second arg if first is a string");
-            if (imag instanceof PyString)
-                throw Py.TypeError("complex() " +
-                        "second arg can't be a string");
-        }
-
-        PyComplex ret = null;
-        try {
-            ret = real.__complex__();
-        } catch (PyException pye) {
-            // i.e PyString.__complex__ throws ValueError
-            if (!(Py.matchException(pye, Py.AttributeError))) throw pye;
-        }
-
-        try {
-            if (ret == null)
-                ret = new PyComplex(real.__float__().getValue(), 0);
-            if (imag != null) {
-                if (ret == real)
-                    ret = new PyComplex(ret.real, ret.imag);
-                if (imag instanceof PyComplex) {
-                    // optimize away __mul__()
-                    // IMO only allowed on pure PyComplex objects, but CPython
-                    // does it on all complex subtypes, so I do too.
-                    PyComplex c = (PyComplex) imag;
-                    ret.real -= c.imag;
-                    ret.imag += c.real;
-                } else {
-                    // CPython doesn't call __complex__ on second argument
-                    ret.imag += imag.__float__().getValue();
-                }
-            }
-            if (new_.for_type == subtype) {
-                return ret;
-            } else {
-                return new PyComplexDerived(subtype, ret.real, ret.imag);
-            }
-        } catch (PyException pye) {
-            // convert all AttributeErrors except on PyInstance to TypeError
-            if (Py.matchException(pye, Py.AttributeError)) {
-                Object o = (ret == null ? real : imag);
-                if (!(o instanceof PyInstance))
-                    throw Py.TypeError("complex() " +
-                            "argument must be a string or a number");
-            }
-            throw pye;
-        }
-    }
-
-    private static final PyType COMPLEXTYPE = PyType.fromClass(PyComplex.class);
+    @ExposedGet(doc = BuiltinDocs.complex_real_doc)
+    public double real;
+
+    @ExposedGet(doc = BuiltinDocs.complex_imag_doc)
+    public double imag;
 
     public PyComplex(PyType subtype, double r, double i) {
         super(subtype);
@@ -763,11 +33,86 @@ public class PyComplex extends PyObject {
     }
 
     public PyComplex(double r, double i) {
-        this(COMPLEXTYPE, r, i);
+        this(TYPE, r, i);
     }
 
-    public String safeRepr() throws PyIgnoreMethodTag {
-        return "'complex' object";
+    public PyComplex(double r) {
+        this(r, 0.0);
+    }
+
+    @ExposedNew
+    public static PyObject complex_new(PyNewWrapper new_, boolean init, PyType subtype,
+                                       PyObject[] args, String[] keywords) {
+        ArgParser ap = new ArgParser("complex", args, keywords, "real", "imag");
+        PyObject real = ap.getPyObject(0, Py.Zero);
+        PyObject imag = ap.getPyObject(1, null);
+
+        // Special-case for single argument that is already complex
+        if (real.getType() == TYPE && new_.for_type == subtype && imag == null) {
+            return real;
+        }
+        if (real instanceof PyString) {
+            if (imag != null) {
+                throw Py.TypeError("complex() can't take second arg if first is a string");
+            }
+            return real.__complex__();
+        }
+        if (imag != null && imag instanceof PyString) {
+            throw Py.TypeError("complex() second arg can't be a string");
+        }
+
+        try {
+            real = real.__complex__();
+        } catch (PyException pye) {
+            if (!pye.match(Py.AttributeError)) {
+                // __complex__ not supported
+                throw pye;
+            }
+            // otherwise try other means
+        }
+
+        PyComplex complexReal;
+        PyComplex complexImag;
+        PyFloat toFloat = null;
+        if (real instanceof PyComplex) {
+            complexReal = (PyComplex) real;
+        } else {
+            try {
+                toFloat = real.__float__();
+            } catch (PyException pye) {
+                if (pye.match(Py.AttributeError)) {
+                    // __float__ not supported
+                    throw Py.TypeError("complex() argument must be a string or a number");
+                }
+                throw pye;
+            }
+            complexReal = new PyComplex(toFloat.getValue());
+        }
+
+        if (imag == null) {
+            complexImag = new PyComplex(0.0);
+        } else if (imag instanceof PyComplex) {
+            complexImag = (PyComplex) imag;
+        } else {
+            toFloat = null;
+            try {
+                toFloat = imag.__float__();
+            } catch (PyException pye) {
+                if (pye.match(Py.AttributeError)) {
+                    // __float__ not supported
+                    throw Py.TypeError("complex() argument must be a string or a number");
+                }
+                throw pye;
+            }
+            complexImag = new PyComplex(toFloat.getValue());
+        }
+
+        complexReal.real -= complexImag.imag;
+        complexReal.imag += complexImag.real;
+        if (new_.for_type != subtype) {
+            complexReal = new PyComplexDerived(subtype, complexReal.real, complexReal.imag);
+        }
+        return complexReal;
     }
 
     public final PyFloat getReal() {
@@ -779,68 +124,67 @@ public class PyComplex extends PyObject {
     }
 
     public static String toString(double value) {
-        if (value == Math.floor(value) &&
-               value <= Long.MAX_VALUE && value >= Long.MIN_VALUE) {
-            return Long.toString((long)value);
+        if (value == Math.floor(value) && value <= Long.MAX_VALUE && value >= Long.MIN_VALUE) {
+            return Long.toString((long) value);
         } else {
             return Double.toString(value);
         }
     }
 
+    @Override
     public String toString() {
         return complex_toString();
     }
 
+    @ExposedMethod(names = {"__repr__", "__str__"}, doc = BuiltinDocs.complex___str___doc)
     final String complex_toString() {
         if (real == 0.) {
-            return toString(imag)+"j";
+            return toString(imag) + "j";
         } else {
             if (imag >= 0) {
-                return "("+toString(real)+"+"+toString(imag)+"j)";
+                return String.format("(%s+%sj)", toString(real), toString(imag));
             } else {
-                return "("+toString(real)+"-"+toString(-imag)+"j)";
+                return String.format("(%s-%sj)", toString(real), toString(-imag));
             }
         }
     }
 
+    @Override
     public int hashCode() {
-        return complex_hashCode();
+        return complex___hash__();
     }
 
-    final int complex_hashCode() {
+    @ExposedMethod(doc = BuiltinDocs.complex___hash___doc)
+    final int complex___hash__() {
         if (imag == 0) {
             return new PyFloat(real).hashCode();
         } else {
-            long v = Double.doubleToLongBits(real) ^
-                Double.doubleToLongBits(imag);
-            return (int)v ^ (int)(v >> 32);
+            long v = Double.doubleToLongBits(real) ^ Double.doubleToLongBits(imag);
+            return (int) v ^ (int) (v >> 32);
         }
     }
 
+    @Override
     public boolean __nonzero__() {
         return complex___nonzero__();
     }
 
+    @ExposedMethod(doc = BuiltinDocs.complex___nonzero___doc)
     final boolean complex___nonzero__() {
-        return real != 0 && imag != 0;
+        return real != 0 || imag != 0;
     }
 
-    /*public Object __tojava__(Class c) {
-      return super.__tojava__(c);
-      }*/
-
+    @Override
     public int __cmp__(PyObject other) {
-        return complex___cmp__(other);
-    }
-
-    final int complex___cmp__(PyObject other) {
-        if (!canCoerce(other))
+        if (!canCoerce(other)) {
             return -2;
+        }
         PyComplex c = coerce(other);
         double oreal = c.real;
         double oimag = c.imag;
-        if (real == oreal && imag == oimag)
+        if (real == oreal && imag == oimag) {
             return 0;
+        }
         if (real != oreal) {
             return real < oreal ? -1 : 1;
         } else {
@@ -848,169 +192,214 @@ public class PyComplex extends PyObject {
         }
     }
 
-    /*
-     * @see org.python.core.PyObject#__eq__(org.python.core.PyObject)
-     */
+    @Override
     public PyObject __eq__(PyObject other) {
         return complex___eq__(other);
     }
 
+    @ExposedMethod(type = MethodType.BINARY, doc = BuiltinDocs.complex___eq___doc)
     final PyObject complex___eq__(PyObject other) {
-        if (!canCoerce(other))
+        if (!canCoerce(other)) {
             return null;
+        }
         PyComplex c = coerce(other);
         return Py.newBoolean(real == c.real && imag == c.imag);
     }
 
-    /*
-     * @see org.python.core.PyObject#__ne__(org.python.core.PyObject)
-     */
+    @Override
     public PyObject __ne__(PyObject other) {
         return complex___ne__(other);
     }
 
+    @ExposedMethod(type = MethodType.BINARY, doc = BuiltinDocs.complex___ne___doc)
     final PyObject complex___ne__(PyObject other) {
-        if (!canCoerce(other))
+        if (!canCoerce(other)) {
             return null;
+        }
         PyComplex c = coerce(other);
         return Py.newBoolean(real != c.real || imag != c.imag);
     }
 
     private PyObject unsupported_comparison(PyObject other) {
-        if (!canCoerce(other))
+        if (!canCoerce(other)) {
             return null;
+        }
         throw Py.TypeError("cannot compare complex numbers using <, <=, >, >=");
     }
 
+    @Override
     public PyObject __ge__(PyObject other) {
         return complex___ge__(other);
     }
 
+    @ExposedMethod(type = MethodType.BINARY, doc = BuiltinDocs.complex___ge___doc)
     final PyObject complex___ge__(PyObject other) {
         return unsupported_comparison(other);
     }
 
+    @Override
     public PyObject __gt__(PyObject other) {
         return complex___gt__(other);
     }
 
+    @ExposedMethod(type = MethodType.BINARY, doc = BuiltinDocs.complex___gt___doc)
     final PyObject complex___gt__(PyObject other) {
         return unsupported_comparison(other);
     }
 
+    @Override
     public PyObject __le__(PyObject other) {
         return complex___le__(other);
     }
 
+    @ExposedMethod(type = MethodType.BINARY, doc = BuiltinDocs.complex___le___doc)
     final PyObject complex___le__(PyObject other) {
         return unsupported_comparison(other);
     }
 
+    @Override
     public PyObject __lt__(PyObject other) {
         return complex___lt__(other);
     }
 
+    @ExposedMethod(type = MethodType.BINARY, doc = BuiltinDocs.complex___lt___doc)
     final PyObject complex___lt__(PyObject other) {
         return unsupported_comparison(other);
     }
 
-
+    @Override
     public Object __coerce_ex__(PyObject other) {
-        if (other instanceof PyComplex)
+        return complex___coerce_ex__(other);
+    }
+
+    @ExposedMethod(doc = BuiltinDocs.complex___coerce___doc)
+    final PyObject complex___coerce__(PyObject other) {
+        return adaptToCoerceTuple(complex___coerce_ex__(other));
+    }
+
+    /**
+     * Coercion logic for complex. Implemented as a final method to avoid
+     * invocation of virtual methods from the exposed coerce.
+     */
+    final PyObject complex___coerce_ex__(PyObject other) {
+        if (other instanceof PyComplex) {
             return other;
-        if (other instanceof PyFloat)
-            return new PyComplex(((PyFloat)other).getValue(), 0);
-        if (other instanceof PyInteger)
-            return new PyComplex((double)((PyInteger)other).getValue(), 0);
-        if (other instanceof PyLong)
-            return new PyComplex(((PyLong)other).doubleValue(), 0);
+        }
+        if (other instanceof PyFloat) {
+            return new PyComplex(((PyFloat) other).getValue(), 0);
+        }
+        if (other instanceof PyInteger) {
+            return new PyComplex(((PyInteger) other).getValue(), 0);
+        }
+        if (other instanceof PyLong) {
+            return new PyComplex(((PyLong) other).doubleValue(), 0);
+        }
         return Py.None;
     }
 
     private final boolean canCoerce(PyObject other) {
-        return other instanceof PyComplex ||
-               other instanceof PyFloat ||
-               other instanceof PyInteger ||
-               other instanceof PyLong;
+        return other instanceof PyComplex || other instanceof PyFloat || other instanceof PyInteger
+                || other instanceof PyLong;
     }
 
     private final PyComplex coerce(PyObject other) {
-        if (other instanceof PyComplex)
+        if (other instanceof PyComplex) {
             return (PyComplex) other;
-        if (other instanceof PyFloat)
-            return new PyComplex(((PyFloat)other).getValue(), 0);
-        if (other instanceof PyInteger)
-            return new PyComplex((double)((PyInteger)other).getValue(), 0);
-        if (other instanceof PyLong)
-            return new PyComplex(((PyLong)other).doubleValue(), 0);
+        }
+        if (other instanceof PyFloat) {
+            return new PyComplex(((PyFloat) other).getValue(), 0);
+        }
+        if (other instanceof PyInteger) {
+            return new PyComplex(((PyInteger) other).getValue(), 0);
+        }
+        if (other instanceof PyLong) {
+            return new PyComplex(((PyLong) other).doubleValue(), 0);
+        }
         throw Py.TypeError("xxx");
     }
 
+    @Override
     public PyObject __add__(PyObject right) {
         return complex___add__(right);
     }
 
+    @ExposedMethod(type = MethodType.BINARY, doc = BuiltinDocs.complex___add___doc)
     final PyObject complex___add__(PyObject right) {
-        if (!canCoerce(right))
+        if (!canCoerce(right)) {
             return null;
+        }
         PyComplex c = coerce(right);
-        return new PyComplex(real+c.real, imag+c.imag);
+        return new PyComplex(real + c.real, imag + c.imag);
     }
 
+    @Override
     public PyObject __radd__(PyObject left) {
         return complex___radd__(left);
     }
 
+    @ExposedMethod(type = MethodType.BINARY, doc = BuiltinDocs.complex___radd___doc)
     final PyObject complex___radd__(PyObject left) {
         return __add__(left);
     }
 
     private final static PyObject _sub(PyComplex o1, PyComplex o2) {
-        return new PyComplex(o1.real-o2.real, o1.imag-o2.imag);
+        return new PyComplex(o1.real - o2.real, o1.imag - o2.imag);
     }
 
+    @Override
     public PyObject __sub__(PyObject right) {
         return complex___sub__(right);
     }
 
+    @ExposedMethod(type = MethodType.BINARY, doc = BuiltinDocs.complex___sub___doc)
     final PyObject complex___sub__(PyObject right) {
-        if (!canCoerce(right))
+        if (!canCoerce(right)) {
             return null;
+        }
         return _sub(this, coerce(right));
     }
 
+    @Override
     public PyObject __rsub__(PyObject left) {
         return complex___rsub__(left);
     }
 
+    @ExposedMethod(type = MethodType.BINARY, doc = BuiltinDocs.complex___rsub___doc)
     final PyObject complex___rsub__(PyObject left) {
-        if (!canCoerce(left))
+        if (!canCoerce(left)) {
             return null;
+        }
         return _sub(coerce(left), this);
     }
 
     private final static PyObject _mul(PyComplex o1, PyComplex o2) {
-        return new PyComplex(o1.real*o2.real-o1.imag*o2.imag,
-                             o1.real*o2.imag+o1.imag*o2.real);
+        return new PyComplex(o1.real * o2.real - o1.imag * o2.imag,
+                             o1.real * o2.imag + o1.imag * o2.real);
     }
 
+    @Override
     public PyObject __mul__(PyObject right) {
         return complex___mul__(right);
     }
 
+    @ExposedMethod(type = MethodType.BINARY, doc = BuiltinDocs.complex___mul___doc)
     final PyObject complex___mul__(PyObject right) {
-        if (!canCoerce(right))
+        if (!canCoerce(right)) {
             return null;
+        }
         return _mul(this, coerce(right));
     }
 
+    @Override
     public PyObject __rmul__(PyObject left) {
         return complex___rmul__(left);
     }
 
+    @ExposedMethod(type = MethodType.BINARY, doc = BuiltinDocs.complex___rmul___doc)
     final PyObject complex___rmul__(PyObject left) {
-        if (!canCoerce(left))
+        if (!canCoerce(left)) {
             return null;
+        }
         return _mul(coerce(left), this);
     }
 
@@ -1035,91 +424,128 @@ public class PyComplex extends PyObject {
         }
     }
 
+    @Override
     public PyObject __div__(PyObject right) {
         return complex___div__(right);
     }
 
+    @ExposedMethod(type = MethodType.BINARY, doc = BuiltinDocs.complex___div___doc)
     final PyObject complex___div__(PyObject right) {
-        if (!canCoerce(right))
+        if (!canCoerce(right)) {
             return null;
-        if (Options.divisionWarning >= 2)
+        }
+        if (Options.divisionWarning >= 2) {
             Py.warning(Py.DeprecationWarning, "classic complex division");
+        }
         return _div(this, coerce(right));
     }
 
+    @Override
     public PyObject __rdiv__(PyObject left) {
         return complex___rdiv__(left);
     }
 
+    @ExposedMethod(type = MethodType.BINARY, doc = BuiltinDocs.complex___rdiv___doc)
     final PyObject complex___rdiv__(PyObject left) {
-        if (!canCoerce(left))
+        if (!canCoerce(left)) {
             return null;
-        if (Options.divisionWarning >= 2)
+        }
+        if (Options.divisionWarning >= 2) {
             Py.warning(Py.DeprecationWarning, "classic complex division");
+        }
         return _div(coerce(left), this);
     }
 
+    @Override
     public PyObject __floordiv__(PyObject right) {
         return complex___floordiv__(right);
     }
 
+    @ExposedMethod(type = MethodType.BINARY, doc = BuiltinDocs.complex___floordiv___doc)
     final PyObject complex___floordiv__(PyObject right) {
-        if (!canCoerce(right))
+        if (!canCoerce(right)) {
             return null;
+        }
         return _divmod(this, coerce(right)).__finditem__(0);
     }
 
+    @Override
     public PyObject __rfloordiv__(PyObject left) {
-        return complex___floordiv__(left);
+        return complex___rfloordiv__(left);
     }
 
+    @ExposedMethod(type = MethodType.BINARY, doc = BuiltinDocs.complex___rfloordiv___doc)
     final PyObject complex___rfloordiv__(PyObject left) {
-        if (!canCoerce(left))
+        if (!canCoerce(left)) {
             return null;
+        }
         return _divmod(coerce(left), this).__finditem__(0);
     }
 
+    // Special case __tojava__ for bug 1605, since we broke it with our support for faux floats.
+
+    @Override
+    public Object __tojava__(Class<?> c) {
+        if (c.isInstance(this)) {
+            return this;
+        }
+        return Py.NoConversion;
+    }
+
+    @Override
     public PyObject __truediv__(PyObject right) {
         return complex___truediv__(right);
     }
 
+    @ExposedMethod(type = MethodType.BINARY, doc = BuiltinDocs.complex___truediv___doc)
     final PyObject complex___truediv__(PyObject right) {
-        if (!canCoerce(right))
+        if (!canCoerce(right)) {
             return null;
+        }
         return _div(this, coerce(right));
     }
 
+    @Override
     public PyObject __rtruediv__(PyObject left) {
         return complex___rtruediv__(left);
     }
 
+    @ExposedMethod(type = MethodType.BINARY, doc = BuiltinDocs.complex___rtruediv___doc)
     final PyObject complex___rtruediv__(PyObject left) {
-        if (!canCoerce(left))
+        if (!canCoerce(left)) {
             return null;
+        }
         return _div(coerce(left), this);
     }
 
+    @Override
     public PyObject __mod__(PyObject right) {
         return complex___mod__(right);
     }
 
+    @ExposedMethod(type = MethodType.BINARY, doc = BuiltinDocs.complex___mod___doc)
     final PyObject complex___mod__(PyObject right) {
-        if (!canCoerce(right))
+        if (!canCoerce(right)) {
             return null;
+        }
         return _mod(this, coerce(right));
     }
 
+    @Override
     public PyObject __rmod__(PyObject left) {
         return complex___rmod__(left);
     }
 
+    @ExposedMethod(type = MethodType.BINARY, doc = BuiltinDocs.complex___rmod___doc)
     final PyObject complex___rmod__(PyObject left) {
-        if (!canCoerce(left))
+        if (!canCoerce(left)) {
             return null;
+        }
         return _mod(coerce(left), this);
     }
 
     private static PyObject _mod(PyComplex value, PyComplex right) {
+        Py.warning(Py.DeprecationWarning, "complex divmod(), // and % are deprecated");
         PyComplex z = (PyComplex) _div(value, right);
 
         z.real = Math.floor(z.real);
@@ -1128,40 +554,47 @@ public class PyComplex extends PyObject {
         return value.__sub__(z.__mul__(right));
     }
 
+    @Override
     public PyObject __divmod__(PyObject right) {
         return complex___divmod__(right);
     }
 
+    @ExposedMethod(type = MethodType.BINARY, doc = BuiltinDocs.complex___divmod___doc)
     final PyObject complex___divmod__(PyObject right) {
-        if (!canCoerce(right))
+        if (!canCoerce(right)) {
             return null;
+        }
         return _divmod(this, coerce(right));
     }
 
+    @Override
     public PyObject __rdivmod__(PyObject left) {
         return complex___rdivmod__(left);
     }
 
+    @ExposedMethod(type = MethodType.BINARY, doc = BuiltinDocs.complex___rdivmod___doc)
     final PyObject complex___rdivmod__(PyObject left) {
-        if (!canCoerce(left))
+        if (!canCoerce(left)) {
             return null;
+        }
         return _divmod(coerce(left), this);
     }
 
     private static PyObject _divmod(PyComplex value, PyComplex right) {
+        Py.warning(Py.DeprecationWarning, "complex divmod(), // and % are deprecated");
         PyComplex z = (PyComplex) _div(value, right);
 
         z.real = Math.floor(z.real);
         z.imag = 0.0;
 
-        return new PyTuple(new PyObject[]
-               { z, value.__sub__(z.__mul__(right))});
+        return new PyTuple(z, value.__sub__(z.__mul__(right)));
     }
-
 
     private static PyObject ipow(PyComplex value, int iexp) {
         int pow = iexp;
-        if (pow < 0) pow = -pow;
+        if (pow < 0) {
+            pow = -pow;
+        }
 
         double xr = value.real;
         double xi = value.imag;
@@ -1173,45 +606,53 @@ public class PyComplex extends PyObject {
 
         while (pow > 0) {
             if ((pow & 0x1) != 0) {
-                tmp = zr*xr - zi*xi;
-                zi = zi*xr + zr*xi;
+                tmp = zr * xr - zi * xi;
+                zi = zi * xr + zr * xi;
                 zr = tmp;
             }
             pow >>= 1;
-            if (pow == 0)
+            if (pow == 0) {
                 break;
-            tmp = xr*xr - xi*xi;
-            xi = xr*xi*2;
+            }
+            tmp = xr * xr - xi * xi;
+            xi = xr * xi * 2;
             xr = tmp;
         }
 
         PyComplex ret = new PyComplex(zr, zi);
 
-        if (iexp < 0)
-            return new PyComplex(1,0).__div__(ret);
+        if (iexp < 0) {
+            return new PyComplex(1, 0).__div__(ret);
+        }
         return ret;
     }
 
+    @Override
     public PyObject __pow__(PyObject right, PyObject modulo) {
         return complex___pow__(right, modulo);
     }
 
+    @ExposedMethod(type = MethodType.BINARY, defaults = "null", doc = BuiltinDocs.complex___pow___doc)
     final PyObject complex___pow__(PyObject right, PyObject modulo) {
         if (modulo != null) {
             throw Py.ValueError("complex modulo");
         }
-        if (!canCoerce(right))
+        if (!canCoerce(right)) {
             return null;
+        }
         return _pow(this, coerce(right));
     }
 
+    @Override
     public PyObject __rpow__(PyObject left) {
         return complex___rpow__(left);
     }
 
+    @ExposedMethod(type = MethodType.BINARY, doc = BuiltinDocs.complex___rpow___doc)
     final PyObject complex___rpow__(PyObject left) {
-        if (!canCoerce(left))
+        if (!canCoerce(left)) {
             return null;
+        }
         return _pow(coerce(left), this);
     }
 
@@ -1227,82 +668,97 @@ public class PyComplex extends PyObject {
 
         if (xr == 0 && xi == 0) {
             if (yi != 0 || yr < 0) {
-                throw Py.ValueError("0.0 to a negative or complex power");
+                throw Py.ZeroDivisionError("0.0 to a negative or complex power");
             }
         }
 
         // Check for integral powers
-        int iexp = (int)yr;
-        if (yi == 0 && yr == (double)iexp && iexp >= -128 && iexp <= 128) {
+        int iexp = (int) yr;
+        if (yi == 0 && yr == iexp && iexp >= -128 && iexp <= 128) {
             return ipow(value, iexp);
         }
 
-        double abs = ExtraMath.hypot(xr, xi);
+        double abs = Math.hypot(xr, xi);
         double len = Math.pow(abs, yr);
 
         double at = Math.atan2(xi, xr);
-        double phase = at*yr;
+        double phase = at * yr;
         if (yi != 0) {
-            len /= Math.exp(at*yi);
-            phase += yi*Math.log(abs);
+            len /= Math.exp(at * yi);
+            phase += yi * Math.log(abs);
         }
-        return new PyComplex(len*Math.cos(phase), len*Math.sin(phase));
+        return new PyComplex(len * Math.cos(phase), len * Math.sin(phase));
     }
 
+    @Override
     public PyObject __neg__() {
         return complex___neg__();
     }
 
+    @ExposedMethod(doc = BuiltinDocs.complex___neg___doc)
     final PyObject complex___neg__() {
         return new PyComplex(-real, -imag);
     }
 
+    @Override
     public PyObject __pos__() {
         return complex___pos__();
     }
 
+    @ExposedMethod(doc = BuiltinDocs.complex___pos___doc)
     final PyObject complex___pos__() {
+        if (getType() == TYPE) {
+            return this;
+        }
         return new PyComplex(real, imag);
     }
 
+    @Override
     public PyObject __invert__() {
-      throw Py.TypeError("bad operand type for unary ~");
+        throw Py.TypeError("bad operand type for unary ~");
     }
 
+    @Override
     public PyObject __abs__() {
         return complex___abs__();
     }
 
+    @ExposedMethod(doc = BuiltinDocs.complex___abs___doc)
     final PyObject complex___abs__() {
-        return new PyFloat(ExtraMath.hypot(real, imag));
+        return new PyFloat(Math.hypot(real, imag));
     }
 
+    @Override
     public PyObject __int__() {
         return complex___int__();
     }
 
+    @ExposedMethod(doc = BuiltinDocs.complex___int___doc)
     final PyInteger complex___int__() {
-        throw Py.TypeError(
-            "can't convert complex to int; use e.g. int(abs(z))");
+        throw Py.TypeError("can't convert complex to int; use e.g. int(abs(z))");
     }
 
-    public PyLong __long__() {
+    @Override
+    public PyObject __long__() {
         return complex___long__();
     }
 
-    final PyLong complex___long__() {
-        throw Py.TypeError(
-            "can't convert complex to long; use e.g. long(abs(z))");
+    @ExposedMethod(doc = BuiltinDocs.complex___long___doc)
+    final PyObject complex___long__() {
+        throw Py.TypeError("can't convert complex to long; use e.g. long(abs(z))");
     }
 
+    @Override
     public PyFloat __float__() {
         return complex___float__();
     }
 
+    @ExposedMethod(doc = BuiltinDocs.complex___float___doc)
     final PyFloat complex___float__() {
         throw Py.TypeError("can't convert complex to float; use e.g. abs(z)");
     }
 
+    @Override
     public PyComplex __complex__() {
         return new PyComplex(real, imag);
     }
@@ -1311,28 +767,23 @@ public class PyComplex extends PyObject {
         return complex_conjugate();
     }
 
+    @ExposedMethod(doc = BuiltinDocs.complex_conjugate_doc)
     final PyComplex complex_conjugate() {
         return new PyComplex(real, -imag);
     }
 
-    /**
-     * Used for pickling.
-     *
-     * @return a tuple of (class, (Integer))
-     */
-    public PyObject __reduce__() {
-        return complex___reduce__();
+    @ExposedMethod(doc = BuiltinDocs.complex___getnewargs___doc)
+    final PyTuple complex___getnewargs__() {
+        return new PyTuple(new PyComplex(real, imag));
     }
 
-    final PyObject complex___reduce__() {
-        return new PyTuple(new PyObject[]{
-            getType(),
-            new PyTuple(new PyObject[]{
-                getReal(), getImag()
-            })
-        });
+    @Override
+    public PyTuple __getnewargs__() {
+        return complex___getnewargs__();
     }
 
-    public boolean isMappingType() { return false; }
-    public boolean isSequenceType() { return false; }
+    @Override
+    public boolean isNumberType() {
+        return true;
+    }
 }

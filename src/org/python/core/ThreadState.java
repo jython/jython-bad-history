@@ -1,104 +1,89 @@
 // Copyright (c) Corporation for National Research Initiatives
 package org.python.core;
 
-import java.util.Stack;
+import java.util.LinkedList;
 
 public class ThreadState {
-    // public InterpreterState interp;
+
     public PySystemState systemState;
 
     public PyFrame frame;
 
-    // public PyObject curexc_type, curexc_value, curexc_traceback;
-    // public PyObject exc_type, exc_value, exc_traceback;
     public PyException exception;
 
     public Thread thread;
 
     public boolean tracing;
 
-    public PyList reprStack = null;
+    public PyList reprStack;
 
-    // public PyInstance initializingProxy = null;
-    private Stack initializingProxies = null;
+    public int compareStateNesting;
 
-    public int compareStateNesting = 0;
+    public int recursion_depth;
+
+    public TraceFunction tracefunc;
+
+    public TraceFunction profilefunc;
+
+    private LinkedList<PyObject> initializingProxies;
 
     private PyDictionary compareStateDict;
 
-    public int recursion_depth = 0;
-
-    public TraceFunction tracefunc;
-    public TraceFunction profilefunc;
-    
-    public PyInstance getInitializingProxy() {
-        if (this.initializingProxies == null
-                || this.initializingProxies.empty()) {
+    public PyObject getInitializingProxy() {
+        if (initializingProxies == null) {
             return null;
         }
-        return (PyInstance) this.initializingProxies.peek();
+        return initializingProxies.peek();
     }
 
-    public void pushInitializingProxy(PyInstance proxy) {
-        if (this.initializingProxies == null) {
-            this.initializingProxies = new Stack();
+    public void pushInitializingProxy(PyObject proxy) {
+        if (initializingProxies == null) {
+            initializingProxies = new LinkedList<PyObject>();
         }
-        this.initializingProxies.push(proxy);
+        initializingProxies.addFirst(proxy);
     }
 
     public void popInitializingProxy() {
-        if (this.initializingProxies == null
-                || this.initializingProxies.empty()) {
+        if (initializingProxies == null || initializingProxies.isEmpty()) {
             throw Py.RuntimeError("invalid initializing proxies state");
         }
-        this.initializingProxies.pop();
+        initializingProxies.removeFirst();
     }
 
     public ThreadState(Thread t, PySystemState systemState) {
-        this.thread = t;
-        // Fake multiple interpreter states for now
-        /*
-         * if (Py.interp == null) { Py.interp =
-         * InterpreterState.getInterpreterState(); }
-         */
         this.systemState = systemState;
-        // interp = Py.interp;
-        this.tracing = false;
-        // System.out.println("new thread state");
+        thread = t;
     }
 
     public boolean enterRepr(PyObject obj) {
-        // if (reprStack == null) System.err.println("reprStack: null");
-        // else System.err.println("reprStack: "+reprStack.__len__());
-        if (this.reprStack == null) {
-            this.reprStack = new PyList(new PyObject[] { obj });
+        if (reprStack == null) {
+            reprStack = new PyList(new PyObject[] {obj});
             return true;
         }
-        for (int i = this.reprStack.size() - 1; i >= 0; i--) {
-            if (obj == this.reprStack.pyget(i)) {
+        for (int i = reprStack.size() - 1; i >= 0; i--) {
+            if (obj == reprStack.pyget(i)) {
                 return false;
             }
         }
-        this.reprStack.append(obj);
+        reprStack.append(obj);
         return true;
     }
 
     public void exitRepr(PyObject obj) {
-        if (this.reprStack == null) {
+        if (reprStack == null) {
             return;
         }
-
-        for (int i = this.reprStack.size() - 1; i >= 0; i--) {
-            if (this.reprStack.pyget(i) == obj) {
-                this.reprStack.delRange(i, this.reprStack.size(), 1);
+        for (int i = reprStack.size() - 1; i >= 0; i--) {
+            if (reprStack.pyget(i) == obj) {
+                reprStack.delRange(i, reprStack.size());
             }
         }
     }
 
     public PyDictionary getCompareStateDict() {
-        if (this.compareStateDict == null) {
-            this.compareStateDict = new PyDictionary();
+        if (compareStateDict == null) {
+            compareStateDict = new PyDictionary();
         }
-        return this.compareStateDict;
+        return compareStateDict;
     }
 }

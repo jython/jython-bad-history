@@ -242,7 +242,7 @@ public abstract class AbstractArray implements Serializable{
      * @return array containing a shallow copy of the data.
      */
     public Object copyArray() {
-        Object copy = Array.newInstance(getArray().getClass().getComponentType(), this.size);
+        Object copy = createArray(this.size);
         System.arraycopy(getArray(), 0, copy, 0, this.size);
         return copy;
     }
@@ -377,13 +377,13 @@ public abstract class AbstractArray implements Serializable{
             }
             System.arraycopy(base, stop, base, start, this.size - stop);
             this.size = this.size - nRemove;
-            clearRangeInternal(this.size, this.size + nRemove - 1);
+            clearRangeInternal(this.size, this.size + nRemove);
             setArray(base);
             return;
         }
 
         throw new IndexOutOfBoundsException("start and stop must follow: 0 <= start <= stop <= " +
-                (this.size - 1) + ", but found start= " + start + " and stop=" + stop);
+                this.size + ", but found start= " + start + " and stop=" + stop);
     }
 
     /**
@@ -494,9 +494,8 @@ public abstract class AbstractArray implements Serializable{
     private void setNewBase(int newCapacity) {
         this.modCountIncr = 1;
         Object base = getArray();
-        Class baseType = base.getClass().getComponentType();
-        Object newBase = Array.newInstance(baseType, newCapacity);
-        System.arraycopy(base, 0, newBase, 0, this.capacity);
+        Object newBase = createArray(newCapacity);
+        System.arraycopy(base, 0, newBase, 0, capacity > newCapacity ? newCapacity : capacity);
         setArray(newBase);
     }
 
@@ -534,7 +533,7 @@ public abstract class AbstractArray implements Serializable{
      * @see java.lang.Object#toString()
      */
     public String toString() {
-        StringBuffer buf = new StringBuffer();
+        StringBuilder buf = new StringBuilder();
         buf.append("[");
 
         Object base = getArray();
@@ -586,4 +585,9 @@ public abstract class AbstractArray implements Serializable{
     public int getModCountIncr() {
         return this.modCountIncr;
     }
+    
+    /**
+     * @return an array of the given size for the type used by this abstract array.
+     */ 
+    protected abstract Object createArray(int size);
 }

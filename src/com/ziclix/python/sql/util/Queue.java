@@ -1,7 +1,6 @@
 /*
  * Jython Database Specification API 2.0
  *
- * $Id$
  *
  * Copyright (c) 2001 brian zimmer <bzimmer@ziclix.com>
  *
@@ -16,7 +15,6 @@ import java.util.LinkedList;
  * queue size under a certain threshold.
  *
  * @author brian zimmer
- * @version $Revision$
  */
 public class Queue {
 
@@ -28,7 +26,7 @@ public class Queue {
     /**
      * Field queue
      */
-    protected LinkedList queue;
+    protected LinkedList<Object> queue;
 
     /**
      * Field capacity, threshold
@@ -49,7 +47,7 @@ public class Queue {
 
         this.closed = false;
         this.capacity = capacity;
-        this.queue = new LinkedList();
+        this.queue = new LinkedList<Object>();
         this.threshold = (int) (this.capacity * 0.75f);
     }
 
@@ -57,7 +55,6 @@ public class Queue {
      * Enqueue an object and notify all waiting Threads.
      */
     public synchronized void enqueue(Object element) throws InterruptedException {
-
         if (closed) {
             throw new QueueClosedException();
         }
@@ -81,7 +78,6 @@ public class Queue {
      * Blocks until an object is dequeued or the queue is closed.
      */
     public synchronized Object dequeue() throws InterruptedException {
-
         while (this.queue.size() <= 0) {
             this.wait();
 
@@ -104,9 +100,7 @@ public class Queue {
      * Close the queue and notify all waiting Threads.
      */
     public synchronized void close() {
-
         this.closed = true;
-
         this.notifyAll();
     }
 }

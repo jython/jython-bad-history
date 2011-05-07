@@ -1,6 +1,8 @@
 // Copyright (c) Corporation for National Research Initiatives
 package org.python.modules;
 
+import org.python.modules.posix.PosixModule;
+
 // This is sort of analogous to CPython's Modules/Setup file.  Use this to
 // specify additional builtin modules.
 
@@ -27,31 +29,37 @@ public class Setup
     public static String[] builtinModules = {
         "jarray",
         "math",
-        "thread",
+        "thread:org.python.modules.thread.thread",
         "operator",
         "time:org.python.modules.time.Time",
-        "os",
-        "types",
-        "py_compile",
-        "pre:org.python.modules.re",
+        "_py_compile",
         "_sre",
         "synchronize",
         "cPickle",
         "cStringIO",
         "struct",
         "binascii",
-        "md5:org.python.modules.MD5Module",
         "exceptions:org.python.core.exceptions",
         "_codecs",
         "imp",
-        "sha",
         "ucnhash",
-        "_jython",
-        "new:org.python.modules.newmodule",
-        "_weakref",
-        "xreadlines",
+        "_weakref:org.python.modules._weakref.WeakrefModule",
         "errno",
         "array:org.python.modules.ArrayModule",
-        "sets:org.python.modules.sets.Sets"
+        "_random:org.python.modules.random.RandomModule",
+        "cmath",
+        "itertools",
+        "zipimport:org.python.modules.zipimport.zipimport",
+        "_collections:org.python.modules._collections.Collections",
+        "gc",
+        "_hashlib",
+        "_functools:org.python.modules._functools._functools",
+        "_csv:org.python.modules._csv._csv",
+        "_systemrestart",
+        "_ast:org.python.antlr.ast.AstModule",
+        "_marshal",
+        "_threading:org.python.modules._threading._threading",
+        PosixModule.getOSName() + ":org.python.modules.posix.PosixModule",
+        "jffi:org.python.modules.jffi.jffi"
     };
 }
