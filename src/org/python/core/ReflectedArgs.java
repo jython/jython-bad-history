@@ -1,14 +1,16 @@
 // Copyright (c) Corporation for National Research Initiatives
 package org.python.core;
 
-class ReflectedArgs {
-    public Class[] args;
+public class ReflectedArgs {
+    public Class<?>[] args;
 
     public Object data;
 
-    public Class declaringClass;
+    public Class<?> declaringClass;
 
     public boolean isStatic;
+
+    public boolean isVarArgs;
 
     public int flags;
 
@@ -18,12 +20,16 @@ class ReflectedArgs {
 
     public static final int PyArgsKeywordsCall = 2;
 
-    public ReflectedArgs(Object data, Class[] args, Class declaringClass,
-            boolean isStatic) {
+    public ReflectedArgs(Object data, Class<?>[] args, Class<?> declaringClass, boolean isStatic) {
+        this(data, args, declaringClass, isStatic, false);
+    }
+
+    public ReflectedArgs(Object data, Class<?>[] args, Class<?> declaringClass, boolean isStatic, boolean isVarArgs) {
         this.data = data;
         this.args = args;
         this.declaringClass = declaringClass;
         this.isStatic = isStatic;
+        this.isVarArgs = isVarArgs; // only used for varargs matching; it should be added after the unboxed form
 
         if (args.length == 1 && args[0] == PyObject[].class) {
             this.flags = PyArgsCall;
@@ -51,11 +57,6 @@ class ReflectedArgs {
          */
         if (this.isStatic) {
             if (self != null) {
-                /*
-                 * PyObject[] newArgs = new PyObject[pyArgs.length+1];
-                 * System.arraycopy(pyArgs, 0, newArgs, 1, pyArgs.length);
-                 * newArgs[0] = self; pyArgs = newArgs;
-                 */
                 self = null;
             }
         } else {
@@ -96,12 +97,44 @@ class ReflectedArgs {
         }
 
         int n = this.args.length;
+
+        // if we have a varargs method AND the last PyObject is not a list/tuple
+        // we need to do box (wrap with an array) the last pyArgs.length - n args
+        // (which might be empty)
+        //
+        // examples:
+        // test(String... x)
+        // test(List... x)
+        //
+        // in this last example, don't worry if someone is overly clever in calling this,
+        // they can always write their own version of PyReflectedFunction and put it in the proxy
+        // if that's what they need to do ;)
+
+        if (isVarArgs) {
+            if (pyArgs.length == 0 || !(pyArgs[pyArgs.length - 1] instanceof PySequenceList)) {
+                int non_varargs_len = n - 1;
+                if (pyArgs.length >= non_varargs_len) {
+                    PyObject[] boxedPyArgs = new PyObject[n];
+                    for (int i = 0; i < non_varargs_len; i++) {
+                        boxedPyArgs[i] = pyArgs[i];
+                    }
+                    int varargs_len = pyArgs.length - non_varargs_len;
+                    PyObject[] varargs = new PyObject[varargs_len];
+                    for (int i = 0; i < varargs_len; i++) {
+                        varargs[i] = pyArgs[non_varargs_len + i];
+                    }
+                    boxedPyArgs[non_varargs_len] = new PyList(varargs);
+                    pyArgs = boxedPyArgs;
+                }
+            }
+        }
+
         if (pyArgs.length != n) {
             return false;
         }
 
         // Make error messages clearer
-        callData.errArg = -1;
+        callData.errArg = ReflectedCallData.UNABLE_TO_CONVERT_SELF;
 
         if (self != null) {
             Object tmp = self.__tojava__(this.declaringClass);
@@ -117,8 +150,11 @@ class ReflectedArgs {
         Object[] javaArgs = callData.args;
 
         for (int i = 0; i < n; i++) {
-            if ((javaArgs[i] = pyArgs[i].__tojava__(this.args[i])) == Py.NoConversion) {
-                // Make error messages clearer
+            PyObject pyArg = pyArgs[i];
+            Class targetClass = this.args[i];
+            Object javaArg = pyArg.__tojava__(targetClass);
+            javaArgs[i] = javaArg;
+            if (javaArg == Py.NoConversion) {
                 if (i > callData.errArg) {
                     callData.errArg = i;
                 }
@@ -128,7 +164,7 @@ class ReflectedArgs {
         return true;
     }
 
-    public static int precedence(Class arg) {
+    public static int precedence(Class<?> arg) {
         if (arg == Object.class) {
             return 3000;
         }
@@ -165,7 +201,7 @@ class ReflectedArgs {
         }
 
         if (arg.isArray()) {
-            Class componentType = arg.getComponentType();
+            Class<?> componentType = arg.getComponentType();
             if (componentType == Object.class) {
                 return 2500;
             }
@@ -179,7 +215,7 @@ class ReflectedArgs {
      * unimportantly different Returns +/-2 iff arg1 and arg2 are significantly
      * different
      */
-    public static int compare(Class arg1, Class arg2) {
+    public static int compare(Class<?> arg1, Class<?> arg2) {
         int p1 = precedence(arg1);
         int p2 = precedence(arg2);
         // Special code if they are both nonprimitives
@@ -199,14 +235,14 @@ class ReflectedArgs {
                     return cmp > 0 ? +1 : -1;
                 }
             }
-        } 
+        }
         return p1 > p2 ? +2 : (p1 == p2 ? 0 : -2);
     }
 
     public static final int REPLACE = 1998;
 
     public int compareTo(ReflectedArgs other) {
-        Class[] oargs = other.args;
+        Class<?>[] oargs = other.args;
 
         // First decision based on flags
         if (other.flags != this.flags) {
@@ -257,12 +293,12 @@ class ReflectedArgs {
         return replace ? REPLACE : 0;
     }
 
+    @Override
     public String toString() {
-        String s = "" + this.declaringClass + ", " + this.isStatic + ", " + this.flags + ", "
-                + this.data + "\n";
+        String s =  declaringClass + ", static=" + isStatic + ", varargs=" + isVarArgs + ",flags=" + flags + ", " + data + "\n";
         s = s + "\t(";
-        for (int j = 0; j < this.args.length; j++) {
-            s += this.args[j].getName() + ", ";
+        for (Class<?> arg : args) {
+            s += arg.getName() + ", ";
         }
         s += ")";
         return s;

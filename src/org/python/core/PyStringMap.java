@@ -1,302 +1,258 @@
-// Copyright (c) Corporation for National Research Initiatives
+/*
+ * Copyright (c) Corporation for National Research Initiatives
+ * Copyright (c) Jython Developers
+ */
 package org.python.core;
 
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
+import org.python.expose.ExposedMethod;
+import org.python.expose.ExposedNew;
+import org.python.expose.ExposedType;
+import org.python.expose.MethodType;
+import org.python.util.Generic;
+
 /**
- * A faster Dictionary where the keys have to be strings.
- * <p>
- * This is the default for all __dict__ instances.
+ * Special fast dict implementation for __dict__ instances. Allows interned String keys in addition
+ * to PyObject unlike PyDictionary.
  */
+@ExposedType(name = "stringmap", isBaseType = false)
+public class PyStringMap extends PyObject {
 
-public class PyStringMap extends PyObject
-{
-    //Table of primes to cycle through
-    private static final int[] primes = {
-        7, 13, 31, 61, 127, 251, 509, 1021, 2017, 4093,
-        5987, 9551, 15683, 19609, 31397,
-        65521, 131071, 262139, 524287, 1048573, 2097143,
-        4194301, 8388593, 16777213, 33554393, 67108859,
-        134217689, 268435399, 536870909, 1073741789,};
+    /**
+     * TYPE computed lazily, PyStringMap is used early in the bootstrap process and
+     * statically calling fromClass(PyStringMap.class) is unsafe.
+     */
+    private static PyType lazyType;
 
-    private transient String[] keys;
-    private transient PyObject[] values;
-    private int size;
-    private transient int filled;
-    private transient int prime;
-    private transient int popfinger;
-
-    /* Override serialization behavior */
-    private void writeObject(java.io.ObjectOutputStream out)
-        throws java.io.IOException
-    {
-        out.defaultWriteObject();
-
-        String[] keyTable = keys;
-        PyObject[] valueTable = values;
-        int n = keyTable.length;
-
-        for (int i=0; i<n; i++) {
-            //String key = keyTable[i];
-            PyObject value = valueTable[i];
-            if (value == null)
-                continue;
-            out.writeUTF(keys[i]);
-            out.writeObject(values[i]);
-        }
-    }
-
-    private void readObject(java.io.ObjectInputStream in)
-        throws java.io.IOException, ClassNotFoundException
-    {
-        in.defaultReadObject();
-
-        prime = 1;
-        keys = null;
-        values = null;
-        int n = size;
-
-        resize(n);
-
-        for (int i=0; i<n; i++) {
-            String key = in.readUTF().intern();
-            insertkey(key, (PyObject)in.readObject());
-        }
-    }
-    public PyStringMap(int capacity) {
-        prime = 0;
-        keys = null;
-        values = null;
-        resize(capacity);
-    }
+    private final ConcurrentMap<Object, PyObject> table;
 
     public PyStringMap() {
         this(4);
     }
 
+    public PyStringMap(int capacity) {
+        super(getLazyType());
+        table = new ConcurrentHashMap<Object, PyObject>(capacity, Generic.CHM_LOAD_FACTOR,
+                                                        Generic.CHM_CONCURRENCY_LEVEL);
+    }
+
+    public PyStringMap(Map<Object, PyObject> map) {
+        this(Math.max((int) (map.size() / Generic.CHM_LOAD_FACTOR) + 1,
+                      Generic.CHM_INITIAL_CAPACITY));
+        table.putAll(map);
+    }
+
     public PyStringMap(PyObject elements[]) {
         this(elements.length);
-        for (int i=0; i<elements.length; i+=2) {
-            __setitem__(elements[i], elements[i+1]);
+        for (int i = 0; i < elements.length; i += 2) {
+            __setitem__(elements[i], elements[i + 1]);
         }
     }
 
-    public synchronized int __len__() {
-        return size;
-    }
-
-    public synchronized boolean __nonzero__() {
-        return size != 0;
-    }
-
-    public synchronized PyObject __finditem__(String key) {
-        String[] table = keys;
-        int maxindex = table.length;
-        int index = (System.identityHashCode(key) & 0x7fffffff) % maxindex;
-
-        // Fairly aribtrary choice for stepsize...
-        int stepsize = maxindex / 5;
-
-        // Cycle through possible positions for the key;
-        //int collisions = 0;
-        while (true) {
-            String tkey = table[index];
-            if (tkey == key) {
-                //if (collisions > 0) {
-                //    System.err.println("key: "+key+", "+collisions+", "+
-                //               maxindex+", "+System.identityHashCode(key));
-                //}
-                return values[index];
-            }
-            if (tkey == null)
-                return values[index];
-
-            //collisions++;
-            index = (index+stepsize) % maxindex;
+    private static PyType getLazyType() {
+        if (lazyType == null) {
+            lazyType = PyType.fromClass(PyStringMap.class);
         }
+        return lazyType;
     }
 
-    public PyObject __finditem__(PyObject key) {
-        //System.err.println("oops: "+key);
-        if (key instanceof PyString) {
-            return __finditem__(((PyString)key).internedString());
-        } else {
+    @ExposedNew
+    final static PyObject stringmap_new(PyNewWrapper new_, boolean init, PyType subtype,
+                                        PyObject[] args, String[] keywords) {
+        PyStringMap map = new PyStringMap();
+        map.stringmap_update(args, keywords);
+        return map;
+    }
+
+    @Override
+    public int __len__() {
+        return stringmap___len__();
+    }
+
+    @ExposedMethod(doc = BuiltinDocs.dict___len___doc)
+    final int stringmap___len__() {
+        return table.size();
+    }
+
+    @Override
+    public boolean __nonzero__() {
+        return table.size() != 0;
+    }
+
+    @Override
+    public PyObject __finditem__(String key) {
+        if (key == null) {
             return null;
         }
+        return table.get(key);
     }
 
-    public PyObject __iter__() {
-        return new PyStringMapIter(keys, values);
-    }
-
-    private final void insertkey(String key, PyObject value) {
-        String[] table = keys;
-        int maxindex = table.length;
-        int index = (System.identityHashCode(key) & 0x7fffffff) % maxindex;
-
-        // Fairly aribtrary choice for stepsize...
-        int stepsize = maxindex / 5;
- 
-        int free_index = -1;
-
-        // Cycle through possible positions for the key;
-        while (true) {
-            String tkey = table[index];
-            if (tkey == null) {
-                if (free_index == -1 ) {
-                    filled++;
-                    free_index = index;
-                }
-                break;
-            } else if (tkey == key) {
-                values[index] = value;
-                return;
-            } else if (tkey == "<deleted key>" && free_index == -1) {
-                free_index = index;
-            }
-            index = (index+stepsize) % maxindex;
-        }
-        table[free_index] = key;
-        values[free_index] = value;
-        size++;
-        return;        
-    }
-
-    private synchronized final void resize(int capacity) {
-        int p = prime;
-        for (; p<primes.length; p++) {
-            if (primes[p] >= capacity)
-                break;
-        }
-        if (primes[p] < capacity) {
-            throw Py.ValueError("can't make hashtable of size: "+capacity);
-        }
-        //System.err.println("resize: "+(keys != null ? keys.length : -1)+
-        //                   ", "+primes[p]);
-        capacity = primes[p];
-        prime = p;
-
-        String[] oldKeys = keys;
-        PyObject[] oldValues = values;
-
-        keys = new String[capacity];
-        values = new PyObject[capacity];
-        size = 0;
-        filled = 0;
-
-        if (oldValues != null) {
-            int n = oldValues.length;
-
-            for (int i=0; i<n; i++) {
-                PyObject value = oldValues[i];
-                if (value == null)
-                    continue;
-                insertkey(oldKeys[i], value);
-            }
-        }
-    }
-
-    public synchronized void __setitem__(String key, PyObject value) {
-        if (2*filled > keys.length)
-            resize(keys.length+1);
-        insertkey(key, value);
-    }
-
-    public void __setitem__(PyObject key, PyObject value) {
+    @Override
+    public PyObject __finditem__(PyObject key) {
         if (key instanceof PyString) {
+            return __finditem__(((PyString)key).internedString());
+        }
+        return table.get(key);
+    }
+
+    public PyObject __getitem__(String key) {
+        PyObject o = __finditem__(key);
+        if (null == o) {
+            throw Py.KeyError("'" + key + "'");
+        } else {
+            return o;
+        }
+    }
+
+    @Override
+    public PyObject __getitem__(PyObject key) {
+        return stringmap___getitem__(key);
+    }
+
+    @ExposedMethod(doc = BuiltinDocs.dict___getitem___doc)
+    final PyObject stringmap___getitem__(PyObject key) {
+        if (key instanceof PyString) {
+            return __getitem__(((PyString)key).internedString());
+        } else {
+            PyObject o = __finditem__(key);
+            if (null == o) {
+                throw Py.KeyError("'" + key.toString() + "'");
+            } else {
+                return o;
+            }
+        }
+    }
+
+    @Override
+    public PyObject __iter__() {
+        return stringmap___iter__();
+    }
+
+    @ExposedMethod(doc = BuiltinDocs.dict___iter___doc)
+    final PyObject stringmap___iter__() {
+        return stringmap_iterkeys();
+    }
+
+    @Override
+    public void __setitem__(String key, PyObject value) {
+        if (value == null) {
+            table.remove(key);
+        } else {
+            table.put(key, value);
+        }
+    }
+
+    @Override
+    public void __setitem__(PyObject key, PyObject value) {
+        stringmap___setitem__(key, value);
+    }
+
+    @ExposedMethod(doc = BuiltinDocs.dict___setitem___doc)
+    final void stringmap___setitem__(PyObject key, PyObject value) {
+        if (value == null) {
+            table.remove(pyToKey(key));
+        } else if (key instanceof PyString) {
             __setitem__(((PyString)key).internedString(), value);
         } else {
-            throw Py.TypeError("keys in namespace must be strings");
+            table.put(key, value);
         }
     }
 
-    public synchronized void __delitem__(String key) {
-        String[] table = keys;
-        int maxindex = table.length;
-        int index = (System.identityHashCode(key) & 0x7fffffff) % maxindex;
-
-        // Fairly aribtrary choice for stepsize...
-        int stepsize = maxindex / 5;
-
-        // Cycle through possible positions for the key;
-        while (true) {
-            String tkey = table[index];
-            if (tkey == null) {
-                throw Py.KeyError(key);
-            }
-            if (tkey == key) {
-                table[index] = "<deleted key>";
-                values[index] = null;
-                size--;
-                break;
-            }
-            index = (index+stepsize) % maxindex;
+    @Override
+    public void __delitem__(String key) {
+        Object ret = table.remove(key);
+        if (ret == null) {
+            throw Py.KeyError(key);
         }
     }
 
+    @Override
     public void __delitem__(PyObject key) {
+        stringmap___delitem__(key);
+    }
+
+    @ExposedMethod(doc = BuiltinDocs.dict___delitem___doc)
+    final void stringmap___delitem__(PyObject key) {
         if (key instanceof PyString) {
             __delitem__(((PyString)key).internedString());
         } else {
-            throw Py.KeyError(key.toString());
+            Object ret = table.remove(key);
+            if (ret == null) {
+                throw Py.KeyError(key.toString());
+            }
         }
     }
 
     /**
      * Remove all items from the dictionary.
      */
-    public synchronized void clear() {
-        for (int i=0; i<keys.length; i++) {
-            keys[i] = null;
-            values[i] = null;
-        }
-        size = 0;
+    public void clear() {
+        stringmap_clear();
     }
 
+    @ExposedMethod(doc = BuiltinDocs.dict_clear_doc)
+    final void stringmap_clear() {
+        table.clear();
+    }
 
-    public synchronized String toString() {
+    @Override
+    public String toString() {
+        return stringmap_toString();
+    }
+
+    @ExposedMethod(names = {"__repr__", "__str__"}, doc = BuiltinDocs.dict___str___doc)
+    final String stringmap_toString() {
         ThreadState ts = Py.getThreadState();
         if (!ts.enterRepr(this)) {
             return "{...}";
         }
-
-        String[] keyTable = keys;
-        PyObject[] valueTable = values;
-        int n = keyTable.length;
-
-        StringBuffer buf = new StringBuffer("{");
-
-        for (int i=0; i<n; i++) {
-            //String key = keyTable[i];
-            PyObject value = valueTable[i];
-            if (value == null)
-                continue;
-            buf.append("'");
-            buf.append(keyTable[i]);
-            buf.append("': ");
-            buf.append(value.__repr__().toString());
+        StringBuilder buf = new StringBuilder("{");
+        for (Entry<Object, PyObject> entry : table.entrySet()) {
+            Object key = entry.getKey();
+            if (key instanceof String) {
+                // This is a bit complicated, but prevents us to duplicate
+                // PyString#__repr__ logic here.
+                buf.append(new PyString((String)key).__repr__().toString());
+            } else {
+                buf.append(((PyObject)key).__repr__().toString());
+            }
+            buf.append(": ");
+            buf.append(entry.getValue().__repr__().toString());
             buf.append(", ");
         }
-
-        // A hack to remove the final ", " from the string repr
-        int len = buf.length();
-        if (len > 4) {
-            buf.setLength(len-2);
+        if (buf.length() > 1) {
+            buf.delete(buf.length() - 2, buf.length());
         }
-
         buf.append("}");
         ts.exitRepr(this);
         return buf.toString();
     }
-  
-    public synchronized int __cmp__(PyObject other) {
-        if (!(other instanceof PyStringMap ||
-                  other instanceof PyDictionary)) {
+
+    @Override
+    public int __cmp__(PyObject other) {
+        return stringmap___cmp__(other);
+    }
+
+    @ExposedMethod(type = MethodType.CMP, doc = BuiltinDocs.dict___cmp___doc)
+    final int stringmap___cmp__(PyObject other) {
+        if (!(other instanceof PyStringMap || other instanceof PyDictionary)) {
             return -2;
         }
         int an = __len__();
         int bn = other.__len__();
-        if (an < bn) return -1;
-        if (an > bn) return 1;
-
+        if (an < bn) {
+            return -1;
+        }
+        if (an > bn) {
+            return 1;
+        }
         PyList akeys = keys();
         PyList bkeys = null;
         if (other instanceof PyStringMap) {
@@ -306,19 +262,19 @@ public class PyStringMap extends PyObject
         }
         akeys.sort();
         bkeys.sort();
-
-        for (int i=0; i<bn; i++) {
+        for (int i = 0; i < bn; i++) {
             PyObject akey = akeys.pyget(i);
             PyObject bkey = bkeys.pyget(i);
             int c = akey._cmp(bkey);
-            if (c != 0)
+            if (c != 0) {
                 return c;
-
+            }
             PyObject avalue = __finditem__(akey);
             PyObject bvalue = other.__finditem__(bkey);
             c = avalue._cmp(bvalue);
-            if (c != 0)
+            if (c != 0) {
                 return c;
+            }
         }
         return 0;
     }
@@ -326,289 +282,403 @@ public class PyStringMap extends PyObject
     /**
      * Return true if the key exist in the dictionary.
      */
+    public boolean has_key(String key) {
+        return table.containsKey(key);
+    }
+
     public boolean has_key(PyObject key) {
-        return __finditem__(key) != null;
+        return stringmap_has_key(key);
+    }
+
+    @ExposedMethod(doc = BuiltinDocs.dict_has_key_doc)
+    final boolean stringmap_has_key(PyObject key) {
+        return table.containsKey(pyToKey(key));
+    }
+
+    @Override
+    public boolean __contains__(PyObject o) {
+        return stringmap___contains__(o);
+    }
+
+    @ExposedMethod(doc = BuiltinDocs.dict___contains___doc)
+    final boolean stringmap___contains__(PyObject o) {
+        return stringmap_has_key(o);
     }
 
     /**
-     * Return this[key] if the key exists in the mapping, default_object
-     * is returned otherwise.
+     * Return this[key] if the key exists in the mapping, defaultObj is returned otherwise.
      *
-     * @param key            the key to lookup in the mapping.
-     * @param default_object the value to return if the key does not
-     *                       exists in the mapping.
+     * @param key
+     *            the key to lookup in the mapping.
+     * @param defaultObj
+     *            the value to return if the key does not exists in the mapping.
      */
-    public PyObject get(PyObject key, PyObject default_object) {
-        PyObject o = __finditem__(key);
-        if (o == null)
-            return default_object;
-        else
-            return o;
+    public PyObject get(PyObject key, PyObject defaultObj) {
+        return stringmap_get(key, defaultObj);
+    }
+
+    @ExposedMethod(defaults = "Py.None", doc = BuiltinDocs.dict_get_doc)
+    final PyObject stringmap_get(PyObject key, PyObject defaultObj) {
+        PyObject obj = __finditem__(key);
+        return obj == null ? defaultObj : obj;
     }
 
     /**
-     * Return this[key] if the key exists in the mapping, None
-     * is returned otherwise.
+     * Return this[key] if the key exists in the mapping, None is returned otherwise.
      *
-     * @param key  the key to lookup in the mapping.
+     * @param key
+     *            the key to lookup in the mapping.
      */
     public PyObject get(PyObject key) {
-        return get(key, Py.None);
+        return stringmap_get(key, Py.None);
     }
 
     /**
      * Return a shallow copy of the dictionary.
      */
-    public synchronized PyStringMap copy() {
-        int n = keys.length;
+    public PyStringMap copy() {
+        return stringmap_copy();
+    }
 
-        PyStringMap map = new PyStringMap(n);
-        System.arraycopy(keys, 0, map.keys, 0, n);
-        System.arraycopy(values, 0, map.values, 0, n);
+    @ExposedMethod(doc = BuiltinDocs.dict_copy_doc)
+    final PyStringMap stringmap_copy() {
+        return new PyStringMap(table);
+    }
 
-        map.filled = filled;
-        map.size = size;
-        map.prime = prime;
-
-        return map;
+    public void update(PyObject other) {
+        stringmap_update(new PyObject[] {other}, Py.NoKeywords);
     }
 
     /**
-     * Insert all the key:value pairs from <code>map</code> into
-     * this mapping.
+     * Insert all the key:value pairs from <code>dict</code> into this mapping.
      */
-    public synchronized void update(PyStringMap map) {
-        String[] keyTable = map.keys;
-        PyObject[] valueTable = map.values;
-        int n = keyTable.length;
-
-        if (2*filled+n > keys.length)
-            resize(2*filled+n);
-
-        for (int i=0; i<n; i++) {
-            String key = keyTable[i];
-            if (key == null || key == "<deleted key>")
-                continue;
-            insertkey(key, valueTable[i]);
+    @ExposedMethod(doc = BuiltinDocs.dict_update_doc)
+    final void stringmap_update(PyObject[] args, String[] keywords) {
+        int nargs = args.length - keywords.length;
+        if (nargs > 1) {
+            throw PyBuiltinCallable.DefaultInfo.unexpectedCall(nargs, false, "update", 0, 1);
+        }
+        if (nargs == 1) {
+            PyObject arg = args[0];
+            if (arg.__findattr__("keys") != null) {
+                merge(arg);
+            } else {
+                mergeFromSeq(arg);
+            }
+        }
+        for (int i = 0; i < keywords.length; i++) {
+            __setitem__(keywords[i], args[nargs + i]);
         }
     }
 
     /**
-     * Insert all the key:value pairs from <code>dict</code> into
-     * this mapping.
-     */
-    public void update(PyDictionary dict) {
-        java.util.Hashtable table = dict.table;
-
-        java.util.Enumeration ek = table.keys();
-        java.util.Enumeration ev = table.elements();
-        int n = table.size();
-
-        for(int i=0; i<n; i++) {
-            __setitem__((PyObject)ek.nextElement(),
-                        (PyObject)ev.nextElement());
-        }
-    }
-
-    /**
-     * Return this[key] if the key exist, otherwise insert key with
-     * a None value and return None.
+     * Merge another PyObject that supports keys() with this
+     * dict.
      *
-     * @param key   the key to lookup in the mapping.
+     * @param other a PyObject with a keys() method
+     */
+    private void merge(PyObject other) {
+        if (other instanceof PyStringMap) {
+            table.putAll(((PyStringMap)other).table);
+        } else if (other instanceof PyDictionary) {
+            mergeFromKeys(other, ((PyDictionary)other).keys());
+        } else {
+            mergeFromKeys(other, other.invoke("keys"));
+        }
+    }
+
+    /**
+     * Merge another PyObject via its keys() method
+     *
+     * @param other a PyObject with a keys() method
+     * @param keys the result of other's keys() method
+     */
+    private void mergeFromKeys(PyObject other, PyObject keys) {
+        for (PyObject key : keys.asIterable()) {
+            __setitem__(key, other.__getitem__(key));
+        }
+    }
+
+    /**
+     * Merge any iterable object producing iterable objects of length
+     * 2 into this dict.
+     *
+     * @param other another PyObject
+     */
+    private void mergeFromSeq(PyObject other) {
+        PyObject pairs = other.__iter__();
+        PyObject pair;
+
+        for (int i = 0; (pair = pairs.__iternext__()) != null; i++) {
+            try {
+                pair = PySequence.fastSequence(pair, "");
+            } catch(PyException pye) {
+                if (pye.match(Py.TypeError)) {
+                    throw Py.TypeError(String.format("cannot convert dictionary update sequence "
+                                                     + "element #%d to a sequence", i));
+                }
+                throw pye;
+            }
+            int n;
+            if ((n = pair.__len__()) != 2) {
+                throw Py.ValueError(String.format("dictionary update sequence element #%d "
+                                                  + "has length %d; 2 is required", i, n));
+            }
+            __setitem__(pair.__getitem__(0), pair.__getitem__(1));
+        }
+    }
+
+    /**
+     * Return this[key] if the key exist, otherwise insert key with a None value and return None.
+     *
+     * @param key
+     *            the key to lookup in the mapping.
      */
     public PyObject setdefault(PyObject key) {
         return setdefault(key, Py.None);
     }
 
     /**
-     * Return this[key] if the key exist, otherwise insert key with
-     * the value of failobj and return failobj
+     * Return this[key] if the key exist, otherwise insert key with the value of failobj and return
+     * failobj
      *
-     * @param key     the key to lookup in the mapping.
-     * @param failobj the default value to insert in the mapping
-     *                if key does not already exist.
+     * @param key
+     *            the key to lookup in the mapping.
+     * @param failobj
+     *            the default value to insert in the mapping if key does not already exist.
      */
     public PyObject setdefault(PyObject key, PyObject failobj) {
-        PyObject o = __finditem__(key);
-        if (o == null)
-            __setitem__(key, o = failobj);
-        return o;
+        return stringmap_setdefault(key, failobj);
+    }
+
+    @ExposedMethod(defaults = "Py.None", doc = BuiltinDocs.dict_setdefault_doc)
+    final PyObject stringmap_setdefault(PyObject key, PyObject failobj) {
+        Object internedKey = (key instanceof PyString) ? ((PyString)key).internedString() : key;
+        PyObject oldValue = table.putIfAbsent(internedKey, failobj);
+        return oldValue == null ? failobj : oldValue;
     }
 
     /**
-     * Return a random (key, value) tuple pair and remove the pair
-     * from the mapping.
+     * Return a random (key, value) tuple pair and remove the pair from the mapping.
      */
-    public synchronized PyObject popitem() {
-        if (size == 0)
+    public PyObject popitem() {
+        return stringmap_popitem();
+    }
+
+    @ExposedMethod(doc = BuiltinDocs.dict_popitem_doc)
+    final PyObject stringmap_popitem() {
+        Iterator<Entry<Object, PyObject>> it = table.entrySet().iterator();
+        if (!it.hasNext()) {
             throw Py.KeyError("popitem(): dictionary is empty");
-
-        String[] table = keys;
-        int maxindex = table.length;
-        int index = popfinger;
-
-        if (index >= maxindex || index < 0)
-            index = 1;
-        while (true) {
-            String tKey = table[index];
-            if (tKey != null && tKey != "<deleted key>")
-                break;
-            index++;
-            if (index >= maxindex)
-               index = 0;
         }
+        PyTuple tuple = itemTuple(it.next());
+        it.remove();
+        return tuple;
+    }
 
-        popfinger = index + 1;
-        PyObject key = Py.newString(table[index]);
-        PyObject val = (PyObject) values[index];
+    // not correct - we need to determine size and remove at the same time!
+    public PyObject pop(PyObject key) {
+        if (table.size() == 0) {
+            throw Py.KeyError("pop(): dictionary is empty");
+        }
+        return stringmap_pop(key, null);
+    }
 
-        table[index] = "<deleted key>";
-        values[index] = null;
-        size--;
+    public PyObject pop(PyObject key, PyObject failobj) {
+        return stringmap_pop(key, failobj);
+    }
 
-        return new PyTuple(new PyObject[] { key, val });
+    @ExposedMethod(defaults = "null", doc = BuiltinDocs.dict_pop_doc)
+    final PyObject stringmap_pop(PyObject key, PyObject failobj) {
+        PyObject value = table.remove(pyToKey(key));
+        if (value == null) {
+            if (failobj == null) {
+                throw Py.KeyError(key.__repr__().toString());
+            } else {
+                return failobj;
+            }
+        }
+        return value;
     }
 
     /**
-     * Return a copy of the mappings list of (key, value) tuple
-     * pairs.
+     * Return a copy of the mappings list of (key, value) tuple pairs.
      */
-    public synchronized PyList items() {
-        String[] keyTable = keys;
-        PyObject[] valueTable = values;
-        int n = keyTable.length;
-
-        PyList l = new PyList();
-        for (int i=0; i<n; i++) {
-            String key = keyTable[i];
-            if (key == null || key == "<deleted key>" || values[i] == null)
-                continue;
-            l.append(new PyTuple(new PyObject[] {
-                new PyString(key), valueTable[i]
-            }));
-        }
-        return l;
+    public PyList items() {
+        return stringmap_items();
     }
 
-
-    synchronized String[] jkeys() {
-        String[] keyTable = keys;
-        //PyObject[] valueTable = values;
-        int n = keyTable.length;
-
-        String[] newKeys = new String[size];
-        int j=0;
-
-        for (int i=0; i<n; i++) {
-            String key = keyTable[i];
-            if (key == null || key == "<deleted key>")
-                continue;
-            newKeys[j++] = key;
-        }
-        return newKeys;
+    @ExposedMethod(doc = BuiltinDocs.dict_items_doc)
+    final PyList stringmap_items() {
+        return new PyList(stringmap_iteritems());
     }
 
+    private PyTuple itemTuple(Entry<Object, PyObject> entry) {
+        return new PyTuple(keyToPy(entry.getKey()), entry.getValue());
+    }
 
     /**
-     * Return a copy of the mappings list of keys.
+     * Return a copy of the mappings list of keys. We have to take in account that we could be
+     * storing String or PyObject objects
      */
-    public synchronized PyList keys() {
-        String[] keyTable = keys;
-        //PyObject[] valueTable = values;
-        int n = keyTable.length;
+    public PyList keys() {
+        return stringmap_keys();
+    }
 
-        PyList l = new PyList();
-        for (int i=0; i<n; i++) {
-            String key = keyTable[i];
-            if (key == null || key == "<deleted key>" || values[i] == null)
-                continue;
-            l.append(new PyString(key));
+    @ExposedMethod(doc = BuiltinDocs.dict_keys_doc)
+    final PyList stringmap_keys() {
+        PyObject[] keyArray = new PyObject[table.size()];
+        int i = 0;
+        for (Object key : table.keySet()) {
+            keyArray[i++] = keyToPy(key);
         }
-        return l;
+        return new PyList(keyArray);
     }
 
     /**
      * Return a copy of the mappings list of values.
      */
-    public synchronized PyList values() {
-        PyObject[] valueTable = values;
-        int n = valueTable.length;
-
-        PyList l = new PyList();
-        for (int i=0; i<n; i++) {
-            PyObject value = valueTable[i];
-            if (value == null)
-                continue;
-            l.append(value);
-        }
-        return l;
+    public PyList values() {
+        return stringmap_values();
     }
+
+    @ExposedMethod(doc = BuiltinDocs.dict_values_doc)
+    final PyList stringmap_values() {
+        return new PyList(table.values());
+    }
+
     /**
      * return an iterator over (key, value) pairs
      */
-    public synchronized PyObject iteritems() {
-        return new PyStringMapIter(keys, values, PyStringMapIter.ITEMS);
+    public PyObject iteritems() {
+        return stringmap_iteritems();
     }
-    
+
+    @ExposedMethod(doc = BuiltinDocs.dict_iteritems_doc)
+    final PyObject stringmap_iteritems() {
+        return new ItemsIter(table.entrySet());
+    }
+
     /**
      * return an iterator over the keys
      */
-    public synchronized PyObject iterkeys() {
-        return new PyStringMapIter(keys, values, PyStringMapIter.KEYS);
+    public PyObject iterkeys() {
+        return stringmap_iterkeys();
     }
-    
+
+    @ExposedMethod(doc = BuiltinDocs.dict_iterkeys_doc)
+    final PyObject stringmap_iterkeys() {
+        // Python allows one to change the dict while iterating over it, including
+        // deletion. Java does not. Can we resolve with CHM?
+        return new KeysIter(table.keySet());
+    }
+
     /**
      * return an iterator over the values
      */
-    public synchronized PyObject itervalues() {
-        return new PyStringMapIter(keys, values, PyStringMapIter.VALUES);
-    }
-}
-
-/* extended, based on PyDictionaryIter */
-class PyStringMapIter extends PyIterator {
-    String[] keyTable;
-    PyObject[] valTable;
-    private int idx;
-    private int type;
-
-    public static final int KEYS    = 0;
-    public static final int VALUES  = 1;
-    public static final int ITEMS   = 2;
-
-    public PyStringMapIter(String[] keys, PyObject[] values) {
-        this(keys, values, KEYS);
+    public PyObject itervalues() {
+        return stringmap_itervalues();
     }
 
-    public PyStringMapIter(String[] keys, PyObject[] values, int type) {
-        this.keyTable = keys;
-        this.valTable = values;
-        this.idx = 0;
-        this.type=type;
+    @ExposedMethod(doc = BuiltinDocs.dict_itervalues_doc)
+    final PyObject stringmap_itervalues() {
+        return new ValuesIter(table.values());
     }
 
-    public PyObject __iternext__() {
-        int n = keyTable.length;
+    @Override
+    public int hashCode() {
+        return stringmap___hash__();
+    }
 
-        for (; idx < n; idx++) {
-            String key = keyTable[idx];
-            PyObject val = valTable[idx];
-            if (key == null || key == "<deleted key>" || val == null)
-                continue;
-            idx++;
+    @ExposedMethod(doc = BuiltinDocs.dict___hash___doc)
+    final int stringmap___hash__() {
+        throw Py.TypeError(String.format("unhashable type: '%.200s'", getType().fastGetName()));
+    }
 
-            switch(type) {
-                case VALUES:
-                    return val;
-                case ITEMS:
-                    return new PyTuple(new PyObject[] { Py.newString(key),
-                        val });
-                default:    // KEYS
-                    return Py.newString(key);
-            }
+    @Override
+    public boolean isMappingType() {
+        return true;
+    }
+
+    @Override
+    public boolean isSequenceType() {
+        return false;
+    }
+
+    private abstract class StringMapIter<T> extends PyIterator {
+
+        protected final Iterator<T> iterator;
+
+        private final int size;
+
+        public StringMapIter(Collection<T> c) {
+            iterator = c.iterator();
+            size = c.size();
         }
-        return null;
+
+        @Override
+        public PyObject __iternext__() {
+            if (table.size() != size) {
+                throw Py.RuntimeError("dictionary changed size during iteration");
+            }
+            if (!iterator.hasNext()) {
+                return null;
+            }
+            return stringMapNext();
+        }
+
+        protected abstract PyObject stringMapNext();
+    }
+
+    private class ValuesIter extends StringMapIter<PyObject> {
+
+        public ValuesIter(Collection<PyObject> c) {
+            super(c);
+        }
+
+            @Override
+            public PyObject stringMapNext() {
+            return iterator.next();
+        }
+    }
+
+    private class KeysIter extends StringMapIter<Object> {
+
+        public KeysIter(Set<Object> s) {
+            super(s);
+        }
+
+        @Override
+        protected PyObject stringMapNext() {
+            return keyToPy(iterator.next());
+        }
+    }
+
+    private class ItemsIter extends StringMapIter<Entry<Object, PyObject>> {
+
+        public ItemsIter(Set<Entry<Object, PyObject>> s) {
+            super(s);
+        }
+
+        @Override
+        public PyObject stringMapNext() {
+            return itemTuple(iterator.next());
+        }
+    }
+
+    private static PyObject keyToPy(Object objKey){
+        if (objKey instanceof String) {
+            return PyString.fromInterned((String)objKey);
+        } else {
+            return (PyObject)objKey;
+        }
+    }
+
+    private static Object pyToKey(PyObject pyKey) {
+        if (pyKey instanceof PyString) {
+            return ((PyString)pyKey).internedString();
+        } else {
+            return pyKey;
+        }
     }
 }
-
-

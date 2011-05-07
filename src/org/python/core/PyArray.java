@@ -9,715 +9,136 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Array;
+
+import org.python.core.util.ByteSwapper;
+import org.python.core.util.StringUtil;
+import org.python.expose.ExposedGet;
+import org.python.expose.ExposedMethod;
+import org.python.expose.ExposedNew;
+import org.python.expose.ExposedType;
+import org.python.expose.MethodType;
 
 /**
  * A wrapper class around native java arrays.
- * 
+ *
  * Instances of PyArray are created either by java functions or directly by the
  * jarray module.
  * <p>
  * See also the jarray module.
  */
+@ExposedType(name = "array.array", base = PyObject.class)
 public class PyArray extends PySequence implements Cloneable {
-    //~ BEGIN GENERATED REGION -- DO NOT EDIT SEE gexpose.py
-    /* type info */
 
-    public static final String exposed_name="array";
+    public static final PyType TYPE = PyType.fromClass(PyArray.class);
 
-    public static final Class exposed_base=PyObject.class;
-
-    public static void typeSetup(PyObject dict,PyType.Newstyle marker) {
-        class exposed___ne__ extends PyBuiltinMethodNarrow {
-
-            exposed___ne__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___ne__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyArray)self).seq___ne__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__ne__",new PyMethodDescr("__ne__",PyArray.class,1,1,new exposed___ne__(null,null)));
-        class exposed___eq__ extends PyBuiltinMethodNarrow {
-
-            exposed___eq__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___eq__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyArray)self).seq___eq__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__eq__",new PyMethodDescr("__eq__",PyArray.class,1,1,new exposed___eq__(null,null)));
-        class exposed___lt__ extends PyBuiltinMethodNarrow {
-
-            exposed___lt__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___lt__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyArray)self).seq___lt__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__lt__",new PyMethodDescr("__lt__",PyArray.class,1,1,new exposed___lt__(null,null)));
-        class exposed___le__ extends PyBuiltinMethodNarrow {
-
-            exposed___le__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___le__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyArray)self).seq___le__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__le__",new PyMethodDescr("__le__",PyArray.class,1,1,new exposed___le__(null,null)));
-        class exposed___gt__ extends PyBuiltinMethodNarrow {
-
-            exposed___gt__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___gt__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyArray)self).seq___gt__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__gt__",new PyMethodDescr("__gt__",PyArray.class,1,1,new exposed___gt__(null,null)));
-        class exposed___ge__ extends PyBuiltinMethodNarrow {
-
-            exposed___ge__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___ge__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyArray)self).seq___ge__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__ge__",new PyMethodDescr("__ge__",PyArray.class,1,1,new exposed___ge__(null,null)));
-        class exposed___getitem__ extends PyBuiltinMethodNarrow {
-
-            exposed___getitem__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___getitem__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyArray)self).seq___finditem__(arg0);
-                if (ret==null) {
-                    throw Py.IndexError("index out of range: "+arg0);
-                }
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__getitem__",new PyMethodDescr("__getitem__",PyArray.class,1,1,new exposed___getitem__(null,null)));
-        class exposed___contains__ extends PyBuiltinMethodNarrow {
-
-            exposed___contains__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___contains__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                return Py.newBoolean(((PyArray)self).object___contains__(arg0));
-            }
-
-        }
-        dict.__setitem__("__contains__",new PyMethodDescr("__contains__",PyArray.class,1,1,new exposed___contains__(null,null)));
-        class exposed___delitem__ extends PyBuiltinMethodNarrow {
-
-            exposed___delitem__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___delitem__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                ((PyArray)self).seq___delitem__(arg0);
-                return Py.None;
-            }
-
-        }
-        dict.__setitem__("__delitem__",new PyMethodDescr("__delitem__",PyArray.class,1,1,new exposed___delitem__(null,null)));
-        class exposed___setitem__ extends PyBuiltinMethodNarrow {
-
-            exposed___setitem__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___setitem__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0,PyObject arg1) {
-                ((PyArray)self).seq___setitem__(arg0,arg1);
-                return Py.None;
-            }
-
-        }
-        dict.__setitem__("__setitem__",new PyMethodDescr("__setitem__",PyArray.class,2,2,new exposed___setitem__(null,null)));
-        class exposed___nonzero__ extends PyBuiltinMethodNarrow {
-
-            exposed___nonzero__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___nonzero__(self,info);
-            }
-
-            public PyObject __call__() {
-                return Py.newBoolean(((PyArray)self).seq___nonzero__());
-            }
-
-        }
-        dict.__setitem__("__nonzero__",new PyMethodDescr("__nonzero__",PyArray.class,0,0,new exposed___nonzero__(null,null)));
-        class exposed___getslice__ extends PyBuiltinMethodNarrow {
-
-            exposed___getslice__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___getslice__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0,PyObject arg1,PyObject arg2) {
-                return((PyArray)self).seq___getslice__(arg0,arg1,arg2);
-            }
-
-            public PyObject __call__(PyObject arg0,PyObject arg1) {
-                return((PyArray)self).seq___getslice__(arg0,arg1);
-            }
-
-        }
-        dict.__setitem__("__getslice__",new PyMethodDescr("__getslice__",PyArray.class,2,3,new exposed___getslice__(null,null)));
-        class exposed___delslice__ extends PyBuiltinMethodNarrow {
-
-            exposed___delslice__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___delslice__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0,PyObject arg1,PyObject arg2) {
-                ((PyArray)self).seq___delslice__(arg0,arg1,arg2);
-                return Py.None;
-            }
-
-        }
-        dict.__setitem__("__delslice__",new PyMethodDescr("__delslice__",PyArray.class,3,3,new exposed___delslice__(null,null)));
-        class exposed___setslice__ extends PyBuiltinMethodNarrow {
-
-            exposed___setslice__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___setslice__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0,PyObject arg1,PyObject arg2,PyObject arg3) {
-                ((PyArray)self).seq___setslice__(arg0,arg1,arg2,arg3);
-                return Py.None;
-            }
-
-            public PyObject __call__(PyObject arg0,PyObject arg1,PyObject arg2) {
-                ((PyArray)self).seq___setslice__(arg0,arg1,arg2);
-                return Py.None;
-            }
-
-        }
-        dict.__setitem__("__setslice__",new PyMethodDescr("__setslice__",PyArray.class,3,4,new exposed___setslice__(null,null)));
-        dict.__setitem__("itemsize",new PyGetSetDescr("itemsize",PyArray.class,"getItemsize",null,null));
-        dict.__setitem__("typecode",new PyGetSetDescr("typecode",PyArray.class,"getTypecode",null,null));
-        class exposed_append extends PyBuiltinMethodNarrow {
-
-            exposed_append(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_append(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                ((PyArray)self).array_append(arg0);
-                return Py.None;
-            }
-
-        }
-        dict.__setitem__("append",new PyMethodDescr("append",PyArray.class,1,1,new exposed_append(null,null)));
-        class exposed_byteswap extends PyBuiltinMethodNarrow {
-
-            exposed_byteswap(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_byteswap(self,info);
-            }
-
-            public PyObject __call__() {
-                ((PyArray)self).array_byteswap();
-                return Py.None;
-            }
-
-        }
-        dict.__setitem__("byteswap",new PyMethodDescr("byteswap",PyArray.class,0,0,new exposed_byteswap(null,null)));
-        class exposed_count extends PyBuiltinMethodNarrow {
-
-            exposed_count(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_count(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                return Py.newInteger(((PyArray)self).array_count(arg0));
-            }
-
-        }
-        dict.__setitem__("count",new PyMethodDescr("count",PyArray.class,1,1,new exposed_count(null,null)));
-        class exposed_extend extends PyBuiltinMethodNarrow {
-
-            exposed_extend(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_extend(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                ((PyArray)self).array_extend(arg0);
-                return Py.None;
-            }
-
-        }
-        dict.__setitem__("extend",new PyMethodDescr("extend",PyArray.class,1,1,new exposed_extend(null,null)));
-        class exposed_fromfile extends PyBuiltinMethodNarrow {
-
-            exposed_fromfile(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_fromfile(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0,PyObject arg1) {
-                try {
-                    ((PyArray)self).array_fromfile(arg0,arg1.asInt(1));
-                    return Py.None;
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 1:
-                        msg="expected an integer";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-        }
-        dict.__setitem__("fromfile",new PyMethodDescr("fromfile",PyArray.class,2,2,new exposed_fromfile(null,null)));
-        class exposed_fromlist extends PyBuiltinMethodNarrow {
-
-            exposed_fromlist(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_fromlist(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                ((PyArray)self).array_fromlist(arg0);
-                return Py.None;
-            }
-
-        }
-        dict.__setitem__("fromlist",new PyMethodDescr("fromlist",PyArray.class,1,1,new exposed_fromlist(null,null)));
-        class exposed_index extends PyBuiltinMethodNarrow {
-
-            exposed_index(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_index(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                return Py.newInteger(((PyArray)self).array_index(arg0));
-            }
-
-        }
-        dict.__setitem__("index",new PyMethodDescr("index",PyArray.class,1,1,new exposed_index(null,null)));
-        class exposed_insert extends PyBuiltinMethodNarrow {
-
-            exposed_insert(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_insert(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0,PyObject arg1) {
-                try {
-                    ((PyArray)self).array_insert(arg0.asInt(0),arg1);
-                    return Py.None;
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 0:
-                        msg="expected an integer";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-        }
-        dict.__setitem__("insert",new PyMethodDescr("insert",PyArray.class,2,2,new exposed_insert(null,null)));
-        class exposed_pop extends PyBuiltinMethodNarrow {
-
-            exposed_pop(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_pop(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                try {
-                    return((PyArray)self).array_pop(arg0.asInt(0));
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 0:
-                        msg="expected an integer";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-            public PyObject __call__() {
-                return((PyArray)self).array_pop();
-            }
-
-        }
-        dict.__setitem__("pop",new PyMethodDescr("pop",PyArray.class,0,1,new exposed_pop(null,null)));
-        class exposed_remove extends PyBuiltinMethodNarrow {
-
-            exposed_remove(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_remove(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                ((PyArray)self).array_remove(arg0);
-                return Py.None;
-            }
-
-        }
-        dict.__setitem__("remove",new PyMethodDescr("remove",PyArray.class,1,1,new exposed_remove(null,null)));
-        class exposed_reverse extends PyBuiltinMethodNarrow {
-
-            exposed_reverse(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_reverse(self,info);
-            }
-
-            public PyObject __call__() {
-                ((PyArray)self).array_reverse();
-                return Py.None;
-            }
-
-        }
-        dict.__setitem__("reverse",new PyMethodDescr("reverse",PyArray.class,0,0,new exposed_reverse(null,null)));
-        class exposed_tofile extends PyBuiltinMethodNarrow {
-
-            exposed_tofile(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_tofile(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                ((PyArray)self).array_tofile(arg0);
-                return Py.None;
-            }
-
-        }
-        dict.__setitem__("tofile",new PyMethodDescr("tofile",PyArray.class,1,1,new exposed_tofile(null,null)));
-        class exposed_tolist extends PyBuiltinMethodNarrow {
-
-            exposed_tolist(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_tolist(self,info);
-            }
-
-            public PyObject __call__() {
-                return((PyArray)self).array_tolist();
-            }
-
-        }
-        dict.__setitem__("tolist",new PyMethodDescr("tolist",PyArray.class,0,0,new exposed_tolist(null,null)));
-        class exposed_tostring extends PyBuiltinMethodNarrow {
-
-            exposed_tostring(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_tostring(self,info);
-            }
-
-            public PyObject __call__() {
-                return((PyArray)self).array_tostring();
-            }
-
-        }
-        dict.__setitem__("tostring",new PyMethodDescr("tostring",PyArray.class,0,0,new exposed_tostring(null,null)));
-        class exposed_write extends PyBuiltinMethodNarrow {
-
-            exposed_write(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed_write(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                ((PyArray)self).array_write(arg0);
-                return Py.None;
-            }
-
-        }
-        dict.__setitem__("write",new PyMethodDescr("write",PyArray.class,1,1,new exposed_write(null,null)));
-        class exposed___init__ extends PyBuiltinMethod {
-
-            exposed___init__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___init__(self,info);
-            }
-
-            public PyObject __call__(PyObject[]args) {
-                return __call__(args,Py.NoKeywords);
-            }
-
-            public PyObject __call__(PyObject[]args,String[]keywords) {
-                ((PyArray)self).array_init(args,keywords);
-                return Py.None;
-            }
-
-        }
-        dict.__setitem__("__init__",new PyMethodDescr("__init__",PyArray.class,-1,-1,new exposed___init__(null,null)));
-        dict.__setitem__("__new__",new PyNewWrapper(PyArray.class,"__new__",-1,-1) {
-
-                                                                                       public PyObject new_impl(boolean init,PyType subtype,PyObject[]args,String[]keywords) {
-                                                                                           PyArray newobj;
-                                                                                           if (for_type==subtype) {
-                                                                                               newobj=new PyArray();
-                                                                                               if (init)
-                                                                                                   newobj.array_init(args,keywords);
-                                                                                           } else {
-                                                                                               newobj=new PyArrayDerived(subtype);
-                                                                                           }
-                                                                                           return newobj;
-                                                                                       }
-
-                                                                                   });
-    }
-    //~ END GENERATED REGION -- DO NOT EDIT SEE gexpose.py
+    /** The underlying Java array. */
     private Object data;
 
-    private Class type;
+    /** The Java array class. */
+    private Class<?> type;
 
+    /** The Python style typecode of the array. */
     private String typecode;
 
     private ArrayDelegate delegate;
 
-    // PyArray can't extend anymore, so delegate
-    private class ArrayDelegate extends AbstractArray {
-
-        final PyArray pyArray;
-
-        private ArrayDelegate(PyArray pyArray) {
-            super((pyArray.data == null) ? 0 : Array.getLength(pyArray.data));
-            this.pyArray = pyArray;
-        }
-
-        protected Object getArray() {
-            return pyArray.data;
-        }
-
-        protected void setArray(Object array) {
-            pyArray.data = array;
-        }
-
-        protected void makeInsertSpace(int index) {
-            super.makeInsertSpace(index, 1);
-        }
-
-        protected void makeInsertSpace(int index, int length) {
-            super.makeInsertSpace(index, length);
-        }
-
-        public void remove(int index) {
-            super.remove(index);
-        }
-    }
-
-    private PyArray() {
-    // do nothing, shell instance
-    }
-    
-    public PyArray(PyType type){
+    public PyArray(PyType type) {
         super(type);
     }
 
-    public PyArray(PyArray toCopy) {
-        data = toCopy.delegate.copyArray();
-        delegate = new ArrayDelegate(this);
-        type = toCopy.type;
+    public PyArray(Class<?> type, Object data) {
+        this(TYPE);
+        setup(type, data);
     }
 
-    public PyArray(Class type, Object data) {
-        this.type = type;
-        this.data = data;
-        delegate = new ArrayDelegate(this);
-    }
-
-    public PyArray(Class type, int n) {
+    public PyArray(Class<?> type, int n) {
         this(type, Array.newInstance(type, n));
     }
-    
-    private void array_init(PyObject[] args, String[] kwds){
-        ArgParser ap = new ArgParser("array",
-                                     args,
-                                     kwds,
-                                     new String[] {"typecode", "seq"},
+
+    public PyArray(PyArray toCopy) {
+        this(toCopy.type, toCopy.delegate.copyArray());
+        typecode = toCopy.typecode;
+    }
+
+    private void setup(Class<?> type, Object data) {
+        this.type = type;
+        typecode = class2char(type);
+        if (data == null) {
+            this.data = Array.newInstance(type, 0);
+        } else {
+            this.data = data;
+        }
+        delegate = new ArrayDelegate();
+    }
+
+    @ExposedNew
+    static final PyObject array_new(PyNewWrapper new_, boolean init, PyType subtype,
+                                   PyObject[] args, String[] keywords) {
+        if (new_.for_type != subtype && keywords.length > 0) {
+            int argc = args.length - keywords.length;
+            PyObject[] justArgs = new PyObject[argc];
+            System.arraycopy(args, 0, justArgs, 0, argc);
+            args = justArgs;
+        }
+        ArgParser ap = new ArgParser("array", args, Py.NoKeywords, new String[] {"typecode", "initializer"},
                                      1);
+        ap.noKeywords();
         PyObject obj = ap.getPyObject(0);
-        if(obj instanceof PyString) {
-            String code = obj.toString();
-            if(code.length() != 1) {
-                throw Py.ValueError("typecode must be in [zcbhilfd]");
+        PyObject initial = ap.getPyObject(1, null);
+
+        Class<?> type;
+        String typecode;
+        if (obj instanceof PyString && !(obj instanceof PyUnicode)) {
+            if (obj.__len__() != 1) {
+                throw Py.TypeError("array() argument 1 must be char, not str");
             }
-            type = char2class(code.charAt(0));
-            typecode = code;
-        }else if(obj instanceof PyJavaClass){
-            type = ((PyJavaClass)obj).proxyClass;
+            typecode = obj.toString();
+            type = char2class(typecode.charAt(0));
+        } else if (obj instanceof PyJavaType) {
+            type = ((PyJavaType)obj).getProxyType();
             typecode = type.getName();
+        } else {
+            throw Py.TypeError("array() argument 1 must be char, not " + obj.getType().fastGetName());
         }
-        data = Array.newInstance(type, 0);
-        delegate = new ArrayDelegate(this);
-        
-        PyObject seq = ap.getPyObject(1, null);
-        if(seq == null){
-            return;
+
+        PyArray self;
+        if (new_.for_type == subtype) {
+            self = new PyArray(subtype);
+        } else {
+            self = new PyArrayDerived(subtype);
         }
-        extendInternal(seq);
+        // Initialize the typecode (and validate type) before creating the backing Array
+        class2char(type);
+        self.setup(type, Array.newInstance(type, 0));
+        self.typecode = typecode;
+        if (initial == null) {
+            return self;
+        }
+        if (initial instanceof PyList) {
+            self.fromlist(initial);
+        } else if (initial instanceof PyString && !(initial instanceof PyUnicode)) {
+            self.fromstring(initial.toString());
+        } else if ("u".equals(typecode)) {
+            if (initial instanceof PyUnicode) {
+                self.extendArray(((PyUnicode) initial).toCodePoints());
+            }
+            else {
+                self.extendUnicodeIter(initial);
+            }
+        } else {
+            self.extendInternal(initial);
+        }
+        return self;
     }
 
     public static PyArray zeros(int n, char typecode) {
         PyArray array = zeros(n, char2class(typecode));
-        // Character.toString(char) is jdk 1.4
-        //array.typecode = Character.toString(typecode);
-        array.typecode = "" + typecode;
+        array.typecode = Character.toString(typecode);
         return array;
     }
 
-    public static PyArray zeros(int n, Class ctype) {
+    public static PyArray zeros(int n, Class<?> ctype) {
         PyArray array = new PyArray(ctype, n);
         array.typecode = ctype.getName();
         return array;
@@ -725,16 +146,14 @@ public class PyArray extends PySequence implements Cloneable {
 
     public static PyArray array(PyObject seq, char typecode) {
         PyArray array = PyArray.array(seq, char2class(typecode));
-        // Character.toString(char) is jdk 1.4
-        //array.typecode = Character.toString(typecode);
-        array.typecode = "" + typecode;
+        array.typecode = Character.toString(typecode);
         return array;
     }
 
     /**
      * Create a PyArray storing <em>ctype</em> types and being initialised
      * with <em>initialiser</em>.
-     * 
+     *
      * @param init
      *            an initialiser for the array - can be PyString or PySequence
      *            (including PyArray) or iterable type.
@@ -742,29 +161,186 @@ public class PyArray extends PySequence implements Cloneable {
      *            <code>Class</code> type of the elements stored in the array.
      * @return a new PyArray
      */
-    public static PyArray array(PyObject init, Class ctype) {
+    public static PyArray array(PyObject init, Class<?> ctype) {
         PyArray array = new PyArray(ctype, 0);
         array.typecode = ctype.getName();
         array.extendInternal(init);
         return array;
     }
 
+    @ExposedMethod(type = MethodType.BINARY)
+    final PyObject array___ne__(PyObject o) {
+        return seq___ne__(o);
+    }
+
+    @ExposedMethod(type = MethodType.BINARY)
+    final PyObject array___eq__(PyObject o) {
+        return seq___eq__(o);
+    }
+
+    @ExposedMethod(type = MethodType.BINARY)
+    final PyObject array___lt__(PyObject o) {
+        return seq___lt__(o);
+    }
+
+    @ExposedMethod(type = MethodType.BINARY)
+    final PyObject array___le__(PyObject o) {
+        return seq___le__(o);
+    }
+
+    @ExposedMethod(type = MethodType.BINARY)
+    final PyObject array___gt__(PyObject o) {
+        return seq___gt__(o);
+    }
+
+    @ExposedMethod(type = MethodType.BINARY)
+    final PyObject array___ge__(PyObject o) {
+        return seq___ge__(o);
+    }
+
+    @ExposedMethod
+    final boolean array___contains__(PyObject o) {
+        return object___contains__(o);
+    }
+
+    @ExposedMethod
+    final void array___delitem__(PyObject index) {
+        seq___delitem__(index);
+    }
+
+    @ExposedMethod
+    final void array___setitem__(PyObject o, PyObject def) {
+        seq___setitem__(o, def);
+    }
+
+    @ExposedMethod
+    final PyObject array___getitem__(PyObject o) {
+        PyObject ret = seq___finditem__(o);
+        if(ret == null) {
+            throw Py.IndexError("index out of range: " + o);
+        }
+        return ret;
+    }
+
+    @ExposedMethod
+    final boolean array___nonzero__() {
+        return seq___nonzero__();
+    }
+
+    @ExposedMethod
+    public PyObject array___iter__() {
+        return seq___iter__();
+    }
+
+    @ExposedMethod(defaults = "null")
+    final PyObject array___getslice__(PyObject start, PyObject stop, PyObject step) {
+        return seq___getslice__(start, stop, step);
+    }
+
+    @ExposedMethod(defaults = "null")
+    final void array___setslice__(PyObject start, PyObject stop, PyObject step, PyObject value) {
+
+        seq___setslice__(start, stop, step, value);
+    }
+
+    @ExposedMethod(defaults = "null")
+    final void array___delslice__(PyObject start, PyObject stop, PyObject step) {
+        seq___delslice__(start, stop, step);
+    }
+
+    @Override
+    public PyObject __imul__(PyObject o) {
+        return array___imul__(o);
+    }
+
+    @ExposedMethod(type = MethodType.BINARY)
+    final PyObject array___imul__(PyObject o) {
+        if (!o.isIndex()) {
+            return null;
+        }
+        if (delegate.getSize() > 0) {
+            int count = o.asIndex(Py.OverflowError);
+            if (count <= 0) {
+                delegate.clear();
+                return this;
+            }
+            Object copy = delegate.copyArray();
+            delegate.ensureCapacity(delegate.getSize() * count);
+            for (int i = 1; i < count; i++) {
+                delegate.appendArray(copy);
+            }
+        }
+        return this;
+    }
+
+    @Override
+    public PyObject __mul__(PyObject o) {
+        return array___mul__(o);
+    }
+
+    @ExposedMethod(type = MethodType.BINARY)
+    final PyObject array___mul__(PyObject o) {
+        if (!o.isIndex()) {
+            return null;
+        }
+        return repeat(o.asIndex(Py.OverflowError));
+    }
+
+    @Override
+    public PyObject __rmul__(PyObject o) {
+        return array___rmul__(o);
+    }
+
+    @ExposedMethod(type = MethodType.BINARY)
+    final PyObject array___rmul__(PyObject o) {
+        if (!o.isIndex()) {
+            return null;
+        }
+        return repeat(o.asIndex(Py.OverflowError));
+    }
+
+    @Override
+    public PyObject __iadd__(PyObject other) {
+        return array___iadd__(other);
+    }
+
+    @ExposedMethod(type = MethodType.BINARY)
+    final PyObject array___iadd__(PyObject other) {
+        if (!(other instanceof PyArray)) {
+            return null;
+        }
+
+        PyArray otherArr = (PyArray)other;
+        if (!otherArr.typecode.equals(this.typecode)) {
+            throw Py.TypeError("can only append arrays of the same type, expected '"
+                               + this.type + ", found " + otherArr.type);
+        }
+        delegate.appendArray(otherArr.delegate.copyArray());
+        return this;
+    }
+
+    @Override
+    public PyObject __add__(PyObject other) {
+        return array___add__(other);
+    }
+
     /**
      * Adds (appends) two PyArrays together
-     * 
+     *
      * @param other
      *            a PyArray to be added to the instance
      * @return the result of the addition as a new PyArray instance
      */
-    public PyObject __add__(PyObject other) {
-        PyArray otherArr = null;
-        if(!(other instanceof PyArray)) {
-            throw Py.TypeError("can only append another array to an array");
+    @ExposedMethod(type = MethodType.BINARY)
+    final PyObject array___add__(PyObject other) {
+        if (!(other instanceof PyArray)) {
+            return null;
         }
-        otherArr = (PyArray)other;
-        if(!otherArr.type.equals(this.type)) {
-            throw Py.TypeError("can only append arrays of the same type, "
-                    + "expected '" + this.type + ", found " + otherArr.type);
+
+        PyArray otherArr = (PyArray)other;
+        if (!otherArr.typecode.equals(this.typecode)) {
+            throw Py.TypeError("can only append arrays of the same type, expected '" + this.type
+                               + ", found " + otherArr.type);
         }
         PyArray ret = new PyArray(this);
         ret.delegate.appendArray(otherArr.delegate.copyArray());
@@ -772,89 +348,151 @@ public class PyArray extends PySequence implements Cloneable {
     }
 
     /**
-     * Finds the attribute.
-     * 
-     * @param name
-     *            the name of the attribute of interest
-     * @return the value for the attribute of the specified name
-     */
-    public PyObject __findattr__(String name) {
-        if("typecode".equals(name)) {
-            return new PyString(getTypecode());
-        }
-        return super.__findattr__(name);
-    }
-
-    /**
      * Length of the array
-     * 
+     *
      * @return number of elements in the array
      */
+    @Override
     public int __len__() {
+        return array___len__();
+    }
+
+    @ExposedMethod
+    final int array___len__() {
         return delegate.getSize();
     }
 
-    /**
-     * String representation of PyArray
-     * 
-     * @return string representation of PyArray
-     */
-    public PyString __repr__() {
-        StringBuffer buf = new StringBuffer(128);
-        buf.append("array(").append(class2char(type)).append(",[");
-        for(int i = 0; i < __len__() - 1; i++) {
-            buf.append(pyget(i).__repr__().toString());
-            buf.append(", ");
+    @Override
+    public PyObject __reduce__() {
+        return array___reduce__();
+    }
+
+    @ExposedMethod
+    final PyObject array___reduce__() {
+        PyObject dict = __findattr__("__dict__");
+        if (dict == null) {
+            dict = Py.None;
         }
-        if(__len__() > 0) {
-            buf.append(pyget(__len__() - 1).__repr__().toString());
+        if (__len__() > 0) {
+            return new PyTuple(getType(), new PyTuple(Py.newString(typecode),
+                                                      Py.newString(tostring())), dict);
+        } else {
+            return new PyTuple(getType(), new PyTuple(Py.newString(typecode)), dict);
         }
-        buf.append("]) ");
-        return new PyString(buf.toString());
+    }
+
+    @Override
+    public String toString() {
+        if (__len__() == 0) {
+            return String.format("array(%s)", encodeTypecode(typecode));
+        }
+        String value;
+        if ("c".equals(typecode)) {
+            value = PyString.encode_UnicodeEscape(tostring(), true);
+        } else if ("u".equals(typecode)) {
+            value = (new PyUnicode(tounicode())).__repr__().toString();
+        } else {
+            value = tolist().toString();
+        }
+        return String.format("array(%s, %s)", encodeTypecode(typecode), value);
+    }
+
+    private String encodeTypecode(String typecode) {
+        if (typecode.length() > 1) return typecode;
+        else return "'" + typecode + "'";
     }
 
     /**
-     * 
+     *
      * @param c
      *            target <em>Class</em> for the conversion
      * @return Java object converted to required class type if possible.
      */
-    public Object __tojava__(Class c) {
+    @Override
+    public Object __tojava__(Class<?> c) {
         if(c == Object.class
                 || (c.isArray() && c.getComponentType().isAssignableFrom(type))) {
-            return data;
+            if (delegate.capacity != delegate.size) {
+                // when unboxing, need to shrink the array first, otherwise incorrect
+                // results to Java
+                return delegate.copyArray();
+            } else {
+                return data;
+            }
         }
         if(c.isInstance(this))
             return this;
         return Py.NoConversion;
     }
 
-    public void array_append(PyObject value) {
+    @ExposedMethod
+    public final void array_append(PyObject value) {
         append(value);
+    }
+
+    private static int getCodePoint(PyObject obj) {
+        if (obj instanceof PyUnicode) {
+            PyUnicode u = (PyUnicode) obj;
+            int[] codepoints = u.toCodePoints();
+            if (codepoints.length == 1) {
+                return codepoints[0];
+            }
+        }
+        throw Py.TypeError("array item must be unicode character");
+    }
+
+
+    // relax to allow mixing with PyString, integers
+    private static int getCodePointOrInt(PyObject obj) {
+        if (obj instanceof PyUnicode) {
+            PyUnicode u = (PyUnicode) obj;
+            return u.toCodePoints()[0];
+        }
+        else if (obj instanceof PyString) {
+            PyString s = (PyString) obj;
+            return s.toString().charAt(0);
+        }
+        else if (obj.__nonzero__()) {
+            return obj.asInt();
+        }
+        else {
+            return -1;
+        }
     }
 
     /**
      * Append new value x to the end of the array.
-     * 
+     *
      * @param value
      *            item to be appended to the array
      */
+
     public void append(PyObject value) {
         // Currently, this is asymmetric with extend, which
         // *will* do conversions like append(5.0) to an int array.
         // Also, cpython 2.2 will do the append coersion. However,
         // it is deprecated in cpython 2.3, so maybe we are just
         // ahead of our time ;-)
+
         int afterLast = delegate.getSize();
-        delegate.makeInsertSpace(afterLast);
-        try {
-            set(afterLast, value);
-        } catch(PyException e) {
-            delegate.setSize(afterLast);
-            throw new PyException(e.type, e.value);
+        if ("u".equals(typecode)) {
+            int codepoint = getCodePoint(value);
+            delegate.makeInsertSpace(afterLast);
+            Array.setInt(data, afterLast, codepoint);
+        } else {
+
+            delegate.makeInsertSpace(afterLast);
+            try {
+                set(afterLast, value);
+            } catch (PyException e) {
+                delegate.setSize(afterLast);
+                throw new PyException(e.type, e.value);
+            }
         }
     }
 
+
+    @ExposedMethod
     public void array_byteswap() {
         byteswap();
     }
@@ -866,8 +504,7 @@ public class PyArray extends PySequence implements Cloneable {
      * written on a machine with a different byte order.
      */
     public void byteswap() {
-        // unknown type - throw RuntimeError
-        if(getItemsize() == 0) {
+        if (getStorageSize() == 0 || "u".equals(typecode)) {
             throw Py.RuntimeError("don't know how to byteswap this array type");
         }
         ByteSwapper.swap(data);
@@ -875,9 +512,10 @@ public class PyArray extends PySequence implements Cloneable {
 
     /**
      * Implementation of <em>Cloneable</em> interface.
-     * 
+     *
      * @return copy of current PyArray
      */
+    @Override
     public Object clone() {
         return new PyArray(this);
     }
@@ -885,7 +523,7 @@ public class PyArray extends PySequence implements Cloneable {
     /**
      * Converts a character code for the array type to a Java <code>Class</code>.
      * <p />
-     * 
+     *
      * The following character codes and their native types are supported:<br />
      * <table>
      * <tr>
@@ -926,69 +564,93 @@ public class PyArray extends PySequence implements Cloneable {
      * </tr>
      * </table>
      * <p />
-     * 
+     *
      * @param type
      *            character code for the array type
-     * 
+     *
      * @return <code>Class</code> of the native type
      */
-    public static Class char2class(char type) throws PyIgnoreMethodTag {
+
+    // promote B, H, I (unsigned int) to next larger size
+    public static Class<?> char2class(char type) throws PyIgnoreMethodTag {
         switch(type){
             case 'z':
                 return Boolean.TYPE;
-            case 'c':
-                return Character.TYPE;
             case 'b':
                 return Byte.TYPE;
+            case 'B':
+                return Short.TYPE;
+            case 'u':
+                return Integer.TYPE;
+            case 'c':
+                return Character.TYPE;
             case 'h':
                 return Short.TYPE;
+            case 'H':
+                return Integer.TYPE;
             case 'i':
                 return Integer.TYPE;
+            case 'I':
+                return Long.TYPE;
             case 'l':
+                return Long.TYPE;
+            case 'L':
                 return Long.TYPE;
             case 'f':
                 return Float.TYPE;
             case 'd':
                 return Double.TYPE;
             default:
-                throw Py.ValueError("typecode must be in [zcbhilfd]");
+                throw Py.ValueError("bad typecode (must be c, b, B, u, h, H, i, I, l, L, f or d)");
         }
     }
 
-    private static String class2char(Class cls) {
+    private static String class2char(Class<?> cls) {
         if(cls.equals(Boolean.TYPE))
-            return "'z'";
+            return "z";
         else if(cls.equals(Character.TYPE))
-            return "'c'";
+            return "c";
         else if(cls.equals(Byte.TYPE))
-            return "'b'";
+            return "b";
         else if(cls.equals(Short.TYPE))
-            return "'h'";
+            return "h";
         else if(cls.equals(Integer.TYPE))
-            return "'i'";
+            return "i";
         else if(cls.equals(Long.TYPE))
-            return "'l'";
+            return "l";
         else if(cls.equals(Float.TYPE))
-            return "'f'";
+            return "f";
         else if(cls.equals(Double.TYPE))
-            return "'d'";
+            return "d";
         else
             return cls.getName();
     }
 
-    public int array_count(PyObject value) {
+    @ExposedMethod
+    public final int array_count(PyObject value) {
         // note: cpython does not raise type errors based on item type;
         int iCount = 0;
-        for(int i = 0; i < delegate.getSize(); i++) {
-            if(value.equals(Py.java2py(Array.get(data, i))))
-                iCount++;
+        int len = delegate.getSize();
+        if ("u".equals(typecode)) {
+            int codepoint = getCodePointOrInt(value);
+            for (int i = 0; i < len; i++) {
+                if (codepoint == Array.getInt(data, i)) {
+                    iCount++;
+                }
+            }
+        } else {
+
+            for (int i = 0; i < len; i++) {
+                if (value.equals(Py.java2py(Array.get(data, i)))) {
+                    iCount++;
+                }
+            }
         }
         return iCount;
     }
-
     /**
      * Return the number of occurrences of x in the array.
-     * 
+     *
      * @param value
      *            instances of the value to be counted
      * @return number of time value was found in the array.
@@ -999,10 +661,11 @@ public class PyArray extends PySequence implements Cloneable {
 
     /**
      * Delete the element at position <em>i</em> from the array
-     * 
+     *
      * @param i
      *            index of the item to be deleted from the array
      */
+    @Override
     protected void del(int i) {
         // Now the AbstractArray can support this:
         // throw Py.TypeError("can't remove from array");
@@ -1010,32 +673,20 @@ public class PyArray extends PySequence implements Cloneable {
     }
 
     /**
-     * Delete the slice defined by <em>start</em>, <em>stop</em> and
-     * <em>step</em> from the array.
-     * 
+     * Delete the slice defined by <em>start</em> to <em>stop</em> from the array.
+     *
      * @param start
      *            starting index of slice
      * @param stop
      *            finishing index of slice
-     * @param step
-     *            stepping increment between start and stop
      */
-    protected void delRange(int start, int stop, int step) {
-        // Now the AbstractArray can support this:
-        // throw Py.TypeError("can't remove from array");
-        if(step > 0 && stop < start)
-            stop = start;
-        if(step == 1) {
-            delegate.remove(start, stop);
-        } else {
-            int n = sliceLength(start, stop, step);
-            for(int i = start, j = 0; j < n; i += step, j++) {
-                delegate.remove(i);
-            }
-        }
+    @Override
+    protected void delRange(int start, int stop) {
+        delegate.remove(start, stop);
     }
-    
-    public void array_extend(PyObject iterable){
+
+    @ExposedMethod
+    public final void array_extend(PyObject iterable){
         extendInternal(iterable);
     }
 
@@ -1046,7 +697,7 @@ public class PyArray extends PySequence implements Cloneable {
      * iterable and its elements must be the right type to be appended to the
      * array. Changed in version 2.4: Formerly, the argument could only be
      * another array.
-     * 
+     *
      * @param iterable
      *            iterable object used to extend the array
      */
@@ -1059,20 +710,27 @@ public class PyArray extends PySequence implements Cloneable {
      * Handles specific cases of <em>iterable</em> being PyStrings or
      * PyArrays. Default behaviour is to defer to
      * {@link #extendInternalIter(PyObject) extendInternalIter }
-     * 
+     *
      * @param iterable
      *            object of type PyString, PyArray or any object that can be
      *            iterated over.
      */
+
     private void extendInternal(PyObject iterable) {
-        // string input
-        if(iterable instanceof PyString) {
-            fromstring(((PyString)iterable).toString());
-            // PyArray input
-        } else if(iterable instanceof PyArray) {
-            PyArray source = (PyArray)iterable;
-            if(!source.type.equals(this.type)) {
-                throw Py.TypeError("can only extend with an array of the same kind");
+        if (iterable instanceof PyUnicode) {
+            if ("u".equals(typecode)) {
+                extendUnicodeIter(iterable);
+            } else if ("c".equals(typecode)){
+                throw Py.TypeError("array item must be char");
+            } else {
+                throw Py.TypeError("an integer is required");
+            }
+        } else if (iterable instanceof PyString) {
+            fromstring(((PyString) iterable).toString());
+        } else if (iterable instanceof PyArray) {
+            PyArray source = (PyArray) iterable;
+            if (!source.typecode.equals(typecode)) {
+                throw Py.TypeError("can only extend with array of same kind");
             }
             delegate.appendArray(source.delegate.copyArray());
         } else {
@@ -1082,34 +740,58 @@ public class PyArray extends PySequence implements Cloneable {
 
     /**
      * Internal extend function to process iterable objects.
-     * 
+     *
      * @param iterable
      *            any object that can be iterated over.
      */
     private void extendInternalIter(PyObject iterable) {
-        PyObject iter = iterable.__iter__();
-        PyObject item = null;
         // iterable object without a length property - cannot presize the
         // array, so append each item
         if(iterable.__findattr__("__len__") == null) {
-            for(int i = 0; (item = iter.__iternext__()) != null; i++) {
+            for (PyObject item : iterable.asIterable()) {
                 append(item);
             }
         } else {
             // create room
             int last = delegate.getSize();
             delegate.ensureCapacity(last + iterable.__len__());
-            for(int i = last; (item = iter.__iternext__()) != null; i++) {
-                set(i, item);
+            for (PyObject item : iterable.asIterable()) {
+                set(last++, item);
                 delegate.size++;
             }
         }
     }
-    
-    private void array_fromfile(PyObject f, int count){
+
+    private void extendUnicodeIter(PyObject iterable) {
+        for (PyObject item : iterable.asIterable()) {
+            PyUnicode uitem;
+            try {
+                uitem = (PyUnicode) item;
+            } catch (ClassCastException e) {
+                throw Py.TypeError("Type not compatible with array type");
+            }
+            for (int codepoint : uitem.toCodePoints()) {
+                int afterLast = delegate.getSize();
+                delegate.makeInsertSpace(afterLast);
+                Array.setInt(data, afterLast, codepoint);
+            }
+        }
+    }
+
+    private void extendArray(int[] items) {
+        int last = delegate.getSize();
+        delegate.ensureCapacity(last + items.length);
+        for (int item : items) {
+            Array.set(data, last++, item);
+            delegate.size++;
+        }
+    }
+
+    @ExposedMethod
+    public final void array_fromfile(PyObject f, int count){
         fromfile(f, count);
     }
-    
+
     /**
      * Read <em>count</em> items (as machine values) from the file object
      * <em>f</em> and append them to the end of the array. If less than
@@ -1117,7 +799,7 @@ public class PyArray extends PySequence implements Cloneable {
      * that were available are still inserted into the array. <em>f</em> must
      * be a real built-in file object; something else with a read() method won't
      * do.
-     * 
+     *
      * @param f
      *            Python builtin file object to retrieve data
      * @param count
@@ -1125,43 +807,39 @@ public class PyArray extends PySequence implements Cloneable {
      */
     public void fromfile(PyObject f, int count) {
         // check for arg1 as file object
-        if(!(f instanceof PyFile)) {
+        if (!(f instanceof PyFile)) {
             throw Py.TypeError("arg1 must be open file");
         }
         PyFile file = (PyFile)f;
-        // check for read only
-        if(file.mode.indexOf("r") == -1) {
-            throw Py.TypeError("file needs to be in read mode");
-        }
-        // read the data via the PyFile
-        int readbytes = count * getItemsize();
+        int readbytes = count * getStorageSize();
         String buffer = file.read(readbytes).toString();
         // load whatever was collected into the array
         fromstring(buffer);
         // check for underflow
         if(buffer.length() < readbytes) {
-            int readcount = buffer.length() / getItemsize();
+            int readcount = buffer.length() / getStorageSize();
             throw Py.EOFError("not enough items in file. "
                     + Integer.toString(count) + " requested, "
                     + Integer.toString(readcount) + " actually read");
         }
     }
-    
-    public void array_fromlist(PyObject obj){
+
+    @ExposedMethod
+    public final void array_fromlist(PyObject obj){
         fromlist(obj);
     }
 
     /**
      * Append items from the list. This is equivalent to "for x in list:
      * a.append(x)"except that if there is a type error, the array is unchanged.
-     * 
+     *
      * @param obj
      *            input list object that will be appended to the array
      */
     public void fromlist(PyObject obj) {
-        // check for list
-        if(!(obj instanceof PyList))
-            throw Py.TypeError("expected list argument");
+        if(!(obj instanceof PyList)) {
+            throw Py.TypeError("arg must be list");
+        }
         // store the current size of the internal array
         int size = delegate.getSize();
         try {
@@ -1177,30 +855,30 @@ public class PyArray extends PySequence implements Cloneable {
     /**
      * Generic stream reader to read the entire contents of a stream into the
      * array.
-     * 
+     *
      * @param is
      *            InputStream to source the data from
-     * 
+     *
      * @return number of primitives successfully read
-     * 
+     *
      * @throws IOException
      * @throws EOFException
      */
     private int fromStream(InputStream is) throws IOException, EOFException {
-        return fromStream(is, is.available() / getItemsize());
+        return fromStream(is, is.available() / getStorageSize());
     }
 
     /**
      * Generic stream reader to read <em>count</em> primitive types from a
      * stream into the array.
-     * 
+     *
      * @param is
      *            InputStream to source the data from
      * @param count
      *            number of primitive types to read from the stream
-     * 
+     *
      * @return number of primitives successfully read
-     * 
+     *
      * @throws IOException
      * @throws EOFException
      */
@@ -1213,68 +891,113 @@ public class PyArray extends PySequence implements Cloneable {
         int index = origsize;
         // create capacity for 'count' items
         delegate.ensureCapacity(index + count);
-        if(type.isPrimitive()) {
-            if(type == Boolean.TYPE) {
-                for(int i = 0; i < count; i++, index++) {
-                    Array.setBoolean(data, index, dis.readBoolean());
-                    delegate.size++;
-                }
-            } else if(type == Byte.TYPE) {
-                for(int i = 0; i < count; i++, index++) {
-                    Array.setByte(data, index, dis.readByte());
-                    delegate.size++;
-                }
-            } else if(type == Character.TYPE) {
-                for(int i = 0; i < count; i++, index++) {
-                    Array.setChar(data, index, (char)dis.readByte());
-                    delegate.size++;
-                }
-            } else if(type == Integer.TYPE) {
-                for(int i = 0; i < count; i++, index++) {
-                    Array.setInt(data, index, dis.readInt());
-                    delegate.size++;
-                }
-            } else if(type == Short.TYPE) {
-                for(int i = 0; i < count; i++, index++) {
-                    Array.setShort(data, index, dis.readShort());
-                    delegate.size++;
-                }
-            } else if(type == Long.TYPE) {
-                for(int i = 0; i < count; i++, index++) {
-                    Array.setLong(data, index, dis.readLong());
-                    delegate.size++;
-                }
-            } else if(type == Float.TYPE) {
-                for(int i = 0; i < count; i++, index++) {
-                    Array.setFloat(data, index, dis.readFloat());
-                    delegate.size++;
-                }
-            } else if(type == Double.TYPE) {
-                for(int i = 0; i < count; i++, index++) {
-                    Array.setDouble(data, index, dis.readDouble());
-                    delegate.size++;
-                }
+        if (type.isPrimitive()) {
+            switch (typecode.charAt(0)) {
+                case 'z':
+                    for (int i = 0; i < count; i++, index++) {
+                        Array.setBoolean(data, index, dis.readBoolean());
+                        delegate.size++;
+                    }
+                    break;
+                case 'b':
+                    for (int i = 0; i < count; i++, index++) {
+                        Array.setByte(data, index, dis.readByte());
+                        delegate.size++;
+                    }
+                    break;
+                case 'B':
+                    for (int i = 0; i < count; i++, index++) {
+                        Array.setShort(data, index, unsignedByte(dis.readByte()));
+                        delegate.size++;
+                    }
+                    break;
+                case 'u':
+                    // use 32-bit integers since we want UCS-4 storage
+                    for (int i = 0; i < count; i++, index++) {
+                        Array.setInt(data, index, dis.readInt());
+                        delegate.size++;
+                    }
+                    break;
+                case 'c':
+                    for (int i = 0; i < count; i++, index++) {
+                        Array.setChar(data, index, (char) (dis.readByte() & 0xff));
+                        delegate.size++;
+                    }
+                    break;
+                case 'h':
+                    for (int i = 0; i < count; i++, index++) {
+                        Array.setShort(data, index, dis.readShort());
+                        delegate.size++;
+                    }
+                    break;
+                case 'H':
+                    for (int i = 0; i < count; i++, index++) {
+                        Array.setInt(data, index, unsignedShort(dis.readShort()));
+                        delegate.size++;
+                    }
+                    break;
+                case 'i':
+                    for (int i = 0; i < count; i++, index++) {
+                        Array.setInt(data, index, dis.readInt());
+                        delegate.size++;
+                    }
+                    break;
+                case 'I':
+                    for (int i = 0; i < count; i++, index++) {
+                        Array.setLong(data, index, unsignedInt(dis.readInt()));
+                        delegate.size++;
+                    }
+                    break;
+                case 'l':
+                    for (int i = 0; i < count; i++, index++) {
+                        Array.setLong(data, index, dis.readLong());
+                        delegate.size++;
+                    }
+                    break;
+                case 'L': // faking it
+                    for (int i = 0; i < count; i++, index++) {
+                        Array.setLong(data, index, dis.readLong());
+                        delegate.size++;
+                    }
+                    break;
+                case 'f':
+                    for (int i = 0; i < count; i++, index++) {
+                        Array.setFloat(data, index, dis.readFloat());
+                        delegate.size++;
+                    }
+                    break;
+                case 'd':
+                    for (int i = 0; i < count; i++, index++) {
+                        Array.setDouble(data, index, dis.readDouble());
+                        delegate.size++;
+                    }
+                    break;
             }
         }
         dis.close();
         return (index - origsize);
     }
 
+    public void fromstring(String input) {
+        array_fromstring(input);
+    }
+
     /**
      * Appends items from the string, interpreting the string as an array of
      * machine values (as if it had been read from a file using the
      * {@link #fromfile(PyObject, int) fromfile()} method).
-     * 
+     *
      * @param input
      *            string of bytes containing array data
      */
-    public void fromstring(String input) {
-        int itemsize = getItemsize();
+    @ExposedMethod
+    final void array_fromstring(String input) {
+        int itemsize = getStorageSize();
         int strlen = input.length();
         if((strlen % itemsize) != 0) {
             throw Py.ValueError("string length not a multiple of item size");
         }
-        ByteArrayInputStream bis = new ByteArrayInputStream(PyString.to_bytes(input));
+        ByteArrayInputStream bis = new ByteArrayInputStream(StringUtil.toBytes(input));
         int origsize = delegate.getSize();
         try {
             fromStream(bis);
@@ -1288,19 +1011,38 @@ public class PyArray extends PySequence implements Cloneable {
         }
     }
 
+    public void fromunicode(PyUnicode input) {
+        array_fromunicode(input);
+    }
+
+    @ExposedMethod
+    final void array_fromunicode(PyObject input) {
+        if (!(input instanceof PyUnicode)) {
+            throw Py.ValueError("fromunicode argument must be an unicode object");
+        }
+        if (!"u".equals(typecode)) {
+            throw Py.ValueError("fromunicode() may only be called on type 'u' arrays");
+        }
+        extend(input);
+    }
+
     /**
      * Get the element at position <em>i</em> from the array
-     * 
+     *
      * @param i
      *            index of the item to be retrieved from the array
      */
+    @Override
     protected PyObject pyget(int i) {
+        if ("u".equals(typecode)) {
+            return new PyUnicode(Array.getInt(data, i));
+        }
         return Py.java2py(Array.get(data, i));
     }
 
     /**
      * Return the internal Java array storage of the PyArray instance
-     * 
+     *
      * @return the <code>Array</code> store.
      */
     public Object getArray() throws PyIgnoreMethodTag {
@@ -1310,17 +1052,17 @@ public class PyArray extends PySequence implements Cloneable {
     /**
      * Getter for the storage size of the array's type.
      * <p />
-     * 
+     *
      * The sizes returned by this method represent the number of bytes used to
      * store the type. In the case of streams, this is the number of bytes
      * written to, or read from a stream. For memory this value is the
      * <em>minimum</em> number of bytes required to store the type.
      * <p />
-     * 
+     *
      * This method is used by other methods to define read/write quanta from
      * strings and streams.
      * <p />
-     * 
+     *
      * Values returned are:<br />
      * <table>
      * <tr>
@@ -1360,9 +1102,10 @@ public class PyArray extends PySequence implements Cloneable {
      * <td>8</td>
      * </tr>
      * </table>
-     * 
+     *
      * @return number of bytes used to store array type.
      */
+    @ExposedGet(name = "itemsize")
     public int getItemsize() {
         if(type.isPrimitive()) {
             if(type == Boolean.TYPE)
@@ -1386,10 +1129,47 @@ public class PyArray extends PySequence implements Cloneable {
         return 0;
     }
 
+    public int getStorageSize() {
+        if (type.isPrimitive()) {
+            switch (typecode.charAt(0)) {
+                case 'z':
+                    return 1;
+                case 'b':
+                    return 1;
+                case 'B':
+                    return 1;
+                case 'u':
+                    return 4;
+                case 'c':
+                    return 1;
+                case 'h':
+                    return 2;
+                case 'H':
+                    return 2;
+                case 'i':
+                    return 4;
+                case 'I':
+                    return 4;
+                case 'l':
+                    return 8;
+                case 'L':
+                    return 8;
+                case 'f':
+                    return 4;
+                case 'd':
+                    return 8;
+                default:
+                    throw Py.ValueError("bad typecode (must be c, b, B, u, h, H, i, I, l, L, f or d)");
+            }
+        }
+        // return something here... could be a calculated size?
+        return 0;
+    }
+
     /**
      * Retrieve a slice from the array specified by the <em>start</em>,
      * <em>stop</em> and <em>step</em>.
-     * 
+     *
      * @param start
      *            start index of the slice
      * @param stop
@@ -1398,16 +1178,20 @@ public class PyArray extends PySequence implements Cloneable {
      *            stepping increment of the slice
      * @return A new PyArray object containing the described slice
      */
+    @Override
     protected PyObject getslice(int start, int stop, int step) {
-        if(step > 0 && stop < start)
+        if (step > 0 && stop < start) {
             stop = start;
+        }
         int n = sliceLength(start, stop, step);
         PyArray ret = new PyArray(type, n);
-        if(step == 1) {
+        // XXX:
+        ret.typecode = typecode;
+        if (step == 1) {
             System.arraycopy(data, start, ret.data, 0, n);
             return ret;
         }
-        for(int i = start, j = 0; j < n; i += step, j++) {
+        for (int i = start, j = 0; j < n; i += step, j++) {
             Array.set(ret.data, j, Array.get(data, i));
         }
         return ret;
@@ -1417,14 +1201,16 @@ public class PyArray extends PySequence implements Cloneable {
      * Getter for the type code of the array.
      * {@link #char2class(char) char2class} describes the possible type codes
      * and their meaning.
-     * 
+     *
      * @return single character type code for the array
      */
-    public String getTypecode() throws PyIgnoreMethodTag {
+    @ExposedGet(name = "typecode")
+    public String getTypecode() {
         return typecode;
     }
-    
-    public int array_index(PyObject value){
+
+    @ExposedMethod
+    public final int array_index(PyObject value){
         int index = indexInternal(value);
         if(index != -1)
             return index;
@@ -1435,7 +1221,7 @@ public class PyArray extends PySequence implements Cloneable {
     /**
      * Return the smallest <em>i</em> such that <em>i</em> is the index of
      * the first occurrence of <em>value</em> in the array.
-     * 
+     *
      * @param value
      *            value to find the index of
      * @return index of the first occurance of <em>value</em>
@@ -1447,22 +1233,34 @@ public class PyArray extends PySequence implements Cloneable {
     /**
      * Return the smallest <em>i</em> such that <em>i</em> is the index of
      * the first occurrence of <em>value</em> in the array.
-     * 
+     *
      * @param value
      *            value to find the index of
      * @return index of the first occurance of <em>value</em>
      */
     private int indexInternal(PyObject value) {
         // note: cpython does not raise type errors based on item type
-        for(int i = 0; i < delegate.getSize(); i++) {
-            if(value.equals(Py.java2py(Array.get(data, i)))) {
-                return i;
+
+        int len = delegate.getSize();
+        if ("u".equals(typecode)) {
+            int codepoint = getCodePointOrInt(value);
+            for (int i = 0; i < len; i++) {
+                if (codepoint == Array.getInt(data, i)) {
+                    return i;
+                }
+            }
+        } else {
+            for (int i = 0; i < len; i++) {
+                if (value.equals(Py.java2py(Array.get(data, i)))) {
+                    return i;
+                }
             }
         }
         return -1;
     }
-    
-    public void array_insert(int index, PyObject value){
+
+    @ExposedMethod
+    public final void array_insert(int index, PyObject value){
         insert(index, value);
     }
 
@@ -1470,23 +1268,32 @@ public class PyArray extends PySequence implements Cloneable {
      * Insert a new item with value <em>value</em> in the array before
      * position <em>index</em>. Negative values are treated as being relative
      * to the end of the array.
-     * 
+     *
      * @param index
      *            insert position
      * @param value
      *            value to be inserted into array
      */
     public void insert(int index, PyObject value) {
-        delegate.makeInsertSpace(index);
-        Array.set(data, index, Py.tojava(value, type));
+        index = boundToSequence(index);
+        if ("u".equals(typecode)) {
+            int codepoint = getCodePoint(value);
+            delegate.makeInsertSpace(index);
+            Array.setInt(data, index, codepoint);
+
+        } else {
+            delegate.makeInsertSpace(index);
+            Array.set(data, index, Py.tojava(value, type));
+        }
     }
-    
-    public PyObject array_pop(){
-        return pop();
-    }
-    
-    public PyObject array_pop(int i){
-        return pop(i);
+
+    @ExposedMethod(defaults="-1")
+    public final PyObject array_pop(int i){
+        PyObject val = pop(i);
+        if ("u".equals(typecode)) {
+            return new PyUnicode(val.asInt());
+        }
+        return val;
     }
 
     /**
@@ -1502,26 +1309,32 @@ public class PyArray extends PySequence implements Cloneable {
      * Removes the item with the index <em>index</em> from the array and
      * returns it. The optional argument defaults to -1, so that by default the
      * last item is removed and returned.
-     * 
+     *
      * @param index
      *            array location to be popped from the array
      * @return array element popped from index
      */
     public PyObject pop(int index) {
-        // todo: python-style error handling
-        index = (index < 0) ? delegate.getSize() + index : index;
+        if (delegate.getSize() == 0) {
+            throw Py.IndexError("pop from empty array");
+        }
+        index = delegator.fixindex(index);
+        if (index == -1) {
+            throw Py.IndexError("pop index out of range");
+        }
         PyObject ret = Py.java2py(Array.get(data, index));
         delegate.remove(index);
         return ret;
     }
-    
-    public void array_remove(PyObject value){
+
+    @ExposedMethod
+    public final void array_remove(PyObject value){
         remove(value);
     }
 
     /**
      * Remove the first occurrence of <em>value</em> from the array.
-     * 
+     *
      * @param value
      *            array value to be removed
      */
@@ -1537,28 +1350,32 @@ public class PyArray extends PySequence implements Cloneable {
 
     /**
      * Repeat the array <em>count</em> times.
-     * 
+     *
      * @param count
      *            number of times to repeat the array
      * @return A new PyArray object containing the source object repeated
      *         <em>count</em> times.
      */
+    @Override
     protected PyObject repeat(int count) {
         Object arraycopy = delegate.copyArray();
         PyArray ret = new PyArray(type, 0);
+        // XXX:
+        ret.typecode = typecode;
         for(int i = 0; i < count; i++) {
             ret.delegate.appendArray(arraycopy);
         }
         return ret;
     }
-    
-    public void array_reverse(){
+
+    @ExposedMethod
+    public final void array_reverse(){
         reverse();
     }
 
     /**
      * Reverse the elements in the array
-     * 
+     *
      */
     public void reverse() {
         // build a new reversed array and set this.data to it when done
@@ -1576,17 +1393,26 @@ public class PyArray extends PySequence implements Cloneable {
      * {@link AbstractArray#ensureCapacity(int) AbstractArray.ensureCapacity()}
      * for ways to extend capacity.
      * <p />
-     * 
+     *
      * This code specifically checks for overflows of the integral types: byte,
      * short, int and long.
-     * 
+     *
      * @param i
      *            index of the element to be set
      * @param value
      *            value to set the element to
      */
-    protected void set(int i, PyObject value) {
-        // check for overflow of the integral types
+    public void set(int i, PyObject value) {
+        pyset(i, value);
+    }
+
+    @Override
+    protected void pyset(int i, PyObject value) {
+        if ("u".equals(typecode)) {
+            Array.setInt(data, i, getCodePoint(value));
+            return;
+        }
+
         if(type == Byte.TYPE) {
             long val;
             try {
@@ -1594,7 +1420,7 @@ public class PyArray extends PySequence implements Cloneable {
             } catch(ClassCastException e) {
                 throw Py.TypeError("Type not compatible with array type");
             }
-            if(val < Byte.MIN_VALUE) {
+            if(val < (isSigned() ? 0 : Byte.MIN_VALUE)) {
                 throw Py.OverflowError("value too small for " + type.getName());
             } else if(val > Byte.MAX_VALUE) {
                 throw Py.OverflowError("value too large for " + type.getName());
@@ -1606,7 +1432,7 @@ public class PyArray extends PySequence implements Cloneable {
             } catch(ClassCastException e) {
                 throw Py.TypeError("Type not compatible with array type");
             }
-            if(val < Short.MIN_VALUE) {
+            if(val < (isSigned() ? 0 : Short.MIN_VALUE)) {
                 throw Py.OverflowError("value too small for " + type.getName());
             } else if(val > Short.MAX_VALUE) {
                 throw Py.OverflowError("value too large for " + type.getName());
@@ -1618,20 +1444,29 @@ public class PyArray extends PySequence implements Cloneable {
             } catch(ClassCastException e) {
                 throw Py.TypeError("Type not compatible with array type");
             }
-            if(val < Integer.MIN_VALUE) {
+            if(val < (isSigned() ? 0 : Integer.MIN_VALUE)) {
                 throw Py.OverflowError("value too small for " + type.getName());
             } else if(val > Integer.MAX_VALUE) {
                 throw Py.OverflowError("value too large for " + type.getName());
             }
         } else if(type == Long.TYPE) {
-            Object o;
-            try {
-                o = value.__tojava__(Long.TYPE);
-            } catch(ClassCastException e) {
-                throw Py.TypeError("Type not compatible with array type");
-            }
-            if(o == Py.NoConversion) {
-                throw Py.OverflowError("value out of range for long");
+            if (isSigned() && value instanceof PyInteger) {
+                if (((PyInteger)value).getValue() < 0) {
+                    throw Py.OverflowError("value too small for " + type.getName());
+                }
+            } else if (value instanceof PyLong) {
+                ((PyLong)value).getLong(isSigned() ? 0 : Long.MIN_VALUE,
+                                        Long.MAX_VALUE);
+            } else {
+                Object o;
+                try {
+                    o = value.__tojava__(Long.TYPE);
+                } catch(ClassCastException e) {
+                    throw Py.TypeError("Type not compatible with array type");
+                }
+                if(o == Py.NoConversion) {
+                    throw Py.TypeError("Type not compatible with array type");
+                }
             }
         }
         Object o = Py.tojava(value, type);
@@ -1641,12 +1476,33 @@ public class PyArray extends PySequence implements Cloneable {
         Array.set(data, i, o);
     }
 
+    // xxx - add more efficient comparable typecode lookup via an enumset, and expand
+    public void set(int i, int value) {
+        if ("u".equals(typecode) || type == Integer.TYPE || type == Long.TYPE) {
+            Array.setInt(data, i, value);
+        } else {
+            throw Py.TypeError("Type not compatible with array type");
+        }
+    }
+
+    public void set(int i, char value) {
+        if ("c".equals(typecode) || type == Integer.TYPE || type == Long.TYPE) {
+            Array.setChar(data, i, value);
+        } else {
+            throw Py.TypeError("Type not compatible with array type");
+        }
+    }
+
+    private boolean isSigned() {
+        return typecode.length() == 1 && typecode.equals(typecode.toUpperCase());
+    }
+
     /**
      * Sets a slice of the array. <em>value</em> can be a string (for
      * <code>byte</code> and <code>char</code> types) or PyArray. If a
      * PyArray, its type must be convertible into the type of the target
      * PyArray.
-     * 
+     *
      * @param start
      *            start index of the delete slice
      * @param stop
@@ -1654,7 +1510,11 @@ public class PyArray extends PySequence implements Cloneable {
      * @param step
      *            stepping increment of the slice
      */
+    @Override
     protected void setslice(int start, int stop, int step, PyObject value) {
+        if (stop < start) {
+            stop = start;
+        }
         if(type == Character.TYPE && value instanceof PyString) {
             char[] chars = null;
             // if (value instanceof PyString) {
@@ -1662,20 +1522,7 @@ public class PyArray extends PySequence implements Cloneable {
                 throw Py.ValueError("invalid bounds for setting from string");
             }
             chars = value.toString().toCharArray();
-            // }
-            // else if (value instanceof PyArray &&
-            // ((PyArray)value).type == Character.TYPE) {
-            // PyArray other = (PyArray)value;
-            // chars = (char[])other.delegate.copyArray();
-            // }
-            int insertSpace = chars.length - (stop - start);
-            // adjust the array, either adding space or removing space
-            if(insertSpace > 0) {
-                delegate.makeInsertSpace(start, insertSpace);
-            } else if(insertSpace < 0) {
-                delegate.remove(start, -insertSpace + start - 1);
-            }
-            delegate.replaceSubArray(chars, start);
+            delegate.replaceSubArray(start, stop, chars, 0, chars.length);
         } else {
             if(value instanceof PyString && type == Byte.TYPE) {
                 byte[] chars = ((PyString)value).toBytes();
@@ -1686,64 +1533,89 @@ public class PyArray extends PySequence implements Cloneable {
                 }
             } else if(value instanceof PyArray) {
                 PyArray array = (PyArray)value;
-                int insertSpace = array.delegate.getSize() - (stop - start);
-                // adjust the array, either adding space or removing space
-                // ...snapshot in case "value" is "this"
-                Object arrayCopy = array.delegate.copyArray();
-                if(insertSpace > 0) {
-                    delegate.makeInsertSpace(start, insertSpace);
-                } else if(insertSpace < 0) {
-                    delegate.remove(start, -insertSpace + start - 1);
+                if (!array.typecode.equals(typecode)) {
+                    throw Py.TypeError("bad argument type for built-in operation|" + array.typecode + "|" + typecode);
                 }
-                try {
-                    delegate.replaceSubArray(arrayCopy, start);
-                } catch(IllegalArgumentException e) {
-                    throw Py.TypeError("Slice typecode '" + array.typecode
-                            + "' is not compatible with this array (typecode '"
-                            + this.typecode + "')");
+                if (step == 1) {
+                    Object arrayDelegate;
+                    if (array == this) {
+                        arrayDelegate = array.delegate.copyArray();
+                    } else {
+                        arrayDelegate = array.delegate.getArray();
+                    }
+                    try {
+                        delegate.replaceSubArray(start, stop, arrayDelegate, 0, array.delegate.getSize());
+                    } catch(IllegalArgumentException e) {
+                        throw Py.TypeError("Slice typecode '" + array.typecode
+                                           + "' is not compatible with this array (typecode '"
+                                           + this.typecode + "')");
+                    }
+                } else if (step > 1) {
+                    int len = array.__len__();
+                    for (int i = 0, j = 0; i < len; i++, j += step) {
+                        Array.set(data, j + start, Array.get(array.data, i));
+                    }
+                } else if (step < 0) {
+                    if (array == this) {
+                        array = (PyArray)array.clone();
+                    }
+                    int len = array.__len__();
+                    for (int i = 0, j = delegate.getSize() - 1; i < len; i++, j += step) {
+                        Array.set(data, j, Array.get(array.data, i));
+                    }
                 }
+            } else {
+                throw Py.TypeError(String.format("can only assign array (not \"%.200s\") to array "
+                                                 + "slice", value.getType().fastGetName()));
             }
         }
     }
-    
-    public void array_tofile(PyObject f){
+
+    @ExposedMethod
+    public final void array_tofile(PyObject f){
         tofile(f);
     }
-    
+
+    @ExposedMethod
     public void array_write(PyObject f){
         tofile(f);
     }
 
     /**
      * Write all items (as machine values) to the file object <em>f</em>.
-     * 
+     *
      * @param f
      *            Python builtin file object to write data
      */
     public void tofile(PyObject f) {
-        if(!(f instanceof PyFile))
+        if (!(f instanceof PyFile)) {
             throw Py.TypeError("arg must be open file");
-        PyFile file = (PyFile)f;
-        if(file.mode.indexOf("w") == -1 && file.mode.indexOf("a") == -1) {
-            throw Py.TypeError("file needs to be in write or append mode");
         }
-        // write via the PyFile
+        PyFile file = (PyFile)f;
         file.write(tostring());
     }
-    
-    public PyObject array_tolist(){
+
+    @ExposedMethod
+    public final PyObject array_tolist() {
         return tolist();
     }
 
     /**
      * Convert the array to an ordinary list with the same items.
-     * 
+     *
      * @return array contents as a list
      */
     public PyObject tolist() {
         PyList list = new PyList();
-        for(int i = 0; i < delegate.getSize(); i++) {
-            list.append(Py.java2py(Array.get(data, i)));
+        int len = delegate.getSize();
+        if ("u".equals(typecode)) {
+            for (int i = 0; i < len; i++) {
+                list.append(new PyUnicode(Array.getInt(data, i)));
+            }
+        } else {
+            for (int i = 0; i < len; i++) {
+                list.append(Py.java2py(Array.get(data, i)));
+            }
         }
         return list;
     }
@@ -1751,47 +1623,140 @@ public class PyArray extends PySequence implements Cloneable {
     /**
      * Generic stream writer to write the entire contents of the array to the
      * stream as primitive types.
-     * 
+     *
      * @param os
      *            OutputStream to sink the array data to
-     * 
+     *
      * @return number of primitives successfully written
-     * 
+     *
      * @throws IOException
      */
     private int toStream(OutputStream os) throws IOException {
         DataOutputStream dos = new DataOutputStream(os);
-        if(type.isPrimitive()) {
-            if(type == Boolean.TYPE) {
+        switch (typecode.charAt(0)) {
+            case 'z':
                 for(int i = 0; i < delegate.getSize(); i++)
                     dos.writeBoolean(Array.getBoolean(data, i));
-            } else if(type == Byte.TYPE) {
+                break;
+            case 'b':
                 for(int i = 0; i < delegate.getSize(); i++)
                     dos.writeByte(Array.getByte(data, i));
-            } else if(type == Character.TYPE) {
+                break;
+            case 'B':
                 for(int i = 0; i < delegate.getSize(); i++)
-                    dos.writeByte((byte)Array.getChar(data, i));
-            } else if(type == Integer.TYPE) {
+                    dos.writeByte(signedByte(Array.getShort(data, i)));
+                break;
+            case 'u':
+                // use 32-bit integers since we want UCS-4 storage
                 for(int i = 0; i < delegate.getSize(); i++)
                     dos.writeInt(Array.getInt(data, i));
-            } else if(type == Short.TYPE) {
+                break;
+            case 'c':
+                for(int i = 0; i < delegate.getSize(); i++)
+                    dos.writeByte((byte)Array.getChar(data, i));
+                break;
+            case 'h':
                 for(int i = 0; i < delegate.getSize(); i++)
                     dos.writeShort(Array.getShort(data, i));
-            } else if(type == Long.TYPE) {
+                break;
+            case 'H':
+                for(int i = 0; i < delegate.getSize(); i++)
+                    dos.writeShort(signedShort(Array.getInt(data, i)));
+                break;
+            case 'i':
+                for(int i = 0; i < delegate.getSize(); i++)
+                    dos.writeInt(Array.getInt(data, i));
+                break;
+            case 'I':
+                for(int i = 0; i < delegate.getSize(); i++)
+                    dos.writeInt(signedInt(Array.getLong(data, i)));
+                break;
+            case 'l':
                 for(int i = 0; i < delegate.getSize(); i++)
                     dos.writeLong(Array.getLong(data, i));
-            } else if(type == Float.TYPE) {
+                break;
+            case 'L': // faking it
+                for(int i = 0; i < delegate.getSize(); i++)
+                    dos.writeLong(Array.getLong(data, i));
+                break;
+            case 'f':
                 for(int i = 0; i < delegate.getSize(); i++)
                     dos.writeFloat(Array.getFloat(data, i));
-            } else if(type == Double.TYPE) {
+                break;
+            case 'd':
                 for(int i = 0; i < delegate.getSize(); i++)
                     dos.writeDouble(Array.getDouble(data, i));
-            }
+                break;
         }
         return dos.size();
     }
-    
-    public PyObject array_tostring(){
+
+    private static byte signedByte(short x) {
+        if (x >= 128 && x < 256) {
+            return (byte)(x - 256);
+        }
+        else if (x >= 0) {
+            return (byte)x;
+        }
+        else {
+            throw Py.ValueError("invalid storage");
+        }
+    }
+
+     private static short signedShort(int x) {
+        if (x >= 32768 && x < 65536) {
+            return (short)(x - 65536);
+        }
+        else if (x >= 0) {
+            return (short)x;
+        }
+        else {
+            throw Py.ValueError("invalid storage");
+        }
+    }
+
+    private static int signedInt(long x) {
+        if (x >= 2147483648L && x < 4294967296L) {
+            return (int)(x - 4294967296L);
+        }
+        else if (x >= 0) {
+            return (int)x;
+        }
+        else {
+            throw Py.ValueError("invalid storage");
+        }
+    }
+
+    private static short unsignedByte(byte x) {
+        if (x < 0) {
+            return (short)(x + 256);
+        }
+        else {
+            return x;
+        }
+    }
+
+     private static int unsignedShort(short x) {
+        if (x < 0) {
+            return x + 65536;
+        }
+        else  {
+            return x;
+        }
+    }
+
+    private static long unsignedInt(int x) {
+        if (x < 0) {
+            return x + 4294967296L;
+        }
+        else {
+            return x;
+        }
+
+    }
+
+    @ExposedMethod
+    public final PyObject array_tostring(){
         return new PyString(tostring());
     }
 
@@ -1807,6 +1772,47 @@ public class PyArray extends PySequence implements Cloneable {
         } catch(IOException e) {
             throw Py.IOError(e);
         }
-        return PyString.from_bytes(bos.toByteArray());
+        return StringUtil.fromBytes(bos.toByteArray());
+    }
+
+    public String tounicode() {
+        if (!"u".equals(typecode)) {
+            throw Py.ValueError("tounicode() may only be called on type 'u' arrays");
+        }
+        int len = delegate.getSize();
+        int[] codepoints = new int[len];
+        for(int i = 0; i < len; i++)
+            codepoints[i] = Array.getInt(data, i);
+        return new String(codepoints, 0, codepoints.length);
+    }
+
+
+    @ExposedMethod
+    public final PyObject array_tounicode() {
+        return new PyUnicode(tounicode());
+    }
+
+    // PyArray can't extend anymore, so delegate
+    private class ArrayDelegate extends AbstractArray {
+
+        private ArrayDelegate() {
+            super(data == null ? 0 : Array.getLength(data));
+        }
+
+        @Override
+        protected Object getArray() {
+            return data;
+        }
+
+        @Override
+        protected void setArray(Object array) {
+            data = array;
+        }
+
+        @Override
+        protected Object createArray(int size) {
+            Class<?> baseType = data.getClass().getComponentType();
+            return Array.newInstance(baseType, size);
+        }
     }
 }

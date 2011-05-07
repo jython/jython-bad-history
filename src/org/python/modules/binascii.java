@@ -9,11 +9,16 @@
 package org.python.modules;
 
 
+import java.util.regex.Pattern;
+
+import org.python.core.ArgParser;
 import org.python.core.Py;
 import org.python.core.PyException;
 import org.python.core.PyObject;
 import org.python.core.PyString;
+import org.python.core.PyStringMap;
 import org.python.core.PyTuple;
+import org.python.core.util.StringUtil;
 
 /**
  * The <tt>binascii.java</tt> module contains a number of methods to convert
@@ -124,11 +129,16 @@ public class binascii {
 
     public static String __doc__ = "Conversion between binary data and ASCII";
 
-    public static final PyString Error = new PyString("binascii.Error");
+    public static final PyObject Error = Py.makeClass("Error", Py.Exception, exceptionNamespace());
 
-    public static final PyString Incomplete =
-                                     new PyString("binascii.Incomplete");
+    public static final PyObject Incomplete = Py.makeClass("Incomplete", Py.Exception,
+                                                           exceptionNamespace());
 
+    public static PyObject exceptionNamespace() {
+        PyObject dict = new PyStringMap();
+        dict.__setitem__("__module__", new PyString("binascii"));
+        return dict;
+    }
 
     // hqx lookup table, ascii->binary.
     private static char RUNCHAR = 0x90;
@@ -189,7 +199,7 @@ public class binascii {
     };
 
     private static byte[] table_b2a_hqx =
-        PyString.to_bytes("!\"#$%&'()*+,-012345689@ABCDEFGHIJKLMNPQRSTUVXYZ[`abcdefhijklmpqr");
+        StringUtil.toBytes("!\"#$%&'()*+,-012345689@ABCDEFGHIJKLMNPQRSTUVXYZ[`abcdefhijklmpqr");
 
 
 
@@ -207,11 +217,11 @@ public class binascii {
 
     private static char BASE64_PAD = '=';
 
-    /* Max binary chunk size (76 char line) */
-    private static int BASE64_MAXBIN = 57;
+    /* Max binary chunk size */
+    private static int BASE64_MAXBIN = Integer.MAX_VALUE / 2 - 3;
 
     private static byte[] table_b2a_base64 =
-        PyString.to_bytes("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/");
+        StringUtil.toBytes("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/");
 
 
 
@@ -262,11 +272,14 @@ public class binascii {
      * binary data. Lines normally contain 45 (binary) bytes, except for the
      * last line. Line data may be followed by whitespace.
      */
-    public static String a2b_uu(String ascii_data) {
+    public static PyString a2b_uu(String ascii_data) {
         int leftbits = 0;
         int leftchar = 0;
 
-        StringBuffer bin_data = new StringBuffer();
+        if (ascii_data.length() == 0)
+            return new PyString("");
+        
+        StringBuilder bin_data = new StringBuilder();
 
         char this_ch;
         int i;
@@ -275,7 +288,7 @@ public class binascii {
 
         int bin_len = (ascii_data.charAt(0) - ' ') & 077;
 
-        for (i = 0; bin_len > 0; i++, ascii_len--) {
+        for (i = 0; bin_len > 0 && ascii_len > 0; i++, ascii_len--) {
             this_ch = ascii_data.charAt(i+1);
             if (this_ch == '\n' || this_ch == '\r' || ascii_len <= 0) {
                 // Whitespace. Assume some spaces got eaten at
@@ -302,6 +315,7 @@ public class binascii {
                 bin_len--;
             }
         }
+        
         // Finally, check that if there's anything left on the line
         // that it's whitespace only.
         while (ascii_len-- > 0) {
@@ -312,7 +326,12 @@ public class binascii {
                 throw new PyException(Error, "Trailing garbage");
             }
         }
-        return bin_data.toString();
+        
+        // finally, if we haven't decoded enough stuff, fill it up with zeros
+        for (; i<bin_len; i++)
+        	bin_data.append((char)0);
+        
+        return new PyString(bin_data.toString());
     }
 
 
@@ -327,7 +346,7 @@ public class binascii {
      * is the converted line, including a newline char. The length of
      * <i>data</i> should be at most 45.
      */
-    public static String b2a_uu(String bin_data) {
+    public static PyString b2a_uu(String bin_data) {
         int leftbits = 0;
         char this_ch;
         int leftchar = 0;
@@ -338,7 +357,7 @@ public class binascii {
             throw new PyException(Error, "At most 45 bytes at once");
         }
 
-        StringBuffer ascii_data = new StringBuffer();
+        StringBuilder ascii_data = new StringBuilder();
 
         // Store the length */
         ascii_data.append((char)(' ' + (bin_len & 077)));
@@ -360,7 +379,7 @@ public class binascii {
         }
         ascii_data.append('\n'); // Append a courtesy newline
 
-        return ascii_data.toString();
+        return new PyString(ascii_data.toString());
     }
 
 
@@ -374,7 +393,7 @@ public class binascii {
         int ret = -1;
 
         while ((slen > 0) && (ret == -1)) {
-            int c = (int)s.charAt(offset);
+            int c = s.charAt(offset);
             short b64val = table_a2b_base64[c & 0x7f];
             if (((c <= 0x7f) && (b64val != -1)) ) {
                 if (num == 0)
@@ -398,7 +417,7 @@ public class binascii {
      * Convert a block of base64 data back to binary and return the
      * binary data. More than one line may be passed at a time.
      */
-    public static String a2b_base64(String ascii_data) {
+    public static PyString a2b_base64(String ascii_data) {
         int leftbits = 0;
         char this_ch;
         int leftchar = 0;
@@ -407,12 +426,12 @@ public class binascii {
         int ascii_len = ascii_data.length();
 
         int bin_len = 0;
-        StringBuffer bin_data = new StringBuffer();
+        StringBuilder bin_data = new StringBuilder();
 
         for(int i = 0; ascii_len > 0 ; ascii_len--, i++) {
             // Skip some punctuation
             this_ch = ascii_data.charAt(i);
-            if ((int) this_ch > 0x7F || this_ch == '\r' ||
+            if (this_ch > 0x7F || this_ch == '\r' ||
                       this_ch == '\n' || this_ch == ' ')
                 continue;
 
@@ -429,7 +448,7 @@ public class binascii {
                 }
             }
 
-            short this_v = table_a2b_base64[(int) this_ch];
+            short this_v = table_a2b_base64[this_ch];
             if (this_v == -1)
                 continue;
 
@@ -449,7 +468,7 @@ public class binascii {
         if (leftbits != 0) {
             throw new PyException(Error, "Incorrect padding");
         }
-        return bin_data.toString();
+        return new PyString(bin_data.toString());
     }
 
 
@@ -462,15 +481,13 @@ public class binascii {
     /**
      * Convert binary data to a line of ASCII characters in base64 coding.
      * The return value is the converted line, including a newline char.
-     * The length of <i>data</i> should be at most 57 to adhere to the base64
-     * standard.
      */
-    public static String b2a_base64(String bin_data) {
+    public static PyString b2a_base64(String bin_data) {
         int leftbits = 0;
         char this_ch;
         int leftchar = 0;
 
-        StringBuffer ascii_data = new StringBuffer();
+        StringBuilder ascii_data = new StringBuilder();
 
         int bin_len = bin_data.length();
         if (bin_len > BASE64_MAXBIN) {
@@ -499,7 +516,7 @@ public class binascii {
         }
         ascii_data.append('\n');  // Append a courtesy newline
 
-        return ascii_data.toString();
+        return new PyString(ascii_data.toString());
     }
 
 
@@ -522,7 +539,7 @@ public class binascii {
 
         int len = ascii_data.length();
 
-        StringBuffer bin_data = new StringBuffer();
+        StringBuilder bin_data = new StringBuilder();
 
         for(int i = 0; len > 0 ; len--, i++) {
             // Get the byte and look it up
@@ -553,9 +570,7 @@ public class binascii {
                                   "String has incomplete number of bytes");
         }
 
-        return new PyTuple(new PyObject[] {
-                           Py.java2py(bin_data.toString()),
-                           Py.newInteger(done ? 1 : 0) });
+        return new PyTuple(Py.java2py(bin_data.toString()), Py.newInteger(done ? 1 : 0));
     }
 
 
@@ -570,7 +585,7 @@ public class binascii {
     static public String rlecode_hqx(String in_data) {
         int len = in_data.length();
 
-        StringBuffer out_data = new StringBuffer();
+        StringBuilder out_data = new StringBuilder();
 
         for (int in=0; in < len; in++) {
             char ch = in_data.charAt(in);
@@ -610,14 +625,14 @@ public class binascii {
      * resulting string. The argument should already be RLE-coded, and have a
      * length divisible by 3 (except possibly the last fragment).
      */
-    public static String b2a_hqx(String bin_data) {
+    public static PyString b2a_hqx(String bin_data) {
         int leftbits = 0;
         char this_ch;
         int leftchar = 0;
 
         int len = bin_data.length();
 
-        StringBuffer ascii_data = new StringBuffer();
+        StringBuilder ascii_data = new StringBuilder();
 
         for(int i = 0; len > 0; len--, i++) {
             // Shift into our buffer, and output any 6bits ready
@@ -634,7 +649,7 @@ public class binascii {
             leftchar <<= (6-leftbits);
             ascii_data.append((char) table_b2a_hqx[leftchar & 0x3f]);
         }
-        return ascii_data.toString();
+        return new PyString(ascii_data.toString());
     }
 
 
@@ -662,7 +677,7 @@ public class binascii {
         if (in_len == 0)
             return "";
 
-        StringBuffer out_data = new StringBuffer();
+        StringBuilder out_data = new StringBuilder();
 
         // Handle first byte separately (since we have to get angry
         // in case of an orphaned RLE code).
@@ -813,17 +828,16 @@ static long[] crc_32_tab = new long[] {
 
     private static char[] hexdigit = "0123456789abcdef".toCharArray();
 
-
     public static PyString __doc__b2a_hex = new PyString(
         "b2a_hex(data) -> s; Hexadecimal representation of binary data.\n" +
         "\n" +
         "This function is also available as \"hexlify()\"."
     );
 
-    public static String b2a_hex(String argbuf) {
+    public static PyString b2a_hex(String argbuf) {
         int arglen = argbuf.length();
 
-        StringBuffer retbuf = new StringBuffer(arglen*2);
+        StringBuilder retbuf = new StringBuilder(arglen*2);
 
         /* make hex version of string, taken from shamodule.c */
         for (int i = 0; i < arglen; i++) {
@@ -831,12 +845,12 @@ static long[] crc_32_tab = new long[] {
             retbuf.append(hexdigit[(ch >>> 4) & 0xF]);
             retbuf.append(hexdigit[ch & 0xF]);
         }
-        return retbuf.toString();
+        return new PyString(retbuf.toString());
 
     }
 
 
-    public static String hexlify(String argbuf) {
+    public static PyString hexlify(String argbuf) {
         return b2a_hex(argbuf);
     }
 
@@ -850,7 +864,7 @@ static long[] crc_32_tab = new long[] {
     );
 
 
-    public static String a2b_hex(String argbuf) {
+    public static PyString a2b_hex(String argbuf) {
         int arglen = argbuf.length();
 
         /* XXX What should we do about strings with an odd length?  Should
@@ -860,7 +874,7 @@ static long[] crc_32_tab = new long[] {
         if (arglen % 2 != 0)
             throw Py.TypeError("Odd-length string");
 
-        StringBuffer retbuf = new StringBuffer(arglen/2);
+        StringBuilder retbuf = new StringBuilder(arglen/2);
 
         for (int i = 0; i < arglen; i += 2) {
             int top = Character.digit(argbuf.charAt(i), 16);
@@ -869,16 +883,168 @@ static long[] crc_32_tab = new long[] {
                 throw Py.TypeError("Non-hexadecimal digit found");
             retbuf.append((char) ((top << 4) + bot));
         }
-        return retbuf.toString();
+        return new PyString(retbuf.toString());
     }
 
 
-    public static String unhexlify(String argbuf) {
+    public static PyString unhexlify(String argbuf) {
         return a2b_hex(argbuf);
     }
 
+    final private static char[] upper_hexdigit = "0123456789ABCDEF".toCharArray();
+    
+    private static StringBuilder qpEscape(StringBuilder sb, char c)
+    {
+    	sb.append('=');
+        sb.append(upper_hexdigit[(c >>> 4) & 0xF]);
+        sb.append(upper_hexdigit[c & 0xF]);
+        return sb;
+    }
 
+    final private static Pattern UNDERSCORE = Pattern.compile("_");
 
+    final public static PyString __doc__a2b_qp = new PyString("Decode a string of qp-encoded data");
+
+    public static boolean getIntFlagAsBool(ArgParser ap, int index, int dflt, String errMsg) {
+        boolean val;
+        try {
+        	val = ap.getInt(index, dflt) != 0;
+        } catch (PyException e) {
+        	if (e.match(Py.AttributeError) || e.match(Py.ValueError))
+			throw Py.TypeError(errMsg);
+        	throw e;
+        }
+        return val;
+    }
+
+    public static PyString a2b_qp(PyObject[] arg, String[] kws)
+    {
+        ArgParser ap = new ArgParser("a2b_qp", arg, kws, new String[] {"s", "header"});
+        String s = ap.getString(0);
+        StringBuilder sb = new StringBuilder();
+        boolean header = getIntFlagAsBool(ap, 1, 0, "an integer is required");
+
+        if (header)
+        	s = UNDERSCORE.matcher(s).replaceAll(" ");
+        
+        for (int i=0, m=s.length(); i<m;) {
+        	char c = s.charAt(i++);
+        	if (c == '=') {
+        		if (i < m) {
+        			c = s.charAt(i++);
+        			if (c == '=') {
+        				sb.append(c);
+                                } else if (c == ' ') {
+                                    sb.append("= ");     
+        			} else if ((c >= '0' && c <= '9' || c >= 'A' && c <= 'F') && i < m) {
+        				char nc = s.charAt(i++);
+        				if ((nc >= '0' && nc <= '9' || nc >= 'A' && nc <= 'F')) {
+        					sb.append((char)(Character.digit(c, 16) << 4 | Character.digit(nc, 16)));
+        				} else {
+        					sb.append('=').append(c).append(nc);
+        				}
+        			} else if (c != '\n') {
+        				sb.append('=').append(c);
+        			}
+        		}
+        	} else {
+        		sb.append(c);
+        	}
+        }
+        return new PyString(sb.toString());
+    }
+
+    final private static Pattern RN_TO_N = Pattern.compile("\r\n");
+    final private static Pattern N_TO_RN = Pattern.compile("(?<!\r)\n");
+    
+    final public static PyString __doc__b2a_qp = new PyString("b2a_qp(data, quotetabs=0, istext=1, header=0) -> s;\n"
+    		+ "Encode a string using quoted-printable encoding.\n\n"
+    		+ "On encoding, when istext is set, newlines are not encoded, and white\n"
+    		+ "space at end of lines is.  When istext is not set, \r and \n (CR/LF) are\n"
+    		+ "both encoded.  When quotetabs is set, space and tabs are encoded.");
+
+    public static PyString b2a_qp(PyObject[] arg, String[] kws) {
+        ArgParser ap = new ArgParser("b2a_qp", arg, kws, new String[] {"s", "quotetabs", "istext", "header"});
+        String s = ap.getString(0);
+        boolean quotetabs = getIntFlagAsBool(ap, 1, 0, "an integer is required");
+        boolean istext = getIntFlagAsBool(ap, 2, 1, "an integer is required");
+        boolean header = getIntFlagAsBool(ap, 3, 0, "an integer is required");
+
+        String lineEnd;
+        int pos = s.indexOf('\n');
+        if (pos > 0 && s.charAt(pos-1) == '\r') {
+        	lineEnd = "\r\n";
+        	s = N_TO_RN.matcher(s).replaceAll("\r\n");
+        } else {
+        	lineEnd = "\n";
+        	s = RN_TO_N.matcher(s).replaceAll("\n");
+        }
+        StringBuilder sb = new StringBuilder();
+        int count = 0;
+        for (int i=0, m=s.length(); i<m; i++) {
+        	char c = s.charAt(i);
+                
+                // RFC 1521 requires that the line ending in a space or tab must have
+                // that trailing character encoded.
+                if (lineEnding(s, lineEnd, i)) {
+                    count = 0;
+                    sb.append(lineEnd);
+                    if (lineEnd.length() > 1) i++;
+                }
+                else if ((c == '\t' || c == ' ' ) && endOfLine(s, lineEnd, i + 1)) {
+                    count += 3;
+                    qpEscape(sb, c);
+                }
+                else if (('!' <= c && c <= '<')
+        		|| ('>' <= c && c <= '^')
+        		|| ('`' <= c && c <= '~')
+        		|| (c == '_' && !header)
+        		|| (c == '\n' || c == '\r' && istext)) {
+//        		if (count == 75 && i < s.length() - 1) {
+                        if (count == 75 && !endOfLine(s, lineEnd, i + 1)) {
+        			sb.append("=").append(lineEnd);
+        			count = 0;
+        		}
+        		sb.append(c);
+        		count++;
+        	}
+        	else if (!quotetabs && (c == '\t' || c == ' ')) {
+        		if (count >= 72) {
+        			sb.append("=").append(lineEnd);
+        			count = 0;
+        		}
+        		
+        		if (count >= 71) {
+        			count += 3;
+        			qpEscape(sb, c);
+        		} else {
+        			if (c == ' ' && header)
+        				sb.append('_');
+        			else
+        				sb.append(c);
+        			count += 1;
+        		}
+        	} else {
+        		if (count >= 72) {
+        			sb.append("=").append(lineEnd);
+        			count = 0;
+        		}
+        		count += 3;
+        		qpEscape(sb, c);
+        	}
+        }
+        return new PyString(sb.toString());
+    }
+    
+    private static boolean endOfLine(String s, String lineEnd, int i) {
+        return (s.length() == i || lineEnding(s, lineEnd, i));
+    }
+    
+    private static boolean lineEnding(String s, String lineEnd, int i) {
+        return 
+            (s.length() > i && s.substring(i).startsWith(lineEnd));
+    }
+    
 /*
     public static void main(String[] args) {
         String l = b2a_uu("Hello");

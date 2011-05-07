@@ -2,11 +2,14 @@
 AMAK: 20050515: This module is the test_socket.py from cpython 2.4, ported to jython.
 """
 
+import java
+
 import unittest
-import test_support
+from test import test_support
 
 import errno
 import Queue
+import platform
 import select
 import socket
 import struct
@@ -20,10 +23,9 @@ PORT = 50007
 HOST = 'localhost'
 MSG = 'Michael Gilfix was here\n'
 EIGHT_BIT_MSG = 'Bh\xed Al\xe1in \xd3 Cinn\xe9ide anseo\n'
-
-import java
-os_name = java.lang.System.getProperty('os.name')
+os_name = platform.java_ver()[3][0]
 is_bsd = os_name == 'Mac OS X' or 'BSD' in os_name
+is_solaris = os_name == 'SunOS'
 
 try:
     True
@@ -284,8 +286,10 @@ class GeneralModuleTests(unittest.TestCase):
     def testHostnameRes(self):
         # Testing hostname resolution mechanisms
         hostname = socket.gethostname()
+        self.assert_(isinstance(hostname, str))
         try:
             ip = socket.gethostbyname(hostname)
+            self.assert_(isinstance(ip, str))
         except socket.error:
             # Probably name lookup wasn't set up right; skip this test
             self.fail("Probably name lookup wasn't set up right; skip testHostnameRes.gethostbyname")
@@ -293,30 +297,18 @@ class GeneralModuleTests(unittest.TestCase):
         self.assert_(ip.find('.') >= 0, "Error resolving host to ip.")
         try:
             hname, aliases, ipaddrs = socket.gethostbyaddr(ip)
+            self.assert_(isinstance(hname, str))
+            for hosts in aliases, ipaddrs:
+                self.assert_(all(isinstance(host, str) for host in hosts))
         except socket.error:
             # Probably a similar problem as above; skip this test
             self.fail("Probably name lookup wasn't set up right; skip testHostnameRes.gethostbyaddr")
             return
         all_host_names = [hostname, hname] + aliases
         fqhn = socket.getfqdn()
+        self.assert_(isinstance(fqhn, str))
         if not fqhn in all_host_names:
             self.fail("Error testing host resolution mechanisms.")
-
-    def testGetAddrInfo(self):
-        try:
-            socket.getaddrinfo(HOST, PORT, 9999)
-        except socket.gaierror, gaix:
-            self.failUnlessEqual(gaix[0], errno.EIO)
-        except Exception, x:
-            self.fail("getaddrinfo with bad family raised wrong exception: %s" % x)
-        else:
-            self.fail("getaddrinfo with bad family should have raised exception")
-            
-        addrinfos = socket.getaddrinfo(HOST, PORT)
-        for addrinfo in addrinfos:
-            family, socktype, proto, canonname, sockaddr = addrinfo
-            self.assert_(isinstance(canonname, str))
-            self.assert_(isinstance(sockaddr[0], str))
 
     def testRefCountGetNameInfo(self):
         # Testing reference count for getnameinfo
@@ -357,13 +349,12 @@ class GeneralModuleTests(unittest.TestCase):
             self.assertRaises(OverflowError, func, 1L<<34)
 
     def testGetServBy(self):
-        if sys.platform[:4] == 'java': return # not implemented on java
         eq = self.assertEqual
         # Find one service that exists, then check all the related interfaces.
         # I've ordered this by protocols that have both a tcp and udp
         # protocol, at least for modern Linuxes.
         if sys.platform in ('linux2', 'freebsd4', 'freebsd5', 'freebsd6',
-                            'darwin'):
+                            'darwin') or is_bsd:
             # avoid the 'echo' service on this platform, as there is an
             # assumption breaking non-standard port/protocol entry
             services = ('daytime', 'qotd', 'domain')
@@ -530,8 +521,11 @@ class TestSocketOptions(unittest.TestCase):
         for expected_value in values:
             sock.setsockopt(level, option, expected_value)
             retrieved_value = sock.getsockopt(level, option)
-            self.failUnlessEqual(retrieved_value, expected_value, \
-                "Retrieved option(%s, %s) value %s != %s(value set)" % (level, option, retrieved_value, expected_value))
+            msg = "Retrieved option(%s, %s) value %s != %s(value set)" % (level, option, retrieved_value, expected_value)
+            if is_solaris and option == socket.SO_RCVBUF:
+                self.assert_(retrieved_value >= expected_value, msg)
+            else:
+                self.failUnlessEqual(retrieved_value, expected_value, msg)
 
     def _testUDPOption(self, level, option, values):
         try:
@@ -560,8 +554,8 @@ class TestSocketOptions(unittest.TestCase):
             sock.bind( (HOST, PORT+1) )
             sock.connect( (HOST, PORT) )
             msg = "Option value '%s'='%s' did not propagate to implementation socket" % (option, values[-1])
-            if is_bsd and option in (socket.SO_RCVBUF, socket.SO_SNDBUF):
-                # XXX: there's no guarantee that bufsize will be the
+            if ((is_bsd or is_solaris) and option in (socket.SO_RCVBUF, socket.SO_SNDBUF)):
+                # NOTE: there's no guarantee that bufsize will be the
                 # exact setsockopt value, particularly after
                 # establishing a connection. seems it will be *at least*
                 # the values we test (which are rather small) on
@@ -582,8 +576,12 @@ class TestSocketOptions(unittest.TestCase):
             # now bind and listen on the socket i.e. cause the implementation socket to be created
             sock.bind( (HOST, PORT) )
             sock.listen(50)
-            self.failUnlessEqual(sock.getsockopt(level, option), values[-1], \
-                 "Option value '(%s,%s)'='%s' did not propagate to implementation socket" % (level, option, values[-1]))
+            msg = "Option value '(%s,%s)'='%s' did not propagate to implementation socket" % (level, option, values[-1])
+            if is_solaris and option == socket.SO_RCVBUF:
+                # NOTE: see similar bsd/solaris workaround above
+                self.assert_(sock.getsockopt(level, option) >= values[-1], msg)
+            else:
+                self.failUnlessEqual(sock.getsockopt(level, option), values[-1], msg)
             self._testSetAndGetOption(sock, level, option, values)
         finally:
             sock.close()
@@ -820,12 +818,12 @@ class UDPBindTest(unittest.TestCase):
     def testBindSpecific(self):
         self.sock.bind( (self.HOST, self.PORT) ) # Use a specific port
         actual_port = self.sock.getsockname()[1]
-        self.failUnless(actual_port == self.PORT, 
-            "Binding to specific port number should have returned same number: %d != %d" % (actual_port, self.PORT)) 
+        self.failUnless(actual_port == self.PORT,
+            "Binding to specific port number should have returned same number: %d != %d" % (actual_port, self.PORT))
 
     def testBindEphemeral(self):
         self.sock.bind( (self.HOST, 0) ) # let system choose a free port
-        self.failUnless(self.sock.getsockname()[1] != 0, "Binding to port zero should have allocated an ephemeral port number") 
+        self.failUnless(self.sock.getsockname()[1] != 0, "Binding to port zero should have allocated an ephemeral port number")
 
     def testShutdown(self):
         self.sock.bind( (self.HOST, self.PORT) )
@@ -857,6 +855,28 @@ class BasicUDPTest(ThreadedUDPSocketTest):
     def _testSendtoAndRecvTimeoutMode(self):
         self.cli.settimeout(10)
         self.cli.sendto(MSG, 0, (self.HOST, self.PORT))
+
+    def testSendAndRecv(self):
+        # Testing send() and recv() over connect'ed UDP
+        msg = self.serv.recv(len(MSG))
+        self.assertEqual(msg, MSG)
+
+    def _testSendAndRecv(self):
+        self.cli.connect( (self.HOST, self.PORT) )
+        self.cli.send(MSG, 0)
+
+    def testSendAndRecvTimeoutMode(self):
+        # Need to test again in timeout mode, which follows
+        # a different code path
+        self.serv.settimeout(10)
+        # Testing send() and recv() over connect'ed UDP
+        msg = self.serv.recv(len(MSG))
+        self.assertEqual(msg, MSG)
+
+    def _testSendAndRecvTimeoutMode(self):
+        self.cli.connect( (self.HOST, self.PORT) )
+        self.cli.settimeout(10)
+        self.cli.send(MSG, 0)
 
     def testRecvFrom(self):
         # Testing recvfrom() over UDP
@@ -982,7 +1002,7 @@ class NonBlockingTCPTests(ThreadedTCPSocketTest):
     # AMAK: 20070311
     # Introduced a new test for non-blocking connect
     # Renamed old testConnect to testBlockingConnect
-    # 
+    #
 
     def testBlockingConnect(self):
         # Testing blocking connect
@@ -1011,7 +1031,7 @@ class NonBlockingTCPTests(ThreadedTCPSocketTest):
     #
     # AMAK: 20070518
     # Introduced a new test for connect with bind to specific local address
-    # 
+    #
 
     def testConnectWithLocalBind(self):
         # Test blocking connect
@@ -1366,7 +1386,7 @@ used, but if it is on your network this failure is bogus.''' % host)
         self.failUnlessRaises(socket.timeout, raise_timeout,
                               "TCP socket recv failed to generate a timeout exception (TCP)")
 
-    # Disable this test, but leave it present for documentation purposes 
+    # Disable this test, but leave it present for documentation purposes
     # socket timeouts only work for read and accept, not for write
     # http://java.sun.com/j2se/1.4.2/docs/api/java/net/SocketTimeoutException.html
     def estSendTimeout(self):
@@ -1423,6 +1443,144 @@ class UDPTimeoutTest(SocketUDPTest):
             self.fail("caught unexpected exception (UDP): %s" % str(x))
         if not ok:
             self.fail("recv() returned success when we did not expect it")
+
+class TestGetAddrInfo(unittest.TestCase):
+
+    def testBadFamily(self):
+        try:
+            socket.getaddrinfo(HOST, PORT, 9999)
+        except socket.gaierror, gaix:
+            self.failUnlessEqual(gaix[0], errno.EIO)
+        except Exception, x:
+            self.fail("getaddrinfo with bad family raised wrong exception: %s" % x)
+        else:
+            self.fail("getaddrinfo with bad family should have raised exception")
+
+    def testReturnsAreStrings(self):
+        addrinfos = socket.getaddrinfo(HOST, PORT)
+        for addrinfo in addrinfos:
+            family, socktype, proto, canonname, sockaddr = addrinfo
+            self.assert_(isinstance(canonname, str))
+            self.assert_(isinstance(sockaddr[0], str))
+
+    def testAI_PASSIVE(self):
+        # Disabling this test for now; it's expectations are not portable.
+        # Expected results are too dependent on system config to be made portable between systems.
+        # And the only way to determine what configuration to test is to use the 
+        # java.net.InetAddress.getAllByName() method, which is what is used to 
+        # implement the getaddrinfo() function. Therefore, no real point in the test.
+        return
+        IPV4_LOOPBACK = "127.0.0.1"
+        local_hostname = java.net.InetAddress.getLocalHost().getHostName()
+        local_ip_address = java.net.InetAddress.getLocalHost().getHostAddress()
+        for flags, host_param, expected_canonname, expected_sockaddr in [
+            # First passive flag
+            (socket.AI_PASSIVE, None, "", socket.INADDR_ANY),
+            (socket.AI_PASSIVE, "", "", local_ip_address),
+            (socket.AI_PASSIVE, "localhost", "", IPV4_LOOPBACK),
+            (socket.AI_PASSIVE, local_hostname, "", local_ip_address),
+            # Now passive flag AND canonname flag
+            # Commenting out all AI_CANONNAME tests, results too dependent on system config
+            #(socket.AI_PASSIVE|socket.AI_CANONNAME, None, "127.0.0.1", "127.0.0.1"),
+            #(socket.AI_PASSIVE|socket.AI_CANONNAME, "", local_hostname, local_ip_address),
+            # The following gives varying results across platforms and configurations: commenting out for now.
+            # Javadoc: http://java.sun.com/j2se/1.5.0/docs/api/java/net/InetAddress.html#getCanonicalHostName()
+            #(socket.AI_PASSIVE|socket.AI_CANONNAME, "localhost", local_hostname, IPV4_LOOPBACK),
+            #(socket.AI_PASSIVE|socket.AI_CANONNAME, local_hostname, local_hostname, local_ip_address),
+        ]:
+            addrinfos = socket.getaddrinfo(host_param, 0, socket.AF_INET, socket.SOCK_STREAM, 0, flags)
+            for family, socktype, proto, canonname, sockaddr in addrinfos:
+                self.failUnlessEqual(expected_canonname, canonname, "For hostname '%s' and flags %d, canonname '%s' != '%s'" % (host_param, flags, expected_canonname, canonname) )
+                self.failUnlessEqual(expected_sockaddr, sockaddr[0], "For hostname '%s' and flags %d, sockaddr '%s' != '%s'" % (host_param, flags, expected_sockaddr, sockaddr[0]) )
+
+    def testIPV4AddressesOnly(self):
+        socket._use_ipv4_addresses_only(True)
+        def doAddressTest(addrinfos):
+            for family, socktype, proto, canonname, sockaddr in addrinfos:
+                self.failIf(":" in sockaddr[0], "Incorrectly received IPv6 address '%s'" % (sockaddr[0]) )
+        doAddressTest(socket.getaddrinfo("localhost", 0, socket.AF_INET6, socket.SOCK_STREAM, 0, 0))
+        doAddressTest(socket.getaddrinfo("localhost", 0, socket.AF_UNSPEC, socket.SOCK_STREAM, 0, 0))
+        socket._use_ipv4_addresses_only(False)
+
+    def testAddrTupleTypes(self):
+        ipv4_address_tuple = socket.getaddrinfo("localhost", 80, socket.AF_INET, socket.SOCK_STREAM, 0, 0)[0][4]
+        self.failUnlessEqual(ipv4_address_tuple[0], "127.0.0.1")
+        self.failUnlessEqual(ipv4_address_tuple[1], 80)
+        self.failUnlessRaises(IndexError, lambda: ipv4_address_tuple[2])
+        self.failUnlessEqual(str(ipv4_address_tuple), "('127.0.0.1', 80)")
+        self.failUnlessEqual(repr(ipv4_address_tuple), "('127.0.0.1', 80)")
+
+        addrinfo = socket.getaddrinfo("localhost", 80, socket.AF_INET6, socket.SOCK_STREAM, 0, 0)
+        if not addrinfo and is_bsd:
+            # older FreeBSDs may have spotty IPV6 Java support (at least
+            # our FreeBSD 6.2 buildbot does)
+            return
+        ipv6_address_tuple = addrinfo[0][4]
+        self.failUnless     (ipv6_address_tuple[0] in ["::1", "0:0:0:0:0:0:0:1"])
+        self.failUnlessEqual(ipv6_address_tuple[1], 80)
+        self.failUnlessEqual(ipv6_address_tuple[2], 0)
+        # Can't have an expectation for scope
+        try:
+            ipv6_address_tuple[3]
+        except IndexError:
+            self.fail("Failed to retrieve third element of ipv6 4-tuple")
+        self.failUnlessRaises(IndexError, lambda: ipv6_address_tuple[4])
+        # These str/repr tests may fail on some systems: the scope element of the tuple may be non-zero
+        # In this case, we'll have to change the test to use .startswith() or .split() to exclude the scope element
+        self.failUnless(str(ipv6_address_tuple) in ["('::1', 80, 0, 0)", "('0:0:0:0:0:0:0:1', 80, 0, 0)"])
+        self.failUnless(repr(ipv6_address_tuple) in ["('::1', 80, 0, 0)", "('0:0:0:0:0:0:0:1', 80, 0, 0)"])
+
+class TestJython_get_jsockaddr(unittest.TestCase):
+    "These tests are specific to jython: they test a key internal routine"
+
+    def testIPV4AddressesFromGetAddrInfo(self):
+        local_addr = socket.getaddrinfo("localhost", 80, socket.AF_INET, socket.SOCK_STREAM, 0, 0)[0][4]
+        sockaddr = socket._get_jsockaddr(local_addr)
+        self.failUnless(isinstance(sockaddr, java.net.InetSocketAddress), "_get_jsockaddr returned wrong type: '%s'" % str(type(sockaddr)))
+        self.failUnlessEqual(sockaddr.address.hostAddress, "127.0.0.1")
+        self.failUnlessEqual(sockaddr.port, 80)
+
+    def testIPV6AddressesFromGetAddrInfo(self):
+        addrinfo = socket.getaddrinfo("localhost", 80, socket.AF_INET6, socket.SOCK_STREAM, 0, 0)
+        if not addrinfo and is_bsd:
+            # older FreeBSDs may have spotty IPV6 Java support
+            return
+        local_addr = addrinfo[0][4]
+        sockaddr = socket._get_jsockaddr(local_addr)
+        self.failUnless(isinstance(sockaddr, java.net.InetSocketAddress), "_get_jsockaddr returned wrong type: '%s'" % str(type(sockaddr)))
+        self.failUnless(sockaddr.address.hostAddress in ["::1", "0:0:0:0:0:0:0:1"])
+        self.failUnlessEqual(sockaddr.port, 80)
+
+    def testAddressesFrom2Tuple(self):
+        for addr_tuple in [
+            ("localhost", 80),
+            ]:
+            sockaddr = socket._get_jsockaddr(addr_tuple)
+            self.failUnless(isinstance(sockaddr, java.net.InetSocketAddress), "_get_jsockaddr returned wrong type: '%s'" % str(type(sockaddr)))
+            self.failUnless(sockaddr.address.hostAddress in ["127.0.0.1", "::1", "0:0:0:0:0:0:0:1"])
+            self.failUnlessEqual(sockaddr.port, 80)
+
+    def testAddressesFrom4Tuple(self):
+        # This test disabled: cannot construct IPV6 addresses from 4-tuple
+        return
+        for addr_tuple in [
+            ("localhost", 80, 0, 0),
+            ]:
+            sockaddr = socket._get_jsockaddr(addr_tuple)
+            self.failUnless(isinstance(sockaddr, java.net.InetSocketAddress), "_get_jsockaddr returned wrong type: '%s'" % str(type(sockaddr)))
+            self.failUnless(isinstance(sockaddr.address, java.net.Inet6Address), "_get_jsockaddr returned wrong address type: '%s'" % str(type(sockaddr.address)))
+            self.failUnless(sockaddr.address.hostAddress in ["::1", "0:0:0:0:0:0:0:1"])
+            self.failUnlessEqual(sockaddr.address.scopeId, 0)
+            self.failUnlessEqual(sockaddr.port, 80)
+
+    def testSpecialHostnames(self):
+        for addr_tuple, for_udp, expected_hostname in [
+            ( ("", 80),            False, socket.INADDR_ANY),
+            ( ("", 80),            True,  socket.INADDR_ANY),
+            ( ("<broadcast>", 80), True,  socket.INADDR_BROADCAST),
+            ]:
+            sockaddr = socket._get_jsockaddr(addr_tuple, for_udp)
+            self.failUnlessEqual(sockaddr.hostName, expected_hostname, "_get_jsockaddr returned wrong hostname '%s' for special hostname '%s'" % (sockaddr.hostName, expected_hostname))
 
 class TestExceptions(unittest.TestCase):
 
@@ -1585,6 +1743,55 @@ class TestUDPAddressParameters(unittest.TestCase, TestAddressParameters):
     def setUp(self):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
+class UnicodeTest(ThreadedTCPSocketTest):
+
+    def testUnicodeHostname(self):
+        pass
+
+    def _testUnicodeHostname(self):
+        self.cli.connect((unicode(self.HOST), self.PORT))
+
+class IDNATest(unittest.TestCase):
+
+    def testGetAddrInfoIDNAHostname(self):
+        idna_domain = u"al\u00e1n.com"
+        if socket.supports('idna'):
+            try:
+                addresses = socket.getaddrinfo(idna_domain, 80)
+                self.failUnless(len(addresses) > 0, "No addresses returned for test IDNA domain '%s'" % repr(idna_domain))
+            except Exception, x:
+                self.fail("Unexpected exception raised for socket.getaddrinfo(%s)" % repr(idna_domain))
+        else:
+            try:
+                socket.getaddrinfo(idna_domain, 80)
+            except UnicodeEncodeError:
+                pass
+            except Exception, x:
+                self.fail("Non ascii domain '%s' should have raised UnicodeEncodeError, not %s" % (repr(idna_domain), str(x)))
+            else:
+                self.fail("Non ascii domain '%s' should have raised UnicodeEncodeError: no exception raised" % repr(idna_domain))
+
+    def testAddrTupleIDNAHostname(self):
+        idna_domain = u"al\u00e1n.com"
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        if socket.supports('idna'):
+            try:
+                s.bind( (idna_domain, 80) )
+            except socket.error:
+                # We're not worried about socket errors, i.e. bind problems, etc.
+                pass
+            except Exception, x:
+                self.fail("Unexpected exception raised for socket.bind(%s)" % repr(idna_domain))
+        else:
+            try:
+                s.bind( (idna_domain, 80) )
+            except UnicodeEncodeError:
+                pass
+            except Exception, x:
+                self.fail("Non ascii domain '%s' should have raised UnicodeEncodeError, not %s" % (repr(idna_domain), str(x)))
+            else:
+                self.fail("Non ascii domain '%s' should have raised UnicodeEncodeError: no exception raised" % repr(idna_domain))
+
 class TestInvalidUsage(unittest.TestCase):
 
     def setUp(self):
@@ -1611,14 +1818,15 @@ class TestInvalidUsage(unittest.TestCase):
 
 def test_main():
     tests = [
-        GeneralModuleTests, 
+        GeneralModuleTests,
         TestSupportedOptions,
         TestUnsupportedOptions,
-        BasicTCPTest, 
-        TCPServerTimeoutTest, 
+        BasicTCPTest,
+        TCPServerTimeoutTest,
         TCPClientTimeoutTest,
         TestExceptions,
         TestInvalidUsage,
+        TestGetAddrInfo,
         TestTCPAddressParameters,
         TestUDPAddressParameters,
         UDPBindTest,
@@ -1634,12 +1842,15 @@ def test_main():
         UnbufferedFileObjectClassTestCase,
         LineBufferedFileObjectClassTestCase,
         SmallBufferedFileObjectClassTestCase,
+        UnicodeTest,
+        IDNATest,
     ]
     if hasattr(socket, "socketpair"):
         tests.append(BasicSocketPairTest)
     if sys.platform[:4] == 'java':
         tests.append(TestJythonTCPExceptions)
         tests.append(TestJythonUDPExceptions)
+        tests.append(TestJython_get_jsockaddr)
     # TODO: Broadcast requires permission, and is blocked by some firewalls
     # Need some way to discover the network setup on the test machine
     if False:

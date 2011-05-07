@@ -11,15 +11,15 @@ package org.python.modules;
 import org.python.core.Py;
 import org.python.core.PyException;
 import org.python.core.PyFloat;
-import org.python.core.PyInteger;
 import org.python.core.PyList;
 import org.python.core.PyLong;
 import org.python.core.PyObject;
 import org.python.core.PyString;
+import org.python.core.PyStringMap;
 import org.python.core.PyTuple;
-import org.python.core.__builtin__;
 
 import java.math.BigInteger;
+import org.python.core.PyArray;
 
 /**
  * This module performs conversions between Python values and C
@@ -96,7 +96,7 @@ import java.math.BigInteger;
  *   <tr><td align=center><samp>I</samp></td>
  *       <td><tt>unsigned int</tt></td>
  *       <td>integer</td>
- *   <tr><td align=center><samp>l</samp></td>
+ *   <tr><td align=center><samp>size</samp></td>
  *       <td><tt>long</tt></td>
  *       <td>integer</td>
  *   <tr><td align=center><samp>L</samp></td>
@@ -258,7 +258,7 @@ public class struct {
      * Exception raised on various occasions; argument is a
      * string describing what is wrong.
      */
-    public static PyString error = new PyString("struct.error");
+    public static final PyObject error = Py.makeClass("error", Py.Exception, exceptionNamespace());
 
     public static String __doc__ =
         "Functions to convert between Python values and C structs.\n" +
@@ -322,7 +322,7 @@ public class struct {
 
         int get_int(PyObject value) {
             try {
-                return ((PyInteger)value.__int__()).getValue();
+                return value.asInt();
             } catch (PyException ex) {
                 throw StructError("required argument is not an integer");
             }
@@ -331,8 +331,9 @@ public class struct {
         long get_long(PyObject value) {
             if (value instanceof PyLong){
                 Object v = value.__tojava__(Long.TYPE);
-                if (v == Py.NoConversion)
-                throw Py.OverflowError("long int too long to convert");
+                if (v == Py.NoConversion) {
+                    throw StructError("long int too long to convert");
+                }
                 return ((Long) v).longValue();
             } else
                 return get_int(value);
@@ -341,8 +342,8 @@ public class struct {
         BigInteger get_ulong(PyObject value) {
             if (value instanceof PyLong){
                 BigInteger v = (BigInteger)value.__tojava__(BigInteger.class);
-                if (v.compareTo(PyLong.maxULong) > 0){
-                    throw Py.OverflowError("unsigned long int too long to convert");
+                if (v.compareTo(PyLong.MAX_ULONG) > 0){
+                    throw StructError("unsigned long int too long to convert");
                 }
                 return v;
             } else
@@ -350,24 +351,22 @@ public class struct {
         }
 
         double get_float(PyObject value) {
-            if (!(value instanceof PyFloat))
-                throw StructError("required argument is not an float");
-            return value.__float__().getValue();
+            return value.asDouble();
         }
 
 
         void BEwriteInt(ByteStream buf, int v) {
-            buf.writeByte((int)(v >>> 24) & 0xFF);
-            buf.writeByte((int)(v >>> 16) & 0xFF);
-            buf.writeByte((int)(v >>>  8) & 0xFF);
-            buf.writeByte((int)(v >>>  0) & 0xFF);
+            buf.writeByte((v >>> 24) & 0xFF);
+            buf.writeByte((v >>> 16) & 0xFF);
+            buf.writeByte((v >>>  8) & 0xFF);
+            buf.writeByte((v >>>  0) & 0xFF);
         }
 
         void LEwriteInt(ByteStream buf, int v) {
-            buf.writeByte((int)(v >>>  0) & 0xFF);
-            buf.writeByte((int)(v >>>  8) & 0xFF);
-            buf.writeByte((int)(v >>> 16) & 0xFF);
-            buf.writeByte((int)(v >>> 24) & 0xFF);
+            buf.writeByte((v >>>  0) & 0xFF);
+            buf.writeByte((v >>>  8) & 0xFF);
+            buf.writeByte((v >>> 16) & 0xFF);
+            buf.writeByte((v >>> 24) & 0xFF);
         }
 
         int BEreadInt(ByteStream buf) {
@@ -400,11 +399,17 @@ public class struct {
         }
 
         ByteStream(String s) {
-            int l = s.length();
-            data = new char[l];
-            s.getChars(0, l, data, 0);
-            len = l;
+            this(s, 0);
+        }
+        
+        ByteStream(String s, int offset) {
+            int size = s.length() - offset;
+            data = new char[size];
+            s.getChars(offset, s.length(), data, 0);
+            len = size;
             pos = 0;
+            
+//            System.out.println("s.length()=" + s.length() + ",offset=" + offset + ",size=" + size + ",data=" + Arrays.toString(data));
         }
 
         int readByte() {
@@ -749,8 +754,13 @@ public class struct {
         }
 
         Object unpack(ByteStream buf) {
-            int v = LEreadInt(buf);
-            return Py.newFloat(Float.intBitsToFloat(v));
+            int bits = LEreadInt(buf);
+            float v = Float.intBitsToFloat(bits);
+            if (PyFloat.float_format == PyFloat.Format.UNKNOWN && (
+                    Float.isInfinite(v) || Float.isNaN(v))) {
+                throw Py.ValueError("can't unpack IEEE 754 special value on non-IEEE platform");
+            }
+            return Py.newFloat(v);
         }
     }
 
@@ -764,7 +774,12 @@ public class struct {
         Object unpack(ByteStream buf) {
             long bits = (LEreadInt(buf) & 0xFFFFFFFFL) +
                         (((long)LEreadInt(buf)) << 32);
-            return Py.newFloat(Double.longBitsToDouble(bits));
+            double v = Double.longBitsToDouble(bits);
+            if (PyFloat.double_format == PyFloat.Format.UNKNOWN &&
+                    (Double.isInfinite(v) || Double.isNaN(v))) {
+                throw Py.ValueError("can't unpack IEEE 754 special value on non-IEEE platform");
+            }
+            return Py.newFloat(v);
         }
     }
 
@@ -776,8 +791,13 @@ public class struct {
         }
 
         Object unpack(ByteStream buf) {
-            int v = BEreadInt(buf);
-            return Py.newFloat(Float.intBitsToFloat(v));
+            int bits = BEreadInt(buf);
+            float v = Float.intBitsToFloat(bits);
+            if (PyFloat.float_format == PyFloat.Format.UNKNOWN && (
+                    Float.isInfinite(v) || Float.isNaN(v))) {
+                throw Py.ValueError("can't unpack IEEE 754 special value on non-IEEE platform");
+            }
+            return Py.newFloat(v);
         }
     }
 
@@ -789,9 +809,14 @@ public class struct {
         }
 
         Object unpack(ByteStream buf) {
-            long bits = (((long)BEreadInt(buf)) << 32) +
-                        (BEreadInt(buf) & 0xFFFFFFFFL);
-            return Py.newFloat(Double.longBitsToDouble(bits));
+            long bits = (((long) BEreadInt(buf)) << 32) +
+                    (BEreadInt(buf) & 0xFFFFFFFFL);
+            double v = Double.longBitsToDouble(bits);
+            if (PyFloat.double_format == PyFloat.Format.UNKNOWN &&
+                    (Double.isInfinite(v) || Double.isNaN(v))) {
+                throw Py.ValueError("can't unpack IEEE 754 special value on non-IEEE platform");
+            }
+            return Py.newFloat(v);
         }
     }
 
@@ -809,8 +834,8 @@ public class struct {
         new LEUnsignedIntFormatDef()    .init('I', 4, 0),
         new LEIntFormatDef()            .init('l', 4, 0),
         new LEUnsignedIntFormatDef()    .init('L', 4, 0),
-        new LELongFormatDef()           .init('q', 8, 8),
-        new LEUnsignedLongFormatDef()   .init('Q', 8, 8),
+        new LELongFormatDef()           .init('q', 8, 0),
+        new LEUnsignedLongFormatDef()   .init('Q', 8, 0),
         new LEFloatFormatDef()          .init('f', 4, 0),
         new LEDoubleFormatDef()         .init('d', 8, 0),
     };
@@ -828,8 +853,8 @@ public class struct {
         new BEUnsignedIntFormatDef()    .init('I', 4, 0),
         new BEIntFormatDef()            .init('l', 4, 0),
         new BEUnsignedIntFormatDef()    .init('L', 4, 0),
-        new BELongFormatDef()           .init('q', 8, 8),
-        new BEUnsignedLongFormatDef()   .init('Q', 8, 8),
+        new BELongFormatDef()           .init('q', 8, 0),
+        new BEUnsignedLongFormatDef()   .init('Q', 8, 0),
         new BEFloatFormatDef()          .init('f', 4, 0),
         new BEDoubleFormatDef()         .init('d', 8, 0),
     };
@@ -855,7 +880,7 @@ public class struct {
 
 
 
-    private static FormatDef[] whichtable(String pfmt) {
+    static FormatDef[] whichtable(String pfmt) {
         char c = pfmt.charAt(0);
         switch (c) {
         case '<' :
@@ -894,7 +919,7 @@ public class struct {
 
 
 
-    private static int calcsize(String format, FormatDef[] f) {
+    static int calcsize(String format, FormatDef[] f) {
         int size = 0;
 
         int len = format.length();
@@ -946,7 +971,7 @@ public class struct {
      * to the given format. The arguments must match the
      * values required by the format exactly.
      */
-    static public String pack(PyObject[] args) {
+    static public PyString pack(PyObject[] args) {
         if (args.length < 1)
             Py.TypeError("illegal argument type for built-in operation");
 
@@ -954,10 +979,43 @@ public class struct {
 
         FormatDef[] f = whichtable(format);
         int size = calcsize(format, f);
+        
+        return new PyString(pack(format, f, size, 1, args).toString());
+    }
+    
+    // xxx - may need to consider doing a generic arg parser here
+    static public void pack_into(PyObject[] args) {
+        if (args.length < 3)
+            Py.TypeError("illegal argument type for built-in operation");
+        String format = args[0].toString();
+        FormatDef[] f = whichtable(format);
+        int size = calcsize(format, f);
+        pack_into(format, f, size, 1, args);
+    }
+    
+    static void pack_into(String format, FormatDef[] f, int size, int argstart, PyObject[] args) {
+        if (args.length - argstart < 2)
+            Py.TypeError("illegal argument type for built-in operation");
+        if (!(args[argstart] instanceof PyArray)) {
+            throw Py.TypeError("pack_into takes an array arg"); // as well as a buffer, what else?
+        }
+        PyArray buffer = (PyArray)args[argstart];
+        int offset = args[argstart + 1].asInt();
 
+        ByteStream res = pack(format, f, size, argstart + 2, args);
+        if (res.pos > buffer.__len__()) {
+            throw StructError("pack_into requires a buffer of at least " + res.pos + " bytes, got " + buffer.__len__());
+        }
+        for (int i = 0; i < res.pos; i++, offset++) {
+            char val = res.data[i];
+            buffer.set(offset, val);
+        }
+    }
+    
+    static ByteStream pack(String format, FormatDef[] f, int size, int start, PyObject[] args) {
         ByteStream res = new ByteStream();
 
-        int i = 1;
+        int i = start;
         int len = format.length();
         for (int j = 0; j < len; j++) {
             char c = format.charAt(j);
@@ -976,7 +1034,7 @@ public class struct {
 
             FormatDef e = getentry(c, f);
 
-            // Fill padd bytes with zeros
+            // Fill pad bytes with zeros
             int nres = align(res.size(), e) - res.size();
             while (nres-- > 0)
                 res.writeByte(0);
@@ -986,7 +1044,7 @@ public class struct {
         if (i < args.length)
             throw StructError("too many arguments for pack format");
 
-        return res.toString();
+        return res;
     }
 
 
@@ -998,19 +1056,41 @@ public class struct {
      * The string must contain exactly the amount of data required by
      * the format (i.e. len(string) must equal calcsize(fmt)).
      */
+   
     public static PyTuple unpack(String format, String string) {
-        int len = string.length();
-
         FormatDef[] f = whichtable(format);
         int size = calcsize(format, f);
-
-        if (size != len)
+        int len = string.length();
+        if (size != len) 
             throw StructError("unpack str size does not match format");
-
+         return unpack(f, size, format, new ByteStream(string));
+    }
+    
+    public static PyTuple unpack(String format, PyArray buffer) {
+        String string = buffer.tostring();
+        FormatDef[] f = whichtable(format);
+        int size = calcsize(format, f);
+        int len = string.length();
+        if (size != len) 
+            throw StructError("unpack str size does not match format");
+         return unpack(f, size, format, new ByteStream(string));
+    }
+    
+    public static PyTuple unpack_from(String format, String string) {
+        return unpack_from(format, string, 0);   
+    }
+        
+    public static PyTuple unpack_from(String format, String string, int offset) {
+        FormatDef[] f = whichtable(format);
+        int size = calcsize(format, f);
+        int len = string.length();
+        if (size >= (len - offset + 1))
+            throw StructError("unpack_from str size does not match format");
+        return unpack(f, size, format, new ByteStream(string, offset));
+    }
+    
+    static PyTuple unpack(FormatDef[] f, int size, String format, ByteStream str) {
         PyList res = new PyList();
-
-        ByteStream str = new ByteStream(string);
-
         int flen = format.length();
         for (int j = 0; j < flen; j++) {
             char c = format.charAt(j);
@@ -1034,12 +1114,22 @@ public class struct {
 
             e.doUnpack(str, num, res);
         }
-        return __builtin__.tuple(res);
+        return PyTuple.fromIterable(res);
     }
 
 
-
-    private static PyException StructError(String explanation) {
+    static PyException StructError(String explanation) {
         return new PyException(error, explanation);
     }
+
+    private static PyObject exceptionNamespace() {
+        PyObject dict = new PyStringMap();
+        dict.__setitem__("__module__", new PyString("struct"));
+        return dict;
+    }
+    
+    public static PyStruct Struct(PyObject[] args, String[] keywords) {
+        return new PyStruct(args, keywords);
+    }
 }
+

@@ -1,7 +1,6 @@
 /*
  * Jython Database Specification API 2.0
  *
- * $Id$
  *
  * Copyright (c) 2001 brian zimmer <bzimmer@ziclix.com>
  *
@@ -14,7 +13,6 @@ import java.util.HashSet;
 import java.util.Set;
 import org.python.core.Py;
 import org.python.core.PyBuiltinMethodSet;
-import org.python.core.PyClass;
 import org.python.core.PyList;
 import org.python.core.PyObject;
 import org.python.core.PyString;
@@ -23,25 +21,8 @@ import org.python.core.PyString;
  * A cursor with extensions to the DB API 2.0.
  *
  * @author brian zimmer
- * @author last revised by $Author$
- * @version $Revision$
  */
 public class PyExtendedCursor extends PyCursor {
-
-    /**
-     * Field __class__
-     */
-    public static PyClass __class__;
-
-    /**
-     * Method getPyClass
-     *
-     * @return PyClass
-     */
-    protected PyClass getPyClass() {
-        return __class__;
-    }
-
     /**
      * Field __members__
      */
@@ -101,7 +82,8 @@ public class PyExtendedCursor extends PyCursor {
      * @param rsType
      * @param rsConcur
      */
-    PyExtendedCursor(PyConnection connection, boolean dynamicFetch, PyObject rsType, PyObject rsConcur) {
+    PyExtendedCursor(PyConnection connection, boolean dynamicFetch, PyObject rsType,
+                     PyObject rsConcur) {
         super(connection, dynamicFetch, rsType, rsConcur);
     }
 
@@ -110,6 +92,7 @@ public class PyExtendedCursor extends PyCursor {
      *
      * @return a string representation of the object.
      */
+    @Override
     public String toString() {
         return "<PyExtendedCursor object instance at " + Py.id(this) + ">";
     }
@@ -120,9 +103,8 @@ public class PyExtendedCursor extends PyCursor {
      * @param dict
      */
     static public void classDictInit(PyObject dict) {
-
         PyCursor.classDictInit(dict);
-        dict.__setitem__("__version__", Py.newString("$Revision$").__getslice__(Py.newInteger(11), Py.newInteger(-2), null));
+        dict.__setitem__("__version__", Py.newString("7290"));
         dict.__setitem__("tables", new ExtendedCursorFunc("tables", 100, 4, 4, "query for table information"));
         dict.__setitem__("columns", new ExtendedCursorFunc("columns", 101, 4, 4, "query for column information"));
         dict.__setitem__("primarykeys", new ExtendedCursorFunc("primarykeys", 102, 3, 3, "query for primary keys"));
@@ -146,15 +128,15 @@ public class PyExtendedCursor extends PyCursor {
      * @param name the name of the attribute of interest
      * @return the value for the attribute of the specified name
      */
-    public PyObject __findattr__(String name) {
-
+    @Override
+    public PyObject __findattr_ex__(String name) {
         if ("__methods__".equals(name)) {
             return __methods__;
         } else if ("__members__".equals(name)) {
             return __members__;
         }
 
-        return super.__findattr__(name);
+        return super.__findattr_ex__(name);
     }
 
     /**
@@ -168,7 +150,6 @@ public class PyExtendedCursor extends PyCursor {
      * @param type
      */
     protected void tables(PyObject qualifier, PyObject owner, PyObject table, PyObject type) {
-
         clear();
 
         String q = getMetaDataName(qualifier);
@@ -212,7 +193,6 @@ public class PyExtendedCursor extends PyCursor {
      * @param column
      */
     protected void columns(PyObject qualifier, PyObject owner, PyObject table, PyObject column) {
-
         clear();
 
         String q = getMetaDataName(qualifier);
@@ -235,7 +215,6 @@ public class PyExtendedCursor extends PyCursor {
      * @param procedure
      */
     protected void procedures(PyObject qualifier, PyObject owner, PyObject procedure) {
-
         clear();
 
         String q = getMetaDataName(qualifier);
@@ -257,8 +236,8 @@ public class PyExtendedCursor extends PyCursor {
      * @param procedure
      * @param column
      */
-    protected void procedurecolumns(PyObject qualifier, PyObject owner, PyObject procedure, PyObject column) {
-
+    protected void procedurecolumns(PyObject qualifier, PyObject owner, PyObject procedure,
+                                    PyObject column) {
         clear();
 
         String q = getMetaDataName(qualifier);
@@ -311,8 +290,9 @@ public class PyExtendedCursor extends PyCursor {
      * @param foreignOwner
      * @param foreignTable
      */
-    protected void foreignkeys(PyObject primaryQualifier, PyObject primaryOwner, PyObject primaryTable, PyObject foreignQualifier, PyObject foreignOwner, PyObject foreignTable) {
-
+    protected void foreignkeys(PyObject primaryQualifier, PyObject primaryOwner,
+                               PyObject primaryTable, PyObject foreignQualifier,
+                               PyObject foreignOwner, PyObject foreignTable) {
         clear();
 
         String pq = getMetaDataName(primaryQualifier);
@@ -339,13 +319,12 @@ public class PyExtendedCursor extends PyCursor {
      * @param unique
      * @param accuracy
      */
-    protected void statistics(PyObject qualifier, PyObject owner, PyObject table, PyObject unique, PyObject accuracy) {
-
+    protected void statistics(PyObject qualifier, PyObject owner, PyObject table, PyObject unique,
+                              PyObject accuracy) {
         clear();
 
-        Set skipCols = new HashSet();
-
-        skipCols.add(new Integer(12));
+        Set<Integer> skipCols = new HashSet<Integer>();
+        skipCols.add(12);
 
         String q = getMetaDataName(qualifier);
         String o = getMetaDataName(owner);
@@ -366,13 +345,11 @@ public class PyExtendedCursor extends PyCursor {
      * @param type data type for which to provide information
      */
     protected void typeinfo(PyObject type) {
-
         clear();
 
-        Set skipCols = new HashSet();
-
-        skipCols.add(new Integer(16));
-        skipCols.add(new Integer(17));
+        Set<Integer> skipCols = new HashSet<Integer>();
+        skipCols.add(16);
+        skipCols.add(17);
 
         try {
             this.fetch.add(getMetaData().getTypeInfo(), skipCols);
@@ -399,7 +376,6 @@ public class PyExtendedCursor extends PyCursor {
      * Gets a description of possible table types.
      */
     protected void tabletypeinfo() {
-
         clear();
 
         try {
@@ -418,7 +394,6 @@ public class PyExtendedCursor extends PyCursor {
      * @param table
      */
     protected void bestrow(PyObject qualifier, PyObject owner, PyObject table) {
-
         clear();
 
         String c = getMetaDataName(qualifier);
@@ -443,7 +418,6 @@ public class PyExtendedCursor extends PyCursor {
      * @param table     a table name
      */
     protected void versioncolumns(PyObject qualifier, PyObject owner, PyObject table) {
-
         clear();
 
         String q = getMetaDataName(qualifier);
@@ -464,7 +438,6 @@ public class PyExtendedCursor extends PyCursor {
      * @return String
      */
     protected String getMetaDataName(PyObject name) {
-
         if (name == Py.None) {
             return null;
         }
@@ -496,20 +469,17 @@ class ExtendedCursorFunc extends PyBuiltinMethodSet {
         super(name, index, minargs, maxargs, doc, PyExtendedCursor.class);
     }
 
+    @Override
     public PyObject __call__() {
-
         PyExtendedCursor cursor = (PyExtendedCursor) __self__;
 
         switch (index) {
-
             case 107:
                 cursor.typeinfo(Py.None);
-
                 return Py.None;
 
             case 108:
                 cursor.tabletypeinfo();
-
                 return Py.None;
 
             default :
@@ -517,15 +487,13 @@ class ExtendedCursorFunc extends PyBuiltinMethodSet {
         }
     }
 
+    @Override
     public PyObject __call__(PyObject arga) {
-
         PyExtendedCursor cursor = (PyExtendedCursor) __self__;
 
         switch (index) {
-
             case 107:
                 cursor.typeinfo(arga);
-
                 return Py.None;
 
             default :
@@ -533,80 +501,68 @@ class ExtendedCursorFunc extends PyBuiltinMethodSet {
         }
     }
 
+    @Override
     public PyObject __call__(PyObject arga, PyObject argb, PyObject argc) {
-
         PyExtendedCursor cursor = (PyExtendedCursor) __self__;
 
         switch (index) {
-
             case 102:
                 cursor.primarykeys(arga, argb, argc);
-
                 return Py.None;
 
             case 104:
                 cursor.procedures(arga, argb, argc);
-
                 return Py.None;
 
             case 109:
                 cursor.bestrow(arga, argb, argc);
-
                 return Py.None;
 
             case 110:
                 cursor.versioncolumns(arga, argb, argc);
-
                 return Py.None;
 
-            default :
+            default:
                 throw info.unexpectedCall(3, false);
         }
     }
 
+    @Override
     public PyObject fancyCall(PyObject[] args) {
-
         PyExtendedCursor cursor = (PyExtendedCursor) __self__;
 
         switch (index) {
-
             case 103:
                 cursor.foreignkeys(args[0], args[1], args[2], args[3], args[4], args[5]);
-
                 return Py.None;
 
             case 106:
                 cursor.statistics(args[0], args[1], args[2], args[3], args[4]);
-
                 return Py.None;
 
-            default :
+            default:
                 throw info.unexpectedCall(args.length, true);
         }
     }
 
+    @Override
     public PyObject __call__(PyObject arg1, PyObject arg2, PyObject arg3, PyObject arg4) {
-
         PyExtendedCursor cursor = (PyExtendedCursor) __self__;
 
         switch (index) {
-
             case 100:
                 cursor.tables(arg1, arg2, arg3, arg4);
-
                 return Py.None;
 
             case 101:
                 cursor.columns(arg1, arg2, arg3, arg4);
-
                 return Py.None;
 
             case 105:
                 cursor.procedurecolumns(arg1, arg2, arg3, arg4);
-
                 return Py.None;
 
-            default :
+            default:
                 throw info.unexpectedCall(4, false);
         }
     }

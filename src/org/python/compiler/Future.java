@@ -2,96 +2,111 @@
 
 package org.python.compiler;
 
-import org.python.parser.*;
-import org.python.parser.ast.*;
-import org.python.parser.ast.Module;
+import org.python.antlr.ParseException;
+import org.python.antlr.ast.ImportFrom;
+import org.python.antlr.ast.Expr;
+import org.python.antlr.ast.Interactive;
+import org.python.antlr.ast.Module;
+import org.python.antlr.ast.Str;
+import org.python.antlr.ast.alias;
+import org.python.antlr.base.mod;
+import org.python.antlr.base.stmt;
+import org.python.core.CodeFlag;
+import org.python.core.FutureFeature;
+import org.python.core.Pragma;
+import org.python.core.PragmaReceiver;
 
-public class Future extends Object implements PythonGrammarTreeConstants {
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Set;
 
-    private boolean division;
-    private boolean generators;
+public class Future {
+    Set<FutureFeature> featureSet = EnumSet.noneOf(FutureFeature.class);
+    private final PragmaReceiver features = new PragmaReceiver() {
 
-    private static final String FUTURE = "__future__";
+        public void add(Pragma pragma) {
+            if (pragma instanceof FutureFeature) {
+                FutureFeature feature = (FutureFeature) pragma;
+                featureSet.add(feature);
+            }
+        }
+
+    };
 
     private boolean check(ImportFrom cand) throws Exception {
-        if (!cand.module.equals(FUTURE))
+        if (!cand.getInternalModule().equals(FutureFeature.MODULE_NAME))
             return false;
-        int n = cand.names.length;
-        if (n == 0) {
+        if (cand.getInternalNames().isEmpty()) {
             throw new ParseException(
-                    "future statement does not support import *",cand);
+                    "future statement does not support import *", cand);
         }
-        for (int i = 0; i < n; i++) {
-            String feature = cand.names[i].name;
-            // *known* features
-            if (feature.equals("nested_scopes")) {
-                continue;
+        try {
+            for (alias feature : cand.getInternalNames()) {
+                // *known* features
+                FutureFeature.addFeature(feature.getInternalName(), features);
             }
-            if (feature.equals("division")) {
-                division = true;
-                continue;
-            }
-            if (feature.equals("generators")) {
-                generators = true;
-                continue;
-            }
-            throw new ParseException("future feature "+feature+
-                                     " is not defined",cand);
+        } catch (ParseException pe) {
+            throw new ParseException(pe.getMessage(), cand);
         }
         return true;
     }
 
-    public void preprocessFutures(modType node,
-                                  org.python.core.CompilerFlags cflags)
-        throws Exception
-    {
+    public void preprocessFutures(mod node, org.python.core.CompilerFlags cflags)
+            throws Exception {
         if (cflags != null) {
-            division = cflags.division;
+            if (cflags.isFlagSet(CodeFlag.CO_FUTURE_DIVISION))
+                FutureFeature.division.addTo(features);
+            if (cflags.isFlagSet(CodeFlag.CO_FUTURE_WITH_STATEMENT))
+                FutureFeature.with_statement.addTo(features);
+            if (cflags.isFlagSet(CodeFlag.CO_FUTURE_ABSOLUTE_IMPORT))
+                FutureFeature.absolute_import.addTo(features);
         }
         int beg = 0;
-        stmtType[] suite = null;
+        List<stmt> suite = null;
         if (node instanceof Module) {
-            suite = ((Module) node).body;
-            if (suite.length > 0 && suite[0] instanceof Expr &&
-                            ((Expr) suite[0]).value instanceof Str) {
+            suite = ((Module) node).getInternalBody();
+            if (suite.size() > 0 && suite.get(0) instanceof Expr
+                    && ((Expr) suite.get(0)).getInternalValue() instanceof Str) {
                 beg++;
             }
         } else if (node instanceof Interactive) {
-            suite = ((Interactive) node).body;
+            suite = ((Interactive) node).getInternalBody();
         } else {
             return;
         }
 
-        for (int i = beg; i < suite.length; i++) {
-            stmtType stmt = suite[i];
-            if (!(stmt instanceof ImportFrom))
-                break;
-            stmt.from_future_checked = true;
-            if (!check((ImportFrom) stmt))
-                break;
+        for (int i = beg; i < suite.size(); i++) {
+            stmt s = suite.get(i);
+            if (!(s instanceof ImportFrom)) break;
+            s.from_future_checked = true;
+            if (!check((ImportFrom) s)) break;
         }
 
         if (cflags != null) {
-            cflags.division      = cflags.division      ||  division;
-        }
-        if (cflags != null) {
-            cflags.generator_allowed = cflags.generator_allowed || generators;
+            for (FutureFeature feature : featureSet) {
+                feature.setFlag(cflags);
+            }
         }
     }
 
-
     public static void checkFromFuture(ImportFrom node) throws Exception {
-        if (node.from_future_checked)
-            return;
-        if (node.module.equals(FUTURE)) {
-            throw new ParseException("from __future__ imports must occur " +
-                                     "at the beginning of the file",node);
+        if (node.from_future_checked) return;
+        if (node.getInternalModule().equals(FutureFeature.MODULE_NAME)) {
+            throw new ParseException("from __future__ imports must occur "
+                    + "at the beginning of the file", node);
         }
         node.from_future_checked = true;
     }
 
     public boolean areDivisionOn() {
-        return division;
+        return featureSet.contains(FutureFeature.division);
     }
 
+    public boolean withStatementSupported() {
+        return featureSet.contains(FutureFeature.with_statement);
+    }
+
+    public boolean isAbsoluteImportOn() {
+        return featureSet.contains(FutureFeature.absolute_import);
+    }
 }

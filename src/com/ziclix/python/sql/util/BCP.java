@@ -1,7 +1,6 @@
 /*
  * Jython Database Specification API 2.0
  *
- * $Id$
  *
  * Copyright (c) 2001 brian zimmer <bzimmer@ziclix.com>
  *
@@ -66,23 +65,7 @@ public class BCP extends PyObject implements ClassDictInit {
         this.batchsize = batchsize;
         this.queuesize = 0;
     }
-
-    // __class__ boilerplate -- see PyObject for details
-
-    /**
-     * Field __class__
-     */
-    public static PyClass __class__;
-
-    /**
-     * Method getPyClass
-     *
-     * @return PyClass
-     */
-    protected PyClass getPyClass() {
-        return __class__;
-    }
-
+    
     /**
      * Field __methods__
      */
@@ -144,7 +127,7 @@ public class BCP extends PyObject implements ClassDictInit {
      * @param name
      * @return the attribute for the given name
      */
-    public PyObject __findattr__(String name) {
+    public PyObject __findattr_ex__(String name) {
 
         if ("destinationDataHandler".equals(name)) {
             return Py.java2py(this.destDH);
@@ -156,7 +139,7 @@ public class BCP extends PyObject implements ClassDictInit {
             return Py.newInteger(this.queuesize);
         }
 
-        return super.__findattr__(name);
+        return super.__findattr_ex__(name);
     }
 
     /**
@@ -165,8 +148,7 @@ public class BCP extends PyObject implements ClassDictInit {
      * @param dict
      */
     static public void classDictInit(PyObject dict) {
-
-        dict.__setitem__("__version__", Py.newString("$Revision$").__getslice__(Py.newInteger(11), Py.newInteger(-2), null));
+        dict.__setitem__("__version__", Py.newString("7290"));
         dict.__setitem__("bcp", new BCPFunc("bcp", 0, 1, 2, zxJDBC.getString("bcp")));
         dict.__setitem__("batchsize", Py.newString(zxJDBC.getString("batchsize")));
         dict.__setitem__("queuesize", Py.newString(zxJDBC.getString("queuesize")));
@@ -204,9 +186,6 @@ public class BCP extends PyObject implements ClassDictInit {
 }
 
 /**
- * @author last modified by $Author$
- * @version $Revision$
- * @date last modified on $Date$
  * @copyright 2001 brian zimmer
  */
 class BCPFunc extends PyBuiltinMethodSet {

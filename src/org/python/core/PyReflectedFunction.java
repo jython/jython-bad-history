@@ -3,46 +3,62 @@ package org.python.core;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.Enumeration;
-import java.util.Hashtable;
+import java.util.Set;
 
+import org.python.util.Generic;
 
-public class PyReflectedFunction extends PyObject
-{
+public class PyReflectedFunction extends PyObject {
+
     public String __name__;
+
     public PyObject __doc__ = Py.None;
-    public ReflectedArgs[] argslist;
+
+    public ReflectedArgs[] argslist = new ReflectedArgs[1];
+
     public int nargs;
 
-    public PyReflectedFunction(String name) {
+    /** Whether __call__ should act as if this is called as a static method. */
+    private boolean calledStatically;
+
+    protected PyReflectedFunction(String name) {
         __name__ = name;
-        argslist = new ReflectedArgs[1];
-        nargs = 0;
     }
 
-    public PyReflectedFunction(Method method) {
-        this(method.getName());
-        addMethod(method);
+    public PyReflectedFunction(Method... methods) {
+        this(methods[0].getName());
+        for (Method meth : methods) {
+            addMethod(meth);
+        }
+        if (nargs == 0) {
+            String msg = String.format("Attempted to make Java method visible, but it isn't "
+                                               + "callable[method=%s, class=%s]",
+                                       methods[0].getName(),
+                                       methods[0].getDeclaringClass());
+            throw Py.SystemError(msg);
+        }
     }
 
+    @Override
     public PyObject _doget(PyObject container) {
         return _doget(container, null);
     }
 
+    @Override
     public PyObject _doget(PyObject container, PyObject wherefound) {
-        if (container == null)
-            return this;
-        return new PyMethod(container, this, wherefound);
-    }
-
-    public boolean _doset(PyObject container) {
-        throw Py.TypeError("java function not settable: "+__name__);
+        // NOTE: this calledStatically business is pretty hacky
+        if (container == null) {
+            return calledStatically ? this : copyWithCalledStatically(true);
+        }
+        return new PyMethod(calledStatically ? copyWithCalledStatically(false) : this,
+                            container, wherefound);
     }
 
     private ReflectedArgs makeArgs(Method m) {
-        return new ReflectedArgs(m, m.getParameterTypes(),
-                                 m.getDeclaringClass(),
-                                 Modifier.isStatic(m.getModifiers()));
+        return new ReflectedArgs(m,
+                m.getParameterTypes(),
+                m.getDeclaringClass(),
+                Modifier.isStatic(m.getModifiers()),
+                m.isVarArgs());
     }
 
     public PyReflectedFunction copy() {
@@ -54,187 +70,184 @@ public class PyReflectedFunction extends PyObject
         return func;
     }
 
+    private PyReflectedFunction copyWithCalledStatically(boolean calledStatically) {
+        PyReflectedFunction copy = copy();
+        copy.calledStatically = calledStatically;
+        return copy;
+    }
+
     public boolean handles(Method method) {
         return handles(makeArgs(method));
     }
 
     protected boolean handles(ReflectedArgs args) {
-        ReflectedArgs[] argsl = argslist;
-        int n = nargs;
-        for(int i=0; i<n; i++) {
-            int cmp = args.compareTo(argsl[i]);
-            if (cmp == 0)
+        for (int i = 0; i < nargs; i++) {
+            int cmp = args.compareTo(argslist[i]);
+            if (cmp == 0) {
                 return true;
-            if (cmp == +1)
+            } else if (cmp == 1) {
                 return false;
+            }
         }
         return false;
     }
 
     public void addMethod(Method m) {
-        int mods = m.getModifiers();
         // Only add public methods unless we're overriding
-        if (!Modifier.isPublic(mods) && !JavaAccessibility.accessIsMutable())
+        if (!Modifier.isPublic(m.getModifiers()) && Options.respectJavaAccessibility) {
             return;
+        }
+        if (isPackagedProtected(m.getDeclaringClass())) {
+            /*
+            * Set public methods on package protected classes accessible so that reflected calls to
+            * the method in subclasses of the package protected class will succeed. Yes, it's
+            * convoluted.
+            *
+            * This fails when done through reflection due to Sun JVM bug
+            * 4071957(http://tinyurl.com/le9vo). 4533479 actually describes the problem we're
+            * seeing, but there are a bevy of reflection bugs that stem from 4071957. Supposedly
+            * it'll be fixed in Dolphin but it's been promised in every version since Tiger
+            * so don't hold your breath.
+            */
+            try {
+                m.setAccessible(true);
+            } catch (SecurityException se) {
+                // This case is pretty far in the corner, so don't scream if we can't set the method
+                // accessible due to a security manager.  Any calls to it will fail with an
+                // IllegalAccessException, so it'll become visible there.  This way we don't spam
+                // people who aren't calling methods like this from Python with warnings if a
+                // library they're using happens to have a method like this.
+            }
+        }
         addArgs(makeArgs(m));
     }
 
+    public static boolean isPackagedProtected(Class<?> c) {
+        int mods = c.getModifiers();
+        return !(Modifier.isPublic(mods) || Modifier.isPrivate(mods) || Modifier.isProtected(mods));
+    }
+
     protected void addArgs(ReflectedArgs args) {
-        ReflectedArgs[] argsl = argslist;
-        int n = nargs;
         int i;
-        for(i=0; i<n; i++) {
-            int cmp = args.compareTo(argsl[i]);
-            if (cmp == 0)
+        for (i = 0; i < nargs; i++) {
+            int cmp = args.compareTo(argslist[i]);
+            if (cmp == 0) {
                 return;
-            if (cmp == ReflectedArgs.REPLACE) {
-                argsl[i] = args;
+            } else if (cmp == ReflectedArgs.REPLACE) {
+                argslist[i] = args;
                 return;
-            }
-            if (cmp == -1)
+            } else if (cmp == -1) {
                 break;
+            }
         }
-
-        int nn = n+1;
-        if (nn > argsl.length) {
-            argsl = new ReflectedArgs[nn+2];
-            System.arraycopy(argslist, 0, argsl, 0, n);
-            argslist = argsl;
+        int nn = nargs + 1;
+        if (nn > argslist.length) {
+            ReflectedArgs[] newargslist = new ReflectedArgs[nn + 2];
+            System.arraycopy(argslist, 0, newargslist, 0, nargs);
+            argslist = newargslist;
         }
-
-        for(int j=n; j>i; j--) {
-            argsl[j] = argsl[j-1];
+        for (int j = nargs; j > i; j--) {
+            argslist[j] = argslist[j - 1];
         }
-
-        argsl[i] = args;
+        argslist[i] = args;
         nargs = nn;
     }
 
-    public PyObject __call__(PyObject self, PyObject[] args,
-                             String[] keywords)
-    {
+    @Override
+    public PyObject __call__(PyObject self, PyObject[] args, String[] keywords) {
         ReflectedCallData callData = new ReflectedCallData();
-        Object method = null;
-
-        ReflectedArgs[] argsl = argslist;
-        int n = nargs;
-        for (int i=0; i<n; i++) {
-            ReflectedArgs rargs = argsl[i];
-            //System.err.println(rargs.toString());
-            if (rargs.matches(self, args, keywords, callData)) {
-                method = rargs.data;
-                break;
+        ReflectedArgs match = null;
+        for (int i = 0; i < nargs && match == null; i++) {
+            // System.err.println(rargs.toString());
+            if (argslist[i].matches(self, args, keywords, callData)) {
+                match = argslist[i];
             }
         }
-        if (method == null) {
-            throwError(callData.errArg, args.length, self != null,
-                       keywords.length != 0);
+        if (match == null) {
+            throwError(callData.errArg, args.length, self != null, keywords.length != 0);
         }
-
         Object cself = callData.self;
-        Method m = (Method)method;        
-        // Check to see if we should be using a super__ method instead
-        // This is probably a bit inefficient...
-        if (self == null && cself != null && cself instanceof PyProxy &&
-                   !__name__.startsWith("super__")) {                       
-            PyInstance iself = ((PyProxy)cself)._getPyInstance();
-            if (argslist[0].declaringClass != iself.instclass.proxyClass) {
-                String mname = ("super__"+__name__);
-                // xxx experimental
-                Method[] super__methods = (Method[])iself.instclass.super__methods.get(mname);
-                if (super__methods != null) {
-                    Class[] msig = m.getParameterTypes();
-                    for (int i=0; i<super__methods.length;i++) {
-                        if (java.util.Arrays.equals(msig,super__methods[i].getParameterTypes())) {
-                            m = super__methods[i];
-                            break;
-                        }
-                    }
-                }
-                /* xxx this way it is slow!
-                Method super_method = null;
-                try {
-                    super_method = cself.getClass().getMethod(mname,m.getParameterTypes());
-                } catch(NoSuchMethodException e) { // ??? more stuff to ignore?
-                }
-                if (super_method != null) {
-                    m = super_method;
-                }*/
-                /* xxx original              
-                PyJavaClass jc = PyJavaClass.lookup(iself.__class__.proxyClass);
-                PyObject super__ = jc.__findattr__(mname.intern());
-                if (super__ != null) {
-                    return super__.__call__(self, args, keywords);
-                }*/
+        Method m = (Method)match.data;
+
+        // If this is a direct call to a Java class instance method with a PyProxy instance as the
+        // arg, use the super__ version to actually route this through the method on the class.
+        if (self == null && cself != null && cself instanceof PyProxy
+                && !__name__.startsWith("super__")
+                && match.declaringClass != cself.getClass()) {
+            String mname = ("super__" + __name__);
+            try {
+                m = cself.getClass().getMethod(mname, m.getParameterTypes());
+            } catch (Exception e) {
+                throw Py.JavaError(e);
             }
         }
+        Object o;
         try {
-
-            Object o = m.invoke(cself, callData.getArgsArray());
-            return Py.java2py(o);
+            o = m.invoke(cself, callData.getArgsArray());
         } catch (Throwable t) {
             throw Py.JavaError(t);
         }
+        return Py.java2py(o);
     }
 
+    @Override
     public PyObject __call__(PyObject[] args, String[] keywords) {
-        return __call__(null, args, keywords);
+        PyObject self;
+        if (calledStatically) {
+            self = null;
+        } else {
+            PyObject[] unboundArgs = new PyObject[args.length - 1];
+            System.arraycopy(args, 1, unboundArgs, 0, unboundArgs.length);
+            self = args[0];
+            args = unboundArgs;
+        }
+        return __call__(self, args, keywords);
     }
 
     // A bunch of code to make error handling prettier
-
-
     protected void throwError(String message) {
-        throw Py.TypeError(__name__+"(): "+message);
+        throw Py.TypeError(__name__ + "(): " + message);
     }
 
-    private static void addRange(StringBuffer buf, int min, int max,
-                                 String sep)
-    {
+    private static void addRange(StringBuilder buf, int min, int max, String sep) {
         if (buf.length() > 0) {
             buf.append(sep);
         }
         if (min < max) {
-            buf.append(Integer.toString(min)+"-"+max);
+            buf.append(Integer.toString(min)).append('-').append(max);
         } else {
             buf.append(min);
         }
     }
-
 
     protected void throwArgCountError(int nArgs, boolean self) {
         // Assume no argument lengths greater than 40...
         boolean[] legalArgs = new boolean[40];
         int maxArgs = -1;
         int minArgs = 40;
-
-        ReflectedArgs[] argsl = argslist;
-        int n = nargs;
-        for (int i=0; i<n; i++) {
-            ReflectedArgs rargs = argsl[i];
-
+        for (int i = 0; i < nargs; i++) {
+            ReflectedArgs rargs = argslist[i];
             int l = rargs.args.length;
             if (!self && !rargs.isStatic) {
                 l += 1;
             }
-
             legalArgs[l] = true;
-            if (l > maxArgs)
+            if (l > maxArgs) {
                 maxArgs = l;
-            if (l < minArgs)
+            }
+            if (l < minArgs) {
                 minArgs = l;
+            }
         }
-
-        StringBuffer buf = new StringBuffer();
-
+        StringBuilder buf = new StringBuilder();
         int startRange = minArgs;
-        int a = minArgs+1;
+        int a = minArgs + 1;
         while (a < maxArgs) {
             if (legalArgs[a]) {
                 a++;
                 continue;
             } else {
-                addRange(buf, startRange, a-1, ", ");
+                addRange(buf, startRange, a - 1, ", ");
                 a++;
                 while (a <= maxArgs) {
                     if (legalArgs[a]) {
@@ -246,107 +259,80 @@ public class PyReflectedFunction extends PyObject
             }
         }
         addRange(buf, startRange, maxArgs, " or ");
-        throwError("expected "+buf+" args; got "+nArgs);
+        throwError("expected " + buf + " args; got " + nArgs);
     }
 
     private static String ordinal(int n) {
-        switch(n+1) {
-        case 0:
-            return "self";
-        case 1:
-            return "1st";
-        case 2:
-            return "2nd";
-        case 3:
-            return "3rd";
-        default:
-            return Integer.toString(n+1)+"th";
+        switch(n + 1){
+            case 0:
+                return "self";
+            case 1:
+                return "1st";
+            case 2:
+                return "2nd";
+            case 3:
+                return "3rd";
+            default:
+                return Integer.toString(n + 1) + "th";
         }
     }
 
-    private static String niceName(Class arg) {
+    private static String niceName(Class<?> arg) {
         if (arg == String.class || arg == PyString.class) {
             return "String";
         }
         if (arg.isArray()) {
-            return niceName(arg.getComponentType())+"[]";
+            return niceName(arg.getComponentType()) + "[]";
         }
         return arg.getName();
     }
 
     protected void throwBadArgError(int errArg, int nArgs, boolean self) {
-        Hashtable table = new Hashtable();
-        ReflectedArgs[] argsl = argslist;
-        int n = nargs;
-        for(int i=0; i<n; i++) {
-            ReflectedArgs rargs = argsl[i];
-            Class[] args = rargs.args;
-            int len = args.length;
-            /*if (!args.isStatic && !self) {
-              len = len-1;
-              }*/
+        Set<Class<?>> argTypes = Generic.set();
+        for (int i = 0; i < nargs; i++) {
             // This check works almost all the time.
-            // I'm still a little worried about non-static methods
-            // called with an explict self...
-            if (len == nArgs) {
-                if (errArg == -1) {
-                    table.put(rargs.declaringClass, rargs.declaringClass);
+            // I'm still a little worried about non-static methods called with an explicit self...
+            if (argslist[i].args.length == nArgs ||
+                    (!argslist[i].isStatic && !self && argslist[i].args.length == nArgs - 1)) {
+                if (errArg == ReflectedCallData.UNABLE_TO_CONVERT_SELF) {
+                    argTypes.add(argslist[i].declaringClass);
                 } else {
-                    table.put(args[errArg], args[errArg]);
+                    argTypes.add(argslist[i].args[errArg]);
                 }
             }
         }
-
-        StringBuffer buf = new StringBuffer();
-        Enumeration keys = table.keys();
-        while (keys.hasMoreElements()) {
-            Class arg = (Class)keys.nextElement();
-            String name = niceName(arg);
-            if (keys.hasMoreElements()) {
-                buf.append(name);
-                buf.append(", ");
-            } else {
-                if (buf.length() > 2) {
-                    buf.setLength(buf.length()-2);
-                    buf.append(" or ");
-                }
-                buf.append(name);
-            }
+        StringBuilder buf = new StringBuilder();
+        for (Class<?> arg : argTypes) {
+            buf.append(niceName(arg));
+            buf.append(", ");
         }
-
-        throwError(ordinal(errArg)+" arg can't be coerced to "+buf);
+        if (buf.length() > 2) {
+            buf.setLength(buf.length() - 2);
+        }
+        throwError(ordinal(errArg) + " arg can't be coerced to " + buf);
     }
 
-    protected void throwError(int errArg, int nArgs, boolean self,
-                              boolean keywords)
-    {
-        if (keywords) throwError("takes no keyword arguments");
-
-        if (errArg == -2) {
+    protected void throwError(int errArg, int nArgs, boolean self, boolean keywords) {
+        if (keywords) {
+            throwError("takes no keyword arguments");
+        } else if (errArg == ReflectedCallData.BAD_ARG_COUNT) {
             throwArgCountError(nArgs, self);
+        } else {
+            throwBadArgError(errArg, nArgs, self);
         }
-
-        /*if (errArg == -1) {
-          throwBadArgError(-1);
-          throwError("bad self argument");
-          // Bad declared class
-          }*/
-
-        throwBadArgError(errArg, nArgs, self);
     }
 
     // Included only for debugging purposes...
     public void printArgs() {
-        System.err.println("nargs: "+nargs);
-        for(int i=0; i<nargs; i++) {
+        System.err.println("nargs: " + nargs);
+        for (int i = 0; i < nargs; i++) {
             ReflectedArgs args = argslist[i];
             System.err.println(args.toString());
         }
     }
 
-
+    @Override
     public String toString() {
-        //printArgs();
-        return "<java function "+__name__+" "+Py.idstr(this)+">";
+        return "<java function " + __name__ + " " + Py.idstr(this) + ">";
     }
 }

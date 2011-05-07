@@ -1,28 +1,16 @@
 package org.python.core;
 
+import org.python.expose.ExposedType;
+
 /**
  * base class for jython strings.
  */
-
+@ExposedType(name = "basestring", base = PyObject.class, doc = BuiltinDocs.basestring_doc)
 public abstract class PyBaseString extends PySequence {
-    //~ BEGIN GENERATED REGION -- DO NOT EDIT SEE gexpose.py
-    /* type info */
-
-    public static final String exposed_name="basestring";
-
-    public static final Class exposed_base=PyObject.class;
-
-    public static void typeSetup(PyObject dict,PyType.Newstyle marker) {
-    }
-    //~ END GENERATED REGION -- DO NOT EDIT SEE gexpose.py
-	
-    public PyBaseString() {
-        super();
-    }
+    
+    public static final PyType TYPE = PyType.fromClass(PyBaseString.class);
 
     protected PyBaseString(PyType type) {
         super(type);
     }
 }
-
-
