@@ -931,7 +931,10 @@ import_from
          }
         | i1=import_as_names
          {
-             if ($dotted_name.text.equals("__future__") && $i1.text.equals("print_function")) {
+             String dottedText = $dotted_name.text;
+             String importText = $i1.text;
+             if (dottedText != null && dottedText.equals("__future__") &&
+                 importText != null && importText.equals("print_function")) {
                  printStatement = false;
              }
              stype = new ImportFrom($FROM, actions.makeFromText($d, $dotted_name.names),

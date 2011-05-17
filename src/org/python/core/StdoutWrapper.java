@@ -222,6 +222,8 @@ public class StdoutWrapper extends OutputStream {
                 out.__setattr__("softspace", Py.Zero);
             }
 
+            printToFileObject(out, o);
+
             if (o instanceof PyString) {
                 String s = o.toString();
                 int len = s.length();
@@ -232,8 +234,6 @@ public class StdoutWrapper extends OutputStream {
             } else {
                 out.__setattr__("softspace", space ? Py.One : Py.Zero);
             }
-
-            printToFileObject(out, o);
 
             if (newline) {
                 out.invoke("write", Py.Newline);
