@@ -9,11 +9,14 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
 import org.python.antlr.base.mod;
 import org.python.core.util.RelativeFile;
+
+import org.python.modules._functools._functools;
 
 class BuiltinFunctions extends PyBuiltinFunctionSet {
 
@@ -167,7 +170,7 @@ class BuiltinFunctions extends PyBuiltinFunctionSet {
             case 33:
                 return __builtin__.pow(arg1, arg2);
             case 35:
-                return __builtin__.reduce(arg1, arg2);
+                return _functools.reduce(arg1, arg2);
             case 29:
                 return fancyCall(new PyObject[] {arg1, arg2});
             case 30:
@@ -209,7 +212,7 @@ class BuiltinFunctions extends PyBuiltinFunctionSet {
             case 33:
                 return __builtin__.pow(arg1, arg2, arg3);
             case 35:
-                return __builtin__.reduce(arg1, arg2, arg3);
+                return _functools.reduce(arg1, arg2, arg3);
             case 39:
                 __builtin__.setattr(arg1, arg2, arg3);
                 return Py.None;
@@ -356,6 +359,8 @@ public class __builtin__ {
         dict.__setitem__("sorted", new SortedFunction());
         dict.__setitem__("all", new AllFunction());
         dict.__setitem__("any", new AnyFunction());
+        dict.__setitem__("format", new FormatFunction());
+        dict.__setitem__("print", new PrintFunction());
     }
 
     public static PyObject abs(PyObject o) {
@@ -1298,6 +1303,99 @@ class AnyFunction extends PyBuiltinFunctionNarrow {
             }
         }
         return Py.False;
+    }
+}
+
+class FormatFunction extends PyBuiltinFunctionNarrow {
+    FormatFunction() {
+        super("format", 1, 2,
+              "format(value[, format_spec]) -> string\n\n" +
+              "Returns value.__format__(format_spec)\n" +
+               "format_spec defaults to \"\"");
+    }
+
+    @Override
+    public PyObject __call__(PyObject arg1) {
+        return __call__(arg1, Py.EmptyString);
+    }
+
+    @Override
+    public PyObject __call__(PyObject arg1, PyObject arg2) {
+        return arg1.__format__(arg2);
+    }
+}
+
+class PrintFunction extends PyBuiltinFunction {
+    PrintFunction() {
+
+        super("print",
+              "print(value, ..., sep=' ', end='\\n', file=sys.stdout)\n\n" +
+              "Prints the values to a stream, or to sys.stdout by default.\n" +
+              "Optional keyword arguments:\n" +
+              "file: a file-like object (stream); defaults to the current sys.stdout.\n" +
+              "sep:  string inserted between values, default a space.\n" +
+              "end:  string appended after the last value, default a newline.\n");
+    }
+
+    @Override
+    public PyObject __call__(PyObject args[], String kwds[]) {
+        int kwlen = kwds.length;
+        int argslen = args.length;
+        boolean useUnicode = false;
+        PyObject values[] = new PyObject[argslen - kwlen];
+        System.arraycopy(args, 0, values, 0, argslen - kwlen);
+        PyObject keyValues[] = new PyObject[kwlen];
+        System.arraycopy(args, argslen - kwlen, keyValues, 0, kwlen);
+        ArgParser ap = new ArgParser("print", keyValues, kwds, new String[] {"sep", "end", "file"});
+        for (PyObject keyValue: keyValues) {
+            if (keyValue instanceof PyUnicode) {
+                //If "file" is passed in as PyUnicode, that's OK as it will error later.
+                useUnicode = true;
+            }
+        }
+        String sep = ap.getString(0, null);
+        String end = ap.getString(1, null);
+        PyObject file = ap.getPyObject(2, null);
+        return print(values, sep, end, file, useUnicode);
+    }
+
+    private static PyObject print(PyObject values[], String sep, String end,
+                                  PyObject file, boolean useUnicode) {
+        StdoutWrapper out;
+        if (file != null && file != Py.None) {
+            out = new FixedFileWrapper(file);
+        } else {
+            out = Py.stdout;
+        }
+        if (values.length == 0) {
+            out.println(useUnicode);
+        } else {
+            if (!useUnicode) {
+                for (PyObject value: values) {
+                    if (value instanceof PyUnicode) {
+                        useUnicode = true;
+                        break;
+                    }
+                }
+            }
+
+            PyObject sepObject;
+            if (sep == null) {
+                sepObject = useUnicode ? Py.UnicodeSpace : Py.Space;
+            } else {
+                sepObject = useUnicode ? Py.newUnicode(sep) : Py.newString(sep);
+            }
+
+            PyObject endObject;
+            if (end == null) {
+                endObject = useUnicode ? Py.UnicodeNewline : Py.Newline;
+            } else {
+                endObject = useUnicode ? Py.newUnicode(end) : Py.newString(end);
+            }
+
+            out.print(values, sepObject, endObject); 
+        }
+        return Py.None;
     }
 }
 
