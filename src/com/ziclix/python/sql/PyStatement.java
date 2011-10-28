@@ -144,8 +144,6 @@ public class PyStatement extends PyObject {
      * @param dict
      */
     static public void classDictInit(PyObject dict) {
-        dict.__setitem__("__version__", Py.newString("7290"));
-
         // hide from python
         dict.__setitem__("classDictInit", null);
         dict.__setitem__("statement", null);
