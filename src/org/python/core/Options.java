@@ -76,6 +76,16 @@ public class Options {
      * binary mode */
     public static boolean unbuffered = false;
 
+    /** Whether -3 (py3k warnings) was enabled via the command line. */
+    public static boolean py3kwarning = false;
+    
+    /** Whether -B (don't write bytecode on import) was enabled via the command line. */
+    public static boolean dontWriteBytecode = false;
+
+    //XXX: place holder
+    public static int bytes_warning = 0;
+
+
     /**
      * Enable division warning. The value maps to the registry values of
      * <ul>
