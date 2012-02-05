@@ -123,12 +123,12 @@ svnant.jar.dir=${basedir}/../externals/svnant-jars
         <property name="PY_RELEASE_LEVEL_SNAPSHOT" value="170"/> <!-- 0xAA -->
 
         <!-- The current version info -->
-        <property name="jython.version" value="2.5.2+"/>
-        <property name="jython.version.noplus" value="2.5.2"/>
+        <property name="jython.version" value="2.6a0+"/>
+        <property name="jython.version.noplus" value="2.6a0"/>
         <property name="jython.major_version" value="2"/>
-        <property name="jython.minor_version" value="5"/>
-        <property name="jython.micro_version" value="2"/>
-        <property name="jython.release_level" value="${PY_RELEASE_LEVEL_FINAL}"/>
+        <property name="jython.minor_version" value="6"/>
+        <property name="jython.micro_version" value="0"/>
+        <property name="jython.release_level" value="${PY_RELEASE_LEVEL_ALPHA}"/>
         <property name="jython.release_serial" value="0"/>
 
         <condition property="do.snapshot.build">
@@ -188,6 +188,7 @@ svnant.jar.dir=${basedir}/../externals/svnant-jars
 
             <pathelement path="${extlibs.dir}/asm-3.1.jar" />
             <pathelement path="${extlibs.dir}/asm-commons-3.1.jar" />
+            <pathelement path="${extlibs.dir}/asm-util-3.1.jar" />
             <pathelement path="${extlibs.dir}/constantine.jar" />
             <pathelement path="${extlibs.dir}/guava-r07.jar" />
             <pathelement path="${extlibs.dir}/jaffl.jar"/>
@@ -219,6 +220,7 @@ svnant.jar.dir=${basedir}/../externals/svnant-jars
         <path id="test.classpath">
             <path refid="main.classpath"/>
             <pathelement path="${extlibs.dir}/asm-commons-3.1.jar" />
+            <pathelement path="${extlibs.dir}/asm-util-3.1.jar" />
             <pathelement path="${extlibs.dir}/junit-3.8.2.jar" />
             <pathelement path="${exposed.dir}" />
             <pathelement path="${compile.dir}" />
