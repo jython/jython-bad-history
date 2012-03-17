@@ -434,7 +434,7 @@ public class PyComplex extends PyObject {
         if (!canCoerce(right)) {
             return null;
         }
-        if (Options.divisionWarning >= 2) {
+        if (Options.division_warning >= 2) {
             Py.warning(Py.DeprecationWarning, "classic complex division");
         }
         return _div(this, coerce(right));
@@ -450,7 +450,7 @@ public class PyComplex extends PyObject {
         if (!canCoerce(left)) {
             return null;
         }
-        if (Options.divisionWarning >= 2) {
+        if (Options.division_warning >= 2) {
             Py.warning(Py.DeprecationWarning, "classic complex division");
         }
         return _div(coerce(left), this);
@@ -707,10 +707,7 @@ public class PyComplex extends PyObject {
 
     @ExposedMethod(doc = BuiltinDocs.complex___pos___doc)
     final PyObject complex___pos__() {
-        if (getType() == TYPE) {
-            return this;
-        }
-        return new PyComplex(real, imag);
+        return getType() == TYPE ? this : new PyComplex(real, imag);
     }
 
     @Override

@@ -1,6 +1,7 @@
 
 package org.python.modules.jffi;
 
+import com.kenai.jffi.CallingConvention;
 import org.python.core.Py;
 import org.python.core.PyList;
 import org.python.core.PyNewWrapper;
@@ -22,9 +23,12 @@ public class Function extends BasePointer implements Pointer {
 
     private final PyStringMap dict = new PyStringMap();
 
-    private volatile PyObject restype = Py.None;
+    private volatile PyObject restype = CType.INT;
     private volatile PyObject[] argtypes = null;
-    private Invoker invoker = null;
+    private Invoker defaultInvoker;
+    private Invoker compiledInvoker;
+    private volatile JITHandle jitHandle;
+    private volatile com.kenai.jffi.Function jffiFunction;
 
     @ExposedGet
     public PyObject errcheck = Py.None;
@@ -102,6 +106,11 @@ public class Function extends BasePointer implements Pointer {
         return getInvoker().invoke(arg0, arg1, arg2);
     }
 
+    @Override
+    public PyObject __call__(PyObject arg0, PyObject arg1, PyObject arg2, PyObject arg3) {
+        return getInvoker().invoke(arg0, arg1, arg2, arg3);
+    }
+
 
     @ExposedGet(name = "restype")
     public PyObject getResultType() {
@@ -110,7 +119,7 @@ public class Function extends BasePointer implements Pointer {
 
     @ExposedSet(name = "restype")
     public void setResultType(PyObject restype) {
-        this.invoker = null; // invalidate old invoker
+        invalidateInvoker();
         this.restype = restype;
     }
 
@@ -121,7 +130,7 @@ public class Function extends BasePointer implements Pointer {
 
     @ExposedSet(name = "argtypes")
     public void setArgTypes(PyObject parameterTypes) {
-        this.invoker = null; // invalidate old invoker
+        invalidateInvoker();
 
         // Removing the parameter types defaults back to varargs
         if (parameterTypes == Py.None) {
@@ -142,7 +151,7 @@ public class Function extends BasePointer implements Pointer {
 
     @ExposedSet(name = "errcheck")
     public void errcheck(PyObject errcheck) {
-        this.invoker = null; // invalidate old invoker
+        invalidateInvoker();
         this.errcheck = errcheck;
     }
     @Override
@@ -150,36 +159,69 @@ public class Function extends BasePointer implements Pointer {
         return !getMemory().isNull();
     }
 
-    private final Invoker getInvoker() {
-        if (invoker != null) {
-            return invoker;
-        }
-        return createInvoker();
+    protected final Invoker getInvoker() {
+        return compiledInvoker != null ? compiledInvoker : tryCompilation();
     }
 
-    private synchronized final Invoker createInvoker() {
+    private synchronized Invoker tryCompilation() {
+        if (compiledInvoker != null) {
+            return compiledInvoker;
+        }
+
         if (argtypes == null) {
             throw Py.NotImplementedError("variadic functions not supported yet;  specify a parameter list");
         }
 
-        com.kenai.jffi.Type jffiReturnType = Util.jffiType(CType.typeOf(restype));
-        com.kenai.jffi.Type[] jffiParamTypes = new com.kenai.jffi.Type[argtypes.length];
-        for (int i = 0; i < jffiParamTypes.length; ++i) {
-            jffiParamTypes[i] = Util.jffiType(CType.typeOf(argtypes[i]));
-        }
-        com.kenai.jffi.Function jffiFunction = new com.kenai.jffi.Function(getMemory().getAddress(), jffiReturnType, jffiParamTypes);
-
-        Invoker i;
-        if (FastIntInvokerFactory.getFactory().isFastIntMethod(restype, argtypes)) {
-            i = FastIntInvokerFactory.getFactory().createInvoker(jffiFunction, restype, argtypes);
-        } else {
-            i = DefaultInvokerFactory.getFactory().createInvoker(jffiFunction, restype, argtypes);
+        CType cResultType = CType.typeOf(restype);
+        CType[] cParameterTypes = new CType[argtypes.length];
+        for (int i = 0; i < cParameterTypes.length; i++) {
+            cParameterTypes[i] = CType.typeOf(argtypes[i]);
         }
 
-        return invoker = errcheck != Py.None ? new ErrCheckInvoker(i, errcheck) : i;
+        if (jitHandle == null) {
+            jitHandle = JITCompiler.getInstance().getHandle(cResultType, cParameterTypes, CallingConvention.DEFAULT, false);
+        }
+
+        if (jffiFunction == null) {
+            com.kenai.jffi.Type jffiReturnType = Util.jffiType(cResultType);
+            com.kenai.jffi.Type[] jffiParamTypes = new com.kenai.jffi.Type[argtypes.length];
+
+            for (int i = 0; i < jffiParamTypes.length; ++i) {
+                jffiParamTypes[i] = Util.jffiType(cParameterTypes[i]);
+            }
+
+            jffiFunction = new com.kenai.jffi.Function(getMemory().getAddress(), jffiReturnType, jffiParamTypes);
+        }
+
+        if (defaultInvoker == null) {
+            Invoker invoker = DefaultInvokerFactory.getFactory().createInvoker(jffiFunction, restype, argtypes);
+            defaultInvoker = errcheck != Py.None ? new ErrCheckInvoker(invoker, errcheck) : invoker;
+        }
+
+        Invoker invoker = jitHandle.compile(jffiFunction, null, new NativeDataConverter[0]);
+        if (invoker != null) {
+            return compiledInvoker = errcheck != Py.None ? new ErrCheckInvoker(invoker, errcheck) : invoker;
+        }
+
+        //
+        // Once compilation has failed, always fallback to the default invoker
+        //
+        if (jitHandle.compilationFailed()) {
+            compiledInvoker = defaultInvoker;
+        }
+
+        return defaultInvoker;
     }
 
-    private static final class ErrCheckInvoker implements Invoker {
+    private synchronized void invalidateInvoker() {
+        // null out the invoker - it will be regenerated on next invocation
+        this.defaultInvoker = null;
+        this.compiledInvoker = null;
+        this.jitHandle = null;
+        this.jffiFunction = null;
+    }
+
+    private static final class ErrCheckInvoker extends Invoker {
         private final Invoker invoker;
         private final PyObject errcheck;
 
@@ -206,6 +248,18 @@ public class Function extends BasePointer implements Pointer {
 
         public PyObject invoke(PyObject arg1, PyObject arg2, PyObject arg3) {
             return errcheck.__call__(invoker.invoke(arg1, arg2, arg3));
+        }
+
+        public PyObject invoke(PyObject arg1, PyObject arg2, PyObject arg3, PyObject arg4) {
+            return errcheck.__call__(invoker.invoke(arg1, arg2, arg3, arg4));
+        }
+
+        public PyObject invoke(PyObject arg1, PyObject arg2, PyObject arg3, PyObject arg4, PyObject arg5) {
+            return errcheck.__call__(invoker.invoke(arg1, arg2, arg3, arg4, arg5));
+        }
+
+        public PyObject invoke(PyObject arg1, PyObject arg2, PyObject arg3, PyObject arg4, PyObject arg5, PyObject arg6) {
+            return errcheck.__call__(invoker.invoke(arg1, arg2, arg3, arg4, arg5, arg6));
         }
     }
 }
