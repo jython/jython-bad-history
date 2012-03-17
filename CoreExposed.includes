@@ -26,6 +26,7 @@ org/python/core/PyInstance.class
 org/python/core/PyInteger.class
 org/python/core/PyList.class
 org/python/core/PyLong.class
+org/python/core/PyMemoryView.class
 org/python/core/PyMethod.class
 org/python/core/PyMethodDescr.class
 org/python/core/PyModule.class
@@ -44,6 +45,8 @@ org/python/core/PyTuple.class
 org/python/core/PyType.class
 org/python/core/PyUnicode.class
 org/python/core/PyXRange.class
+org/python/core/stringlib/MarkupIterator.class
+org/python/core/stringlib/FieldNameIterator.class
 org/python/modules/PyStruct.class
 org/python/modules/PyTeeIterator.class
 org/python/jsr223/PyScriptEngineScope.class
@@ -53,6 +56,7 @@ org/python/modules/_collections/PyDeque.class
 org/python/modules/_csv/PyDialect.class
 org/python/modules/_csv/PyReader.class
 org/python/modules/_csv/PyWriter.class
+org/python/modules/_fileio/PyFileIO.class
 org/python/modules/_functools/PyPartial.class
 org/python/modules/_hashlib$Hash.class
 org/python/modules/jffi/ArrayCData.class
