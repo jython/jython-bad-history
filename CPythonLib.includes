@@ -6,18 +6,24 @@ compiler/**
 distutils/**
 email/**
 encodings/**
+importlib/*
 logging/*
 test/**
+unittest/**
 xml/etree/**
+json/**
 
 # Lib files, in alphabetical order:
 __future__.py
 _LWPCookieJar.py
 _MozillaCookieJar.py
+_pyio.py
 _strptime.py
 _threading_local.py
 aifc.py
 anydbm.py
+argparse.py
+ast.py
 atexit.py
 asynchat.py
 BaseHTTPServer.py
@@ -35,6 +41,7 @@ cmp.py
 cmpcache.py
 code.py
 codecs.py
+collections.py
 colorsys.py
 commands.py
 compileall.py
@@ -58,8 +65,10 @@ exceptions.py
 fnmatch.py
 formatter.py
 fpformat.py
+fractions.py
 ftplib.py
 functools.py
+genericpath.py
 getopt.py
 glob.py
 gopherlib.py
@@ -73,6 +82,7 @@ httplib.py
 ihooks.py
 imaplib.py
 imghdr.py
+io.py
 keyword.py
 linecache.py
 locale.py
@@ -90,6 +100,7 @@ modulefinder.py
 multifile.py
 mutex.py
 nntplib.py
+numbers.py
 nturl2path.py
 opcode.py
 optparse.py
@@ -97,12 +108,14 @@ pdb.py
 pickle.py
 pickletools.py
 pipes.py
+plistlib.py
 poplib.py
 posixfile.py
 pprint.py
 profile.py
 pstats.py
 pyclbr.py
+pydoc_topics.py
 Queue.py
 quopri.py
 random.py
@@ -131,6 +144,7 @@ stat.py
 string.py
 StringIO.py
 symbol.py
+sysconfig.py
 tabnanny.py
 this.py
 textwrap.py
@@ -140,7 +154,6 @@ tokenize.py
 trace.py
 traceback.py
 tzparse.py
-unittest.py
 urllib2.py
 urlparse.py
 user.py
@@ -148,6 +161,7 @@ UserDict.py
 UserList.py
 UserString.py
 uuid.py
+warnings.py
 whichdb.py
 whrandom.py
 wsgiref.egg-info
