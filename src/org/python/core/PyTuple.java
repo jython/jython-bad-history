@@ -1,563 +1,363 @@
 // Copyright (c) Corporation for National Research Initiatives
 package org.python.core;
 
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.ArrayList;
 import java.util.ListIterator;
+
+import java.lang.reflect.Array;
+
+import org.python.expose.ExposedMethod;
+import org.python.expose.ExposedNew;
+import org.python.expose.ExposedType;
+import org.python.expose.MethodType;
 
 /**
  * A builtin python tuple.
  */
+@ExposedType(name = "tuple", base = PyObject.class, doc = BuiltinDocs.tuple_doc)
+public class PyTuple extends PySequenceList implements List {
 
-public class PyTuple extends PySequenceList implements ClassDictInit
-{
+    public static final PyType TYPE = PyType.fromClass(PyTuple.class);
 
-    /** <i>Internal use only. Do not call this method explicit.</i> */
-    public static void classDictInit(PyObject dict)throws PyIgnoreMethodTag {}
-    //~ BEGIN GENERATED REGION -- DO NOT EDIT SEE gexpose.py
-    /* type info */
+    private final PyObject[] array;
 
-    public static final String exposed_name="tuple";
+    private volatile List<PyObject> cachedList = null;
 
-    public static final Class exposed_base=PyObject.class;
-
-    public static void typeSetup(PyObject dict,PyType.Newstyle marker) {
-        class exposed___ne__ extends PyBuiltinMethodNarrow {
-
-            exposed___ne__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___ne__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyTuple)self).tuple___ne__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__ne__",new PyMethodDescr("__ne__",PyTuple.class,1,1,new exposed___ne__(null,null)));
-        class exposed___eq__ extends PyBuiltinMethodNarrow {
-
-            exposed___eq__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___eq__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyTuple)self).tuple___eq__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__eq__",new PyMethodDescr("__eq__",PyTuple.class,1,1,new exposed___eq__(null,null)));
-        class exposed___lt__ extends PyBuiltinMethodNarrow {
-
-            exposed___lt__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___lt__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyTuple)self).tuple___lt__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__lt__",new PyMethodDescr("__lt__",PyTuple.class,1,1,new exposed___lt__(null,null)));
-        class exposed___le__ extends PyBuiltinMethodNarrow {
-
-            exposed___le__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___le__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyTuple)self).tuple___le__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__le__",new PyMethodDescr("__le__",PyTuple.class,1,1,new exposed___le__(null,null)));
-        class exposed___gt__ extends PyBuiltinMethodNarrow {
-
-            exposed___gt__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___gt__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyTuple)self).tuple___gt__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__gt__",new PyMethodDescr("__gt__",PyTuple.class,1,1,new exposed___gt__(null,null)));
-        class exposed___ge__ extends PyBuiltinMethodNarrow {
-
-            exposed___ge__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___ge__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyTuple)self).tuple___ge__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__ge__",new PyMethodDescr("__ge__",PyTuple.class,1,1,new exposed___ge__(null,null)));
-        class exposed___add__ extends PyBuiltinMethodNarrow {
-
-            exposed___add__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___add__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyTuple)self).tuple___add__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__add__",new PyMethodDescr("__add__",PyTuple.class,1,1,new exposed___add__(null,null)));
-        class exposed___mul__ extends PyBuiltinMethodNarrow {
-
-            exposed___mul__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___mul__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyTuple)self).tuple___mul__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__mul__",new PyMethodDescr("__mul__",PyTuple.class,1,1,new exposed___mul__(null,null)));
-        class exposed___rmul__ extends PyBuiltinMethodNarrow {
-
-            exposed___rmul__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___rmul__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyTuple)self).tuple___rmul__(arg0);
-                if (ret==null)
-                    return Py.NotImplemented;
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__rmul__",new PyMethodDescr("__rmul__",PyTuple.class,1,1,new exposed___rmul__(null,null)));
-        class exposed___getitem__ extends PyBuiltinMethodNarrow {
-
-            exposed___getitem__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___getitem__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject ret=((PyTuple)self).seq___finditem__(arg0);
-                if (ret==null) {
-                    throw Py.IndexError("index out of range: "+arg0);
-                }
-                return ret;
-            }
-
-        }
-        dict.__setitem__("__getitem__",new PyMethodDescr("__getitem__",PyTuple.class,1,1,new exposed___getitem__(null,null)));
-        class exposed___getslice__ extends PyBuiltinMethodNarrow {
-
-            exposed___getslice__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___getslice__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0,PyObject arg1,PyObject arg2) {
-                return((PyTuple)self).seq___getslice__(arg0,arg1,arg2);
-            }
-
-            public PyObject __call__(PyObject arg0,PyObject arg1) {
-                return((PyTuple)self).seq___getslice__(arg0,arg1);
-            }
-
-        }
-        dict.__setitem__("__getslice__",new PyMethodDescr("__getslice__",PyTuple.class,2,3,new exposed___getslice__(null,null)));
-        class exposed___contains__ extends PyBuiltinMethodNarrow {
-
-            exposed___contains__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___contains__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                return Py.newBoolean(((PyTuple)self).tuple___contains__(arg0));
-            }
-
-        }
-        dict.__setitem__("__contains__",new PyMethodDescr("__contains__",PyTuple.class,1,1,new exposed___contains__(null,null)));
-        class exposed___len__ extends PyBuiltinMethodNarrow {
-
-            exposed___len__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___len__(self,info);
-            }
-
-            public PyObject __call__() {
-                return Py.newInteger(((PyTuple)self).tuple___len__());
-            }
-
-        }
-        dict.__setitem__("__len__",new PyMethodDescr("__len__",PyTuple.class,0,0,new exposed___len__(null,null)));
-        class exposed___reduce__ extends PyBuiltinMethodNarrow {
-
-            exposed___reduce__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___reduce__(self,info);
-            }
-
-            public PyObject __call__() {
-                return((PyTuple)self).tuple___reduce__();
-            }
-
-        }
-        dict.__setitem__("__reduce__",new PyMethodDescr("__reduce__",PyTuple.class,0,0,new exposed___reduce__(null,null)));
-        class exposed___hash__ extends PyBuiltinMethodNarrow {
-
-            exposed___hash__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___hash__(self,info);
-            }
-
-            public PyObject __call__() {
-                return Py.newInteger(((PyTuple)self).tuple_hashCode());
-            }
-
-        }
-        dict.__setitem__("__hash__",new PyMethodDescr("__hash__",PyTuple.class,0,0,new exposed___hash__(null,null)));
-        class exposed___repr__ extends PyBuiltinMethodNarrow {
-
-            exposed___repr__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___repr__(self,info);
-            }
-
-            public PyObject __call__() {
-                return new PyString(((PyTuple)self).tuple_toString());
-            }
-
-        }
-        dict.__setitem__("__repr__",new PyMethodDescr("__repr__",PyTuple.class,0,0,new exposed___repr__(null,null)));
-        dict.__setitem__("__new__",new PyNewWrapper(PyTuple.class,"__new__",-1,-1) {
-
-                                                                                       public PyObject new_impl(boolean init,PyType subtype,PyObject[]args,String[]keywords) {
-                                                                                           return tuple_new(this,init,subtype,args,keywords);
-                                                                                       }
-
-                                                                                   });
-    }
-    //~ END GENERATED REGION -- DO NOT EDIT SEE gexpose.py
-
-    private static final PyType TUPLETYPE = PyType.fromClass(PyTuple.class);
+    private static final PyTuple EMPTY_TUPLE = new PyTuple();
 
     public PyTuple() {
-        this(TUPLETYPE, Py.EmptyObjects);
+        this(TYPE, Py.EmptyObjects);
     }
 
-    public PyTuple(PyObject[] elements) {
-        this(TUPLETYPE, elements);
+    public PyTuple(PyObject... elements) {
+        this(TYPE, elements);
     }
 
     public PyTuple(PyType subtype, PyObject[] elements) {
-        super(subtype, elements);
+        super(subtype);
+        if (elements == null) {
+            array = new PyObject[0];
+        } else {
+            array = new PyObject[elements.length];
+            System.arraycopy(elements, 0, array, 0, elements.length);
+        }
     }
 
+    public PyTuple(PyObject[] elements, boolean copy) {
+        this(TYPE, elements, copy);
+    }
+
+    public PyTuple(PyType subtype, PyObject[] elements, boolean copy) {
+        super(subtype);
+
+        if (copy) {
+            array = new PyObject[elements.length];
+            System.arraycopy(elements, 0, array, 0, elements.length);
+        } else {
+            array = elements;
+        }
+    }
+
+    private static PyTuple fromArrayNoCopy(PyObject[] elements) {
+        return new PyTuple(elements, false);
+    }
+
+    List<PyObject> getList() {
+        if (cachedList == null) {
+            cachedList = Arrays.asList(array);
+        }
+        return cachedList;
+    }
+
+    @ExposedNew
     final static PyObject tuple_new(PyNewWrapper new_, boolean init, PyType subtype,
-            PyObject[] args, String[] keywords) {
-        ArgParser ap = new ArgParser("tuple", args, keywords, new String[] { "sequence" }, 0);
+                                    PyObject[] args, String[] keywords) {
+        ArgParser ap = new ArgParser("tuple", args, keywords, new String[] {"sequence"}, 0);
         PyObject S = ap.getPyObject(0, null);
         if (new_.for_type == subtype) {
             if (S == null) {
-                return new PyTuple();
+                return EMPTY_TUPLE;
             }
             if (S instanceof PyTupleDerived) {
-                return new PyTuple(((PyTuple)S).getArray());
+                return new PyTuple(((PyTuple) S).getArray());
             }
             if (S instanceof PyTuple) {
                 return S;
             }
-            PyObject iter = S.__iter__();
-            // it's not always possible to know the length of the iterable
-            ArrayList a = new ArrayList(10);
-            for (PyObject item = null; (item = iter.__iternext__()) != null; ) {
-                a.add(item);
-            }
-            return new PyTuple((PyObject[])a.toArray(new PyObject[a.size()]));
+            return fromArrayNoCopy(Py.make_array(S));
         } else {
             if (S == null) {
                 return new PyTupleDerived(subtype, Py.EmptyObjects);
             }
-            PyObject iter = S.__iter__();
-            // it's not always possible to know the length of the iterable
-            ArrayList a = new ArrayList(10);
-            for (PyObject item = null; (item = iter.__iternext__()) != null; ) {
-                a.add(item);
-            }
-            return new PyTupleDerived(subtype, (PyObject[])a.toArray(new PyObject[a.size()]));
+            return new PyTupleDerived(subtype, Py.make_array(S));
         }
     }
 
-    public String safeRepr() throws PyIgnoreMethodTag {
-        return "'tuple' object";
+    /**
+     * Return a new PyTuple from an iterable.
+     *
+     * Raises a TypeError if the object is not iterable.
+     *
+     * @param iterable an iterable PyObject
+     * @return a PyTuple containing each item in the iterable
+     */
+    public static PyTuple fromIterable(PyObject iterable) {
+        return fromArrayNoCopy(Py.make_array(iterable));
     }
 
     protected PyObject getslice(int start, int stop, int step) {
-        if (step > 0 && stop < start)
+        if (step > 0 && stop < start) {
             stop = start;
+        }
         int n = sliceLength(start, stop, step);
         PyObject[] newArray = new PyObject[n];
-        PyObject[] array = getArray();
 
         if (step == 1) {
-            System.arraycopy(array, start, newArray, 0, stop-start);
-            return new PyTuple(newArray);
+            System.arraycopy(array, start, newArray, 0, stop - start);
+            return fromArrayNoCopy(newArray);
         }
-        int j = 0;
-        for (int i=start; j<n; i+=step) {
+        for (int i = start, j = 0; j < n; i += step, j++) {
             newArray[j] = array[i];
-            j++;
         }
-        return new PyTuple(newArray);
+        return fromArrayNoCopy(newArray);
     }
 
     protected PyObject repeat(int count) {
-
-        PyObject[] array = getArray();
-        int l = size();
-        PyObject[] newArray = new PyObject[l*count];
-        for (int i=0; i<count; i++) {
-            System.arraycopy(array, 0, newArray, i*l, l);
+        if (count < 0) {
+            count = 0;
         }
-        return new PyTuple(newArray);
+        int size = size();
+        if (size == 0 || count == 1) {
+            if (getType() == TYPE) {
+                // Since tuples are immutable, we can return a shared copy in this case
+                return this;
+            }
+            if (size == 0) {
+                return EMPTY_TUPLE;
+            }
+        }
+
+        int newSize = size * count;
+        if (newSize / size != count) {
+            throw Py.MemoryError("");
+        }
+
+        PyObject[] newArray = new PyObject[newSize];
+        for (int i = 0; i < count; i++) {
+            System.arraycopy(array, 0, newArray, i * size, size);
+        }
+        return fromArrayNoCopy(newArray);
     }
 
+    @Override
     public int __len__() {
         return tuple___len__();
     }
 
+    @ExposedMethod(doc = BuiltinDocs.tuple___len___doc)
     final int tuple___len__() {
         return size();
     }
 
+    @ExposedMethod(doc = BuiltinDocs.tuple___contains___doc)
     final boolean tuple___contains__(PyObject o) {
         return super.__contains__(o);
     }
 
+    @ExposedMethod(type = MethodType.BINARY, doc = BuiltinDocs.tuple___ne___doc)
     final PyObject tuple___ne__(PyObject o) {
         return super.__ne__(o);
     }
 
+    @ExposedMethod(type = MethodType.BINARY, doc = BuiltinDocs.tuple___eq___doc)
     final PyObject tuple___eq__(PyObject o) {
         return super.__eq__(o);
     }
 
+    @ExposedMethod(type = MethodType.BINARY, doc = BuiltinDocs.tuple___gt___doc)
     final PyObject tuple___gt__(PyObject o) {
         return super.__gt__(o);
     }
 
+    @ExposedMethod(type = MethodType.BINARY, doc = BuiltinDocs.tuple___ge___doc)
     final PyObject tuple___ge__(PyObject o) {
         return super.__ge__(o);
     }
 
+    @ExposedMethod(type = MethodType.BINARY, doc = BuiltinDocs.tuple___lt___doc)
     final PyObject tuple___lt__(PyObject o) {
         return super.__lt__(o);
     }
 
+    @ExposedMethod(type = MethodType.BINARY, doc = BuiltinDocs.tuple___le___doc)
     final PyObject tuple___le__(PyObject o) {
         return super.__le__(o);
     }
 
+    @Override
     public PyObject __add__(PyObject generic_other) {
         return tuple___add__(generic_other);
     }
 
+    @ExposedMethod(type = MethodType.BINARY, doc = BuiltinDocs.tuple___add___doc)
     final PyObject tuple___add__(PyObject generic_other) {
         PyTuple sum = null;
         if (generic_other instanceof PyTuple) {
-            PyTuple otherTuple = (PyTuple)generic_other;
-            PyObject[] array = getArray();
-            PyObject[] otherArray = otherTuple.getArray();
-            int thisLen = size();
-            int otherLen = otherTuple.size();
-            PyObject[] newArray = new PyObject[thisLen + otherLen];
-            System.arraycopy(array, 0, newArray, 0, thisLen);
-            System.arraycopy(otherArray, 0, newArray, thisLen, otherLen);
-            sum = new PyTuple(newArray);
+            PyTuple other = (PyTuple) generic_other;
+            PyObject[] newArray = new PyObject[array.length + other.array.length];
+            System.arraycopy(array, 0, newArray, 0, array.length);
+            System.arraycopy(other.array, 0, newArray, array.length, other.array.length);
+            sum = fromArrayNoCopy(newArray);
         }
         return sum;
     }
 
+    @Override
+    public PyObject __mul__(PyObject o) {
+        return tuple___mul__(o);
+    }
+
+    @ExposedMethod(type = MethodType.BINARY, doc = BuiltinDocs.tuple___mul___doc)
     final PyObject tuple___mul__(PyObject o) {
-        if (!(o instanceof PyInteger || o instanceof PyLong))
+        if (!o.isIndex()) {
             return null;
-        int count = ((PyInteger)o.__int__()).getValue();
-        return repeat(count);
+        }
+        return repeat(o.asIndex(Py.OverflowError));
     }
 
+    @Override
+    public PyObject __rmul__(PyObject o) {
+        return tuple___rmul__(o);
+    }
+
+    @ExposedMethod(type = MethodType.BINARY, doc = BuiltinDocs.tuple___rmul___doc)
     final PyObject tuple___rmul__(PyObject o) {
-        if (!(o instanceof PyInteger || o instanceof PyLong))
+        if (!o.isIndex()) {
             return null;
-        int count = ((PyInteger)o.__int__()).getValue();
-        return repeat(count);
+        }
+        return repeat(o.asIndex(Py.OverflowError));
     }
 
-    /**
-     * Used for pickling.
-     *
-     * @return a tuple of (class, tuple)
-     */
-    public PyObject __reduce__() {
-        return tuple___reduce__();
+    @Override
+    public PyObject __iter__() {
+        return tuple___iter__();
     }
 
-    final PyObject tuple___reduce__() {
-        PyTuple newargs = __getnewargs__();
-        return new PyTuple(new PyObject[]{
-            getType(), newargs
-        });
+    @ExposedMethod(doc = BuiltinDocs.tuple___iter___doc)
+    public PyObject tuple___iter__() {
+        return new PyFastSequenceIter(this);
     }
 
+    @ExposedMethod(defaults = "null", doc = BuiltinDocs.tuple___getslice___doc)
+    final PyObject tuple___getslice__(PyObject s_start, PyObject s_stop, PyObject s_step) {
+        return seq___getslice__(s_start, s_stop, s_step);
+    }
+
+    @ExposedMethod(doc = BuiltinDocs.tuple___getitem___doc)
+    final PyObject tuple___getitem__(PyObject index) {
+        PyObject ret = seq___finditem__(index);
+        if (ret == null) {
+            throw Py.IndexError("index out of range: " + index);
+        }
+        return ret;
+    }
+
+    @ExposedMethod(doc = BuiltinDocs.tuple___getnewargs___doc)
+    final PyTuple tuple___getnewargs__() {
+        return new PyTuple(new PyTuple(getArray()));
+    }
+
+    @Override
     public PyTuple __getnewargs__() {
-        return new PyTuple(new PyObject[]
-            {new PyList(list.getArray())}
-        );
+        return tuple___getnewargs__();
     }
 
+    @Override
     public int hashCode() {
-        return tuple_hashCode();
+        return tuple___hash__();
     }
 
-    final int tuple_hashCode() {
-        return super.hashCode();
+    @ExposedMethod(doc = BuiltinDocs.tuple___hash___doc)
+    final int tuple___hash__() {
+        // strengthened hash to avoid common collisions. from CPython
+        // tupleobject.tuplehash. See http://bugs.python.org/issue942952
+        int y;
+        int len = size();
+        int mult = 1000003;
+        int x = 0x345678;
+        while (--len >= 0) {
+            y = array[len].hashCode();
+            x = (x ^ y) * mult;
+            mult += 82520 + len + len;
+        }
+        return x + 97531;
     }
 
     private String subobjRepr(PyObject o) {
-        if (o == null)
+        if (o == null) {
             return "null";
+        }
         return o.__repr__().toString();
     }
 
+    @Override
     public String toString() {
-        return tuple_toString();
+        return tuple___repr__();
     }
 
-    final String tuple_toString() {
-        StringBuffer buf = new StringBuffer("(");
-        PyObject[] array = getArray();
-        int arrayLen = size();
-        for (int i = 0; i < arrayLen-1; i++) {
+    @ExposedMethod(doc = BuiltinDocs.tuple___repr___doc)
+    final String tuple___repr__() {
+        StringBuilder buf = new StringBuilder("(");
+        for (int i = 0; i < array.length - 1; i++) {
             buf.append(subobjRepr(array[i]));
             buf.append(", ");
         }
-        if (arrayLen > 0)
-            buf.append(subobjRepr(array[arrayLen-1]));
-        if (arrayLen == 1)
+        if (array.length > 0) {
+            buf.append(subobjRepr(array[array.length - 1]));
+        }
+        if (array.length == 1) {
             buf.append(",");
+        }
         buf.append(")");
         return buf.toString();
     }
 
     public List subList(int fromIndex, int toIndex) {
-        return Collections.unmodifiableList(list.subList(fromIndex, toIndex));
+        if (fromIndex < 0 || toIndex > size()) {
+            throw new IndexOutOfBoundsException();
+        } else if (fromIndex > toIndex) {
+            throw new IllegalArgumentException();
+        }
+        PyObject elements[] = new PyObject[toIndex - fromIndex];
+        for (int i = 0, j = fromIndex; i < elements.length; i++, j++) {
+            elements[i] = array[j];
+        }
+        return new PyTuple(elements);
     }
 
-    // Make PyTuple immutable from the collections interfaces by overriding
-    // all the mutating methods to throw UnsupportedOperationException exception.
-    // This is how Collections.unmodifiableList() does it.
     public Iterator iterator() {
         return new Iterator() {
-            Iterator i = list.iterator();
+
+            private final Iterator<PyObject> iter = getList().iterator();
+
             public void remove() {
                 throw new UnsupportedOperationException();
             }
+
             public boolean hasNext() {
-                return i.hasNext();
-                }
+                return iter.hasNext();
+            }
+
             public Object next() {
-                return i.next();
-                }
+                return iter.next().__tojava__(Object.class);
+            }
         };
     }
 
-    public boolean add(Object o){
+    public boolean add(Object o) {
         throw new UnsupportedOperationException();
     }
 
@@ -603,14 +403,32 @@ public class PyTuple extends PySequenceList implements ClassDictInit
 
     public ListIterator listIterator(final int index) {
         return new ListIterator() {
-            ListIterator i = list.listIterator(index);
 
-            public boolean hasNext()     {return i.hasNext();}
-            public Object next()         {return i.next();}
-            public boolean hasPrevious() {return i.hasPrevious();}
-            public Object previous()     {return i.previous();}
-            public int nextIndex()       {return i.nextIndex();}
-            public int previousIndex()   {return i.previousIndex();}
+            private final ListIterator<PyObject> iter = getList().listIterator(index);
+
+            public boolean hasNext() {
+                return iter.hasNext();
+            }
+
+            public Object next() {
+                return iter.next().__tojava__(Object.class);
+            }
+
+            public boolean hasPrevious() {
+                return iter.hasPrevious();
+            }
+
+            public Object previous() {
+                return iter.previous().__tojava__(Object.class);
+            }
+
+            public int nextIndex() {
+                return iter.nextIndex();
+            }
+
+            public int previousIndex() {
+                return iter.previousIndex();
+            }
 
             public void remove() {
                 throw new UnsupportedOperationException();
@@ -631,5 +449,116 @@ public class PyTuple extends PySequenceList implements ClassDictInit
             return "can only concatenate tuple (not \"{2}\") to tuple";
         }
         return super.unsupportedopMessage(op, o2);
+    }
+
+    public void pyset(int index, PyObject value) {
+        throw Py.TypeError("'tuple' object does not support item assignment");
+    }
+
+    @Override
+    public boolean contains(Object o) {
+        return getList().contains(Py.java2py(o));
+    }
+
+    @Override
+    public boolean containsAll(Collection c) {
+        if (c instanceof PyList) {
+            return getList().containsAll(((PyList)c).getList());
+        } else if (c instanceof PyTuple) {
+            return getList().containsAll(((PyTuple)c).getList());
+        } else {
+            return getList().containsAll(new PyList(c));
+        }
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (this == other) {
+            return true;
+        }
+
+        if (other instanceof PyObject) {
+            return _eq((PyObject)other).__nonzero__();
+        }
+        if (other instanceof List) {
+            return other.equals(this);
+        }
+        return false;
+    }
+
+    @Override
+    public Object get(int index) {
+        return array[index].__tojava__(Object.class);
+    }
+
+    @Override
+    public PyObject[] getArray() {
+        return array;
+    }
+
+    @Override
+    public int indexOf(Object o) {
+        return getList().indexOf(Py.java2py(o));
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return array.length == 0;
+    }
+
+    @Override
+    public int lastIndexOf(Object o) {
+        return getList().lastIndexOf(Py.java2py(o));
+    }
+
+    @Override
+    public void pyadd(int index, PyObject element) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean pyadd(PyObject o) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public PyObject pyget(int index) {
+        return array[index];
+    }
+
+    @Override
+    public void remove(int start, int stop) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int size() {
+        return array.length;
+    }
+
+    @Override
+    public Object[] toArray() {
+        Object[] converted = new Object[array.length];
+        for (int i = 0; i < array.length; i++) {
+            converted[i] = array[i].__tojava__(Object.class);
+        }
+        return converted;
+    }
+
+    @Override
+    public Object[] toArray(Object[] converted) {
+        Class<?> type = converted.getClass().getComponentType();
+        if (converted.length < array.length) {
+            converted = (Object[])Array.newInstance(type, array.length);
+        }
+        for (int i = 0; i < array.length; i++) {
+            converted[i] = type.cast(array[i].__tojava__(type));
+        }
+        if (array.length < converted.length) {
+            for (int i = array.length; i < converted.length; i++) {
+                converted[i] = null;
+            }
+        }
+        return converted;
     }
 }

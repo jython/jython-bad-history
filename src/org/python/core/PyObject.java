@@ -1,242 +1,109 @@
 // Copyright (c) Corporation for National Research Initiatives
 package org.python.core;
 
+import java.io.Serializable;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+
+import org.python.expose.ExposedDelete;
+import org.python.expose.ExposedGet;
+import org.python.expose.ExposedMethod;
+import org.python.expose.ExposedNew;
+import org.python.expose.ExposedSet;
+import org.python.expose.ExposedType;
+import org.python.util.Generic;
 
 /**
- * All objects known to the Jython runtime system are represented
- * by an instance of the class <code>PyObject</code> or one of
- * its subclasses.
- *
- **/
+ * All objects known to the Jython runtime system are represented by an instance
+ * of the class <code>PyObject</code> or one of its subclasses.
+ */
+@ExposedType(name = "object", doc = BuiltinDocs.object_doc)
+public class PyObject implements Serializable {
 
-public class PyObject implements java.io.Serializable {
-    //~ BEGIN GENERATED REGION -- DO NOT EDIT SEE gexpose.py
-    /* type info */
+    public static final PyType TYPE = PyType.fromClass(PyObject.class);
 
-    public static final String exposed_name="object";
+    /** The type of this object. */
+    protected PyType objtype;
 
-    public static void typeSetup(PyObject dict,PyType.Newstyle marker) {
-        dict.__setitem__("__class__",new PyGetSetDescr("__class__",PyObject.class,"getType","setType","delType"));
-        dict.__setitem__("__doc__",new PyGetSetDescr("__doc__",PyObject.class,"getDoc",null,null));
-        class exposed___reduce__ extends PyBuiltinMethodNarrow {
+    /**
+     * An underlying Java instance that this object is wrapping or is a subclass
+     * of. Anything attempting to use the proxy should go through {@link #getJavaProxy()}
+     * which ensures that it's initialized.
+     */
+    protected Object javaProxy;
 
-            exposed___reduce__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
+    /** Primitives classes their wrapper classes. */
+    private static final Map<Class<?>, Class<?>> primitiveMap = Generic.map();
 
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___reduce__(self,info);
-            }
+    static {
+        primitiveMap.put(Character.TYPE, Character.class);
+        primitiveMap.put(Boolean.TYPE, Boolean.class);
+        primitiveMap.put(Byte.TYPE, Byte.class);
+        primitiveMap.put(Short.TYPE, Short.class);
+        primitiveMap.put(Integer.TYPE, Integer.class);
+        primitiveMap.put(Long.TYPE, Long.class);
+        primitiveMap.put(Float.TYPE, Float.class);
+        primitiveMap.put(Double.TYPE, Double.class);
 
-            public PyObject __call__() {
-                return((PyObject)self).object___reduce__();
-            }
-
+        if (Py.BOOTSTRAP_TYPES.size() > 0) {
+            Py.writeWarning("init", "Bootstrap types weren't encountered in bootstrapping: "
+                            + Py.BOOTSTRAP_TYPES);
         }
-        dict.__setitem__("__reduce__",new PyMethodDescr("__reduce__",PyObject.class,0,0,new exposed___reduce__(null,null)));
-        class exposed___str__ extends PyBuiltinMethodNarrow {
-
-            exposed___str__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___str__(self,info);
-            }
-
-            public PyObject __call__() {
-                return self.__repr__();
-            }
-
-        }
-        dict.__setitem__("__str__",new PyMethodDescr("__str__",PyObject.class,0,0,new exposed___str__(null,null)));
-        class exposed___getattribute__ extends PyBuiltinMethodNarrow {
-
-            exposed___getattribute__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___getattribute__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                try {
-                    String name=(arg0.asName(0));
-                    PyObject ret=self.object___findattr__(name);
-                    if (ret==null)
-                        self.noAttributeError(name);
-                    return ret;
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 0:
-                        msg="attribute name must be a string";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-        }
-        dict.__setitem__("__getattribute__",new PyMethodDescr("__getattribute__",PyObject.class,1,1,new exposed___getattribute__(null,null)));
-        class exposed___setattr__ extends PyBuiltinMethodNarrow {
-
-            exposed___setattr__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___setattr__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0,PyObject arg1) {
-                try {
-                    ((PyObject)self).object___setattr__(arg0.asName(0),arg1);
-                    return Py.None;
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 0:
-                        msg="attribute name must be a string";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-        }
-        dict.__setitem__("__setattr__",new PyMethodDescr("__setattr__",PyObject.class,2,2,new exposed___setattr__(null,null)));
-        class exposed___delattr__ extends PyBuiltinMethodNarrow {
-
-            exposed___delattr__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___delattr__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                try {
-                    ((PyObject)self).object___delattr__(arg0.asName(0));
-                    return Py.None;
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 0:
-                        msg="attribute name must be a string";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
-
-        }
-        dict.__setitem__("__delattr__",new PyMethodDescr("__delattr__",PyObject.class,1,1,new exposed___delattr__(null,null)));
-        class exposed___hash__ extends PyBuiltinMethodNarrow {
-
-            exposed___hash__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___hash__(self,info);
-            }
-
-            public PyObject __call__() {
-                return new PyInteger(self.object_hashCode());
-            }
-
-        }
-        dict.__setitem__("__hash__",new PyMethodDescr("__hash__",PyObject.class,0,0,new exposed___hash__(null,null)));
-        class exposed___repr__ extends PyBuiltinMethodNarrow {
-
-            exposed___repr__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___repr__(self,info);
-            }
-
-            public PyObject __call__() {
-                return new PyString(self.object_toString());
-            }
-
-        }
-        dict.__setitem__("__repr__",new PyMethodDescr("__repr__",PyObject.class,0,0,new exposed___repr__(null,null)));
-        class exposed___init__ extends PyBuiltinMethod {
-
-            exposed___init__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___init__(self,info);
-            }
-
-            public PyObject __call__(PyObject[]args) {
-                return __call__(args,Py.NoKeywords);
-            }
-
-            public PyObject __call__(PyObject[]args,String[]keywords) {
-                ((PyObject)self).object_init(args,keywords);
-                return Py.None;
-            }
-
-        }
-        dict.__setitem__("__init__",new PyMethodDescr("__init__",PyObject.class,-1,-1,new exposed___init__(null,null)));
-        dict.__setitem__("__new__",new PyNewWrapper(PyObject.class,"__new__",-1,-1) {
-
-                                                                                        public PyObject new_impl(boolean init,PyType subtype,PyObject[]args,String[]keywords) {
-                                                                                            PyObject newobj;
-                                                                                            if (for_type==subtype) {
-                                                                                                newobj=new PyObject();
-                                                                                                if (init)
-                                                                                                    newobj.object_init(args,keywords);
-                                                                                            } else {
-                                                                                                newobj=new PyObjectDerived(subtype);
-                                                                                            }
-                                                                                            return newobj;
-                                                                                        }
-
-                                                                                    });
-    }
-    //~ END GENERATED REGION -- DO NOT EDIT SEE gexpose.py
-
-    final void object_init(PyObject[] args, String[] keywords) {
-        // xxx
     }
 
-    // getType may become not necessary
-    private PyType objtype;
+    public PyObject(PyType objtype) {
+        this.objtype = objtype;
+    }
 
+    /**
+     * The standard constructor for a <code>PyObject</code>. It will set the <code>objtype</code>
+     * field to correspond to the specific subclass of <code>PyObject</code> being instantiated.
+     **/
+    public PyObject() {
+        objtype = PyType.fromClass(getClass(), false);
+    }
+
+    /**
+     * Creates the PyObject for the base type. The argument only exists to make the constructor
+     * distinct.
+     */
+    PyObject(boolean ignored) {
+        objtype = (PyType)this;
+    }
+
+    //XXX: in CPython object.__new__ has a doc string...
+    @ExposedNew
+    @ExposedMethod(doc = BuiltinDocs.object___init___doc)
+    final void object___init__(PyObject[] args, String[] keywords) {
+        // XXX: attempted fix for object(foo=1), etc
+        // XXX: this doesn't work for metaclasses, for some reason
+        /*
+        if (args.length > 0) {
+            throw Py.TypeError("default __new__ takes no parameters");
+        }
+        */
+    }
+
+    @ExposedGet(name = "__class__")
     public PyType getType() {
         return objtype;
     }
 
+    @ExposedSet(name = "__class__")
     public void setType(PyType type) {
-        if(getType().layoutAligns(type) &&
-                !type.equals(PyType.fromClass(PyObject.class))){
-            this.objtype = type;
-        } else {
-            throw Py.TypeError("Can only assign subtypes of object to __class__ on subclasses of object");
+        if (type.builtin || getType().builtin) {
+            throw Py.TypeError("__class__ assignment: only for heap types");
         }
+        type.compatibleForAssignment(getType(), "__class__");
+        objtype = type;
     }
 
+    @ExposedDelete(name = "__class__")
     public void delType() {
-        throw Py.TypeError("Can't delete __class__ attribute");
+        throw Py.TypeError("can't delete __class__ attribute");
     }
 
     // xxx
@@ -244,66 +111,54 @@ public class PyObject implements java.io.Serializable {
         return objtype;
     }
 
-    public PyObject getDoc() {
-        PyObject d = fastGetDict();
-        if (d != null) {
-            PyObject doc = d.__finditem__("__doc__");
-            if(doc != null) {
-                return doc;
-            }
-        }
-        return Py.None;
-    }
-
-    public PyObject(PyType objtype) {
-        this.objtype = objtype;
-    }
-
-    // A package private constructor used by PyJavaClass
-    // xxx will need variants for PyType of PyType and still PyJavaClass of PyJavaClass
-    PyObject(boolean dummy) {
-        objtype = (PyType) this;
-    }
-
-    /**
-     * The standard constructor for a <code>PyObject</code>.  It will set
-     * the <code>__class__</code> field to correspond to the specific
-     * subclass of <code>PyObject</code> being instantiated.
-     **/
-    public PyObject() {
-        // xxx for now no such caching
-        // PyClass c = getPyClass();
-        // if (c == null)
-        //    c = PyJavaClass.lookup(getClass());
-        objtype = PyType.fromClass(getClass());
-    }
-
-    /* xxx will be replaced.
-     * This method is provided to efficiently initialize the __class__
-     * attribute.  If the following boilerplate is added to a subclass of
-     * PyObject, the instantiation time for the object will be greatly
-     * reduced.
-     *
-     * <blockquote><pre>
-     * // __class__ boilerplate -- see PyObject for details
-     * public static PyClass __class__;
-     * protected PyClass getPyClass() { return __class__; }
-     * </pre></blockquote>
-     *
-     * With PyIntegers this leads to a 50% faster instantiation time.
-     * This replaces the PyObject(PyClass c) constructor which is now
-     * deprecated.
-     *
-    protected PyClass getPyClass() {
-        return null;
-    } */
-
     /**
      * Dispatch __init__ behavior
      */
-    public void dispatch__init__(PyType type,PyObject[] args,String[] keywords) {
+    public void dispatch__init__(PyObject[] args, String[] keywords) {
     }
 
+    /**
+     * Attempts to automatically initialize our Java proxy if we have one and it wasn't initialized
+     * by our __init__.
+     */
+    void proxyInit() {
+        Class<?> c = getType().getProxyType();
+        if (javaProxy != null || c == null) {
+            return;
+        }
+        if (!PyProxy.class.isAssignableFrom(c)) {
+            throw Py.SystemError("Automatic proxy initialization should only occur on proxy classes");
+        }
+        PyProxy proxy;
+        ThreadState ts = Py.getThreadState();
+        try {
+            ts.pushInitializingProxy(this);
+            try {
+                proxy = (PyProxy)c.newInstance();
+            } catch (java.lang.InstantiationException e) {
+                Class<?> sup = c.getSuperclass();
+                String msg = "Default constructor failed for Java superclass";
+                if (sup != null) {
+                    msg += " " + sup.getName();
+                }
+                throw Py.TypeError(msg);
+            } catch (NoSuchMethodError nsme) {
+                throw Py.TypeError("constructor requires arguments");
+            } catch (Exception exc) {
+                throw Py.JavaError(exc);
+            }
+        } finally {
+            ts.popInitializingProxy();
+        }
+        if (javaProxy != null && javaProxy != proxy) {
+            throw Py.TypeError("Proxy instance already initialized");
+        }
+        PyObject proxyInstance = proxy._getPyInstance();
+        if (proxyInstance != null && proxyInstance != this) {
+            throw Py.TypeError("Proxy initialized with another instance");
+        }
+        javaProxy = proxy;
+    }
 
     /**
      * Equivalent to the standard Python __repr__ method.  This method
@@ -311,36 +166,35 @@ public class PyObject implements java.io.Serializable {
      * configure the string representation of a <code>PyObject</code> is to
      * override the standard Java <code>toString</code> method.
      **/
+    // counter-intuitively exposing this as __str__, otherwise stack overflow
+    // occurs during regression testing.  XXX: more detail for this comment
+    // is needed.
+    @ExposedMethod(names = "__str__", doc = BuiltinDocs.object___str___doc)
     public PyString __repr__() {
         return new PyString(toString());
     }
 
+    @Override
     public String toString() {
         return object_toString();
     }
 
+    @ExposedMethod(names = "__repr__", doc = BuiltinDocs.object___repr___doc)
     final String object_toString() {
         if (getType() == null) {
             return "unknown object";
         }
 
-        String name = getType().getFullName();
-        if (name == null)
-            return "unknown object";
-
-        return "<"+name+" object "+Py.idstr(this)+">";
-    }
-
-    public String safeRepr() throws PyIgnoreMethodTag {
-        if (getType() == null) {
+        String name = getType().getName();
+        if (name == null) {
             return "unknown object";
         }
 
-        String name = getType().getFullName();
-        if (name == null)
-            return "unknown object";
-
-        return "'" + name + "' object";
+        PyObject module = getType().getModule();
+        if (module instanceof PyString && !module.toString().equals("__builtin__")) {
+            return String.format("<%s.%s object at %s>", module.toString(), name, Py.idstr(this));
+        }
+        return String.format("<%s object at %s>", name, Py.idstr(this));
     }
 
     /**
@@ -356,7 +210,7 @@ public class PyObject implements java.io.Serializable {
     public PyUnicode __unicode__() {
         return new PyUnicode(__str__());
     }
- 
+
     /**
      * Equivalent to the standard Python __hash__ method.  This method can
      * not be overridden.  Instead, you should override the standard Java
@@ -367,11 +221,13 @@ public class PyObject implements java.io.Serializable {
         return new PyInteger(hashCode());
     }
 
+    @Override
     public int hashCode() {
-        return object_hashCode();
+        return object___hash__();
     }
 
-    final int object_hashCode() {
+    @ExposedMethod(doc = BuiltinDocs.object___hash___doc)
+    final int object___hash__() {
         return System.identityHashCode(this);
     }
 
@@ -380,6 +236,7 @@ public class PyObject implements java.io.Serializable {
      * If overridden, it is the subclasses responsibility to ensure that
      * <code>a.equals(b) == true</code> iff <code>cmp(a,b) == 0</code>
      **/
+    @Override
     public boolean equals(Object ob_other) {
         if(ob_other == this) {
             return true;
@@ -404,10 +261,44 @@ public class PyObject implements java.io.Serializable {
      *
      * @param c the Class to convert this <code>PyObject</code> to.
      **/
-    public Object __tojava__(Class c) {
-        if (c.isInstance(this))
+    public Object __tojava__(Class<?> c) {
+        if ((c == Object.class || c == Serializable.class) && getJavaProxy() != null) {
+            return javaProxy;
+        }
+        if (c.isInstance(this)) {
             return this;
+        }
+        if (c.isPrimitive()) {
+            Class<?> tmp = primitiveMap.get(c);
+            if (tmp != null) {
+                c = tmp;
+            }
+        }
+        if (c.isInstance(getJavaProxy())) {
+            return javaProxy;
+        }
+
+        // convert faux floats
+        // XXX: should also convert faux ints, but that breaks test_java_visibility
+        // (ReflectedArgs resolution)
+        if (c == Double.class || c == Float.class) {
+            try {
+                return __float__().asDouble();
+            } catch (PyException pye) {
+                if (!pye.match(Py.AttributeError)) {
+                    throw pye;
+                }
+            }
+        }
+
         return Py.NoConversion;
+    }
+
+    protected synchronized Object getJavaProxy() {
+        if (javaProxy == null) {
+            proxyInit();
+        }
+        return javaProxy;
     }
 
     /**
@@ -422,7 +313,11 @@ public class PyObject implements java.io.Serializable {
      * @param keywords the keywords used for all keyword arguments.
      **/
     public PyObject __call__(PyObject args[], String keywords[]) {
-        throw Py.TypeError("call of non-function (" + safeRepr() + ")");
+        throw Py.TypeError(String.format("'%s' object is not callable", getType().fastGetName()));
+    }
+
+    public PyObject __call__(ThreadState state, PyObject args[], String keywords[]) {
+        return __call__(args, keywords);
     }
 
     /**
@@ -439,14 +334,15 @@ public class PyObject implements java.io.Serializable {
      *                 keyword arguments).
      * @param keywords the keywords used for all keyword arguments.
      **/
-    public PyObject __call__(
-        PyObject arg1,
-        PyObject args[],
-        String keywords[]) {
+    public PyObject __call__(PyObject arg1, PyObject args[], String keywords[]) {
         PyObject[] newArgs = new PyObject[args.length + 1];
         System.arraycopy(args, 0, newArgs, 1, args.length);
         newArgs[0] = arg1;
         return __call__(newArgs, keywords);
+    }
+
+    public PyObject __call__(ThreadState state, PyObject arg1, PyObject args[], String keywords[]) {
+        return __call__(arg1, args, keywords);
     }
 
     /**
@@ -461,6 +357,10 @@ public class PyObject implements java.io.Serializable {
         return __call__(args, Py.NoKeywords);
     }
 
+    public PyObject __call__(ThreadState state, PyObject args[]) {
+        return __call__(args);
+    }
+
     /**
      * A variant of the __call__ method with no arguments.  The default
      * behavior is to invoke <code>__call__(args, keywords)</code> with the
@@ -469,6 +369,10 @@ public class PyObject implements java.io.Serializable {
      **/
     public PyObject __call__() {
         return __call__(Py.EmptyObjects, Py.NoKeywords);
+    }
+
+    public PyObject __call__(ThreadState state) {
+        return __call__();
     }
 
     /**
@@ -483,6 +387,10 @@ public class PyObject implements java.io.Serializable {
         return __call__(new PyObject[] { arg0 }, Py.NoKeywords);
     }
 
+    public PyObject __call__(ThreadState state, PyObject arg0) {
+        return __call__(arg0);
+    }
+
     /**
      * A variant of the __call__ method with two arguments.  The default
      * behavior is to invoke <code>__call__(args, keywords)</code> with the
@@ -494,6 +402,10 @@ public class PyObject implements java.io.Serializable {
      **/
     public PyObject __call__(PyObject arg0, PyObject arg1) {
         return __call__(new PyObject[] { arg0, arg1 }, Py.NoKeywords);
+    }
+
+    public PyObject __call__(ThreadState state, PyObject arg0, PyObject arg1) {
+        return __call__(arg0, arg1);
     }
 
     /**
@@ -510,6 +422,10 @@ public class PyObject implements java.io.Serializable {
         return __call__(new PyObject[] { arg0, arg1, arg2 }, Py.NoKeywords);
     }
 
+    public PyObject __call__(ThreadState state, PyObject arg0, PyObject arg1, PyObject arg2) {
+        return __call__(arg0, arg1, arg2);
+    }
+
     /**
      * A variant of the __call__ method with four arguments.  The default
      * behavior is to invoke <code>__call__(args, keywords)</code> with the
@@ -521,17 +437,16 @@ public class PyObject implements java.io.Serializable {
      * @param arg2     the third argument to the function.
      * @param arg3     the fourth argument to the function.
      **/
-    public PyObject __call__(
-        PyObject arg0,
-        PyObject arg1,
-        PyObject arg2,
-        PyObject arg3) {
+    public PyObject __call__(PyObject arg0, PyObject arg1, PyObject arg2, PyObject arg3) {
         return __call__(
             new PyObject[] { arg0, arg1, arg2, arg3 },
             Py.NoKeywords);
     }
 
-    /** @deprecated **/
+    public PyObject __call__(ThreadState state, PyObject arg0, PyObject arg1, PyObject arg2, PyObject arg3) {
+        return __call__(arg0, arg1, arg2, arg3);
+    }
+
     public PyObject _callextra(PyObject[] args,
                                String[] keywords,
                                PyObject starargs,
@@ -539,9 +454,11 @@ public class PyObject implements java.io.Serializable {
 
         int argslen = args.length;
 
-        String name = "";
+        String name;
         if (this instanceof PyFunction) {
             name = ((PyFunction) this).__name__ + "() ";
+        } else if (this instanceof PyBuiltinCallable) {
+            name = ((PyBuiltinCallable)this).fastGetName().toString() + "() ";
         } else {
             name = getType().fastGetName() + " ";
         }
@@ -549,42 +466,23 @@ public class PyObject implements java.io.Serializable {
             PyObject keys = kwargs.__findattr__("keys");
             if(keys == null)
                 throw Py.TypeError(name
-                        + "argument after ** must be a dictionary");
-            for (int i = 0; i < keywords.length; i++)
-                if (kwargs.__finditem__(keywords[i]) != null)
+                        + "argument after ** must be a mapping");
+            for (String keyword : keywords)
+                if (kwargs.__finditem__(keyword) != null)
                     throw Py.TypeError(
                         name
                             + "got multiple values for "
                             + "keyword argument '"
-                            + keywords[i]
+                            + keyword
                             + "'");
             argslen += kwargs.__len__();
         }
-        List starObjs = null;
-        if(starargs != null) {
-            if(starargs.__findattr__("__iter__") != null){
-                PyObject iter = starargs.__iter__();
-                starObjs = new ArrayList();
-                PyObject cur;
-                while((cur = iter.__iternext__()) != null) {
-                    starObjs.add(cur);
-                }
-            } else {
-                try {
-                    int nstar = starargs.__len__();
-                    PyObject cur;
-                    starObjs = new ArrayList(nstar);
-                    for(int i = 0; (cur = starargs.__finditem__(i)) != null
-                            && i < nstar; i++) {
-                        starObjs.add(cur);
-                    }
-                } catch(PyException e) {
-                    if(Py.matchException(e, Py.AttributeError)) {
-                        throw Py.TypeError(name + "argument after * must "
-                                + "be a sequence");
-                    }
-                    throw e;
-                }
+        List<PyObject> starObjs = null;
+        if (starargs != null) {
+            starObjs = new ArrayList<PyObject>();
+            PyObject iter = Py.iter(starargs, name + "argument after * must be a sequence");
+            for (PyObject cur = null; ((cur = iter.__iternext__()) != null); ) {
+                starObjs.add(cur);
             }
             argslen += starObjs.size();
         }
@@ -592,9 +490,9 @@ public class PyObject implements java.io.Serializable {
         int argidx = args.length - keywords.length;
         System.arraycopy(args, 0, newargs, 0, argidx);
         if(starObjs != null) {
-            Iterator it = starObjs.iterator();
+            Iterator<PyObject> it = starObjs.iterator();
             while(it.hasNext()) {
-                newargs[argidx++] = (PyObject)it.next();
+                newargs[argidx++] = it.next();
             }
         }
         System.arraycopy(args,
@@ -629,22 +527,33 @@ public class PyObject implements java.io.Serializable {
         return __call__(args, keywords);
     }
 
-    /* xxx fix these around */
-
     public boolean isCallable() {
-        return __findattr__("__call__") != null;
-    }
-    public boolean isMappingType() {
-        return true;
-    }
-    public boolean isNumberType() {
-        return true;
-    }
-    public boolean isSequenceType() {
-        return true;
+        return getType().lookup("__call__") != null;
     }
 
-    /* . */
+    public boolean isNumberType() {
+        PyType type = getType();
+        return type.lookup("__int__") != null || type.lookup("__float__") != null;
+    }
+
+    public boolean isMappingType() {
+        PyType type = getType();
+        return type.lookup("__getitem__") != null
+                && !(isSequenceType() && type.lookup("__getslice__") != null);
+    }
+
+    public boolean isSequenceType() {
+        return getType().lookup("__getitem__") != null;
+    }
+
+    /**
+     * Determine if this object can act as an index (implements __index__).
+     *
+     * @return true if the object can act as an index
+     */
+    public boolean isIndex() {
+        return getType().lookup("__index__") != null;
+    }
 
     /* The basic functions to implement a mapping */
 
@@ -655,7 +564,8 @@ public class PyObject implements java.io.Serializable {
      * @return the length of the object
      **/
     public int __len__() {
-        throw Py.AttributeError("__len__");
+        throw Py.TypeError(String.format("object of type '%.200s' has no len()",
+                                         getType().fastGetName()));
     }
 
     /**
@@ -672,7 +582,8 @@ public class PyObject implements java.io.Serializable {
      * @return the value corresponding to key or null if key is not found
      **/
     public PyObject __finditem__(PyObject key) {
-        throw Py.AttributeError("__getitem__");
+        throw Py.TypeError(String.format("'%.200s' object is unsubscriptable",
+                                         getType().fastGetName()));
     }
 
     /**
@@ -740,8 +651,9 @@ public class PyObject implements java.io.Serializable {
      **/
     public PyObject __getitem__(PyObject key) {
         PyObject ret = __finditem__(key);
-        if (ret == null)
-            throw Py.KeyError(key.toString());
+        if (ret == null) {
+            throw Py.KeyError(key);
+        }
         return ret;
     }
 
@@ -752,7 +664,8 @@ public class PyObject implements java.io.Serializable {
      * @param value the value to set this key to
      **/
     public void __setitem__(PyObject key, PyObject value) {
-        throw Py.AttributeError("__setitem__");
+        throw Py.TypeError(String.format("'%.200s' object does not support item assignment",
+                                         getType().fastGetName()));
     }
 
     /**
@@ -797,7 +710,8 @@ public class PyObject implements java.io.Serializable {
      * @exception Py.KeyError if the key is not found in the container
      **/
     public void __delitem__(PyObject key) {
-        throw Py.AttributeError("__delitem__");
+        throw Py.TypeError(String.format("'%.200s' object doesn't support item deletion",
+                                         getType().fastGetName()));
     }
 
     /**
@@ -844,47 +758,62 @@ public class PyObject implements java.io.Serializable {
     }
 
     public PyObject __getslice__(PyObject start, PyObject stop) {
-        return __getslice__(start, stop, Py.One);
+        return __getslice__(start, stop, null);
     }
 
     public void __setslice__(PyObject start, PyObject stop, PyObject value) {
-        __setslice__(start, stop, Py.One, value);
+        __setslice__(start, stop, null, value);
     }
 
     public void __delslice__(PyObject start, PyObject stop) {
-        __delslice__(start, stop, Py.One);
+        __delslice__(start, stop, null);
     }
 
     /*The basic functions to implement an iterator */
 
     /**
-     * Return an iterator that is used to iterate the element of this
-     * sequence.
-     * From version 2.2, this method is the primary protocol for looping
-     * over sequences.
+     * Return an iterator that is used to iterate the element of this sequence. From version 2.2,
+     * this method is the primary protocol for looping over sequences.
      * <p>
-     * If a PyObject subclass should support iteration based in the
-     * __finditem__() method, it must supply an implementation of __iter__()
-     * like this:
+     * If a PyObject subclass should support iteration based in the __finditem__() method, it must
+     * supply an implementation of __iter__() like this:
+     *
      * <pre>
-     *    public PyObject __iter__() {
-     *        return new PySequenceIter(this);
-     *    }
+     * public PyObject __iter__() {
+     *     return new PySequenceIter(this);
+     * }
      * </pre>
      *
-     * When iterating over a python sequence from java code, it should be
-     * done with code like this:
+     * When iterating over a python sequence from java code, it should be done with code like this:
+     *
      * <pre>
-     *    PyObject iter = seq.__iter__();
-     *    for (PyObject item; (item = iter.__iternext__()) != null;)  {
-     *        // Do somting with item
-     *    }
+     * for (PyObject item : seq.asIterable()) {
+     *     // Do somting with item
+     * }
      * </pre>
      *
      * @since 2.2
      */
     public PyObject __iter__() {
-        throw Py.TypeError("iteration over non-sequence");
+        throw Py.TypeError(String.format("'%.200s' object is not iterable",
+                                         getType().fastGetName()));
+    }
+
+    /**
+     * Returns an Iterable over the Python iterator returned by __iter__ on this object. If this
+     * object doesn't support __iter__, a TypeException will be raised when iterator is called on
+     * the returned Iterable.
+     */
+    public Iterable<PyObject> asIterable() {
+        return new Iterable<PyObject>() {
+            public Iterator<PyObject> iterator() {
+                return new WrappedIterIterator<PyObject>(__iter__()) {
+                    public PyObject next() {
+                        return getNext();
+                    }
+                };
+            }
+        };
     }
 
     /**
@@ -903,17 +832,13 @@ public class PyObject implements java.io.Serializable {
      * Very similar to the standard Python __getattr__ method. Instead of
      * throwing a AttributeError if the item isn't found, this just returns
      * null.
-     * 
+     *
      * By default, this method will call
      * <code>__findattr__(name.internedString)</code> with the appropriate
-     * args. 
-     * 
-     * Classes that wish to implement __getattr__ should override this method
-     * instead (with the appropriate semantics.
-     * 
-     * @param name
-     *            the name to lookup in this namespace
-     * 
+     * args.
+     *
+     * @param name the name to lookup in this namespace
+     *
      * @return the value corresponding to name or null if name is not found
      */
     public final PyObject __findattr__(PyString name) {
@@ -926,51 +851,64 @@ public class PyObject implements java.io.Serializable {
     /**
      * A variant of the __findattr__ method which accepts a Java
      * <code>String</code> as the name.
-     * 
+     *
      * <b>Warning: name must be an interned string!</b>
      *
      * @param name the name to lookup in this namespace
      * <b> must be an interned string </b>.
      * @return the value corresponding to name or null if name is not found
-     *
-     * @see #__findattr__(PyString)
      **/
-    public PyObject __findattr__(String name) { // xxx accelerators/ expose
-        /*if (getType() == null)
-            return null;
-        if (name == "__class__")
-            return getType();*/
-        /*PyObject ret = getType().lookup(name, false);
-        if (ret != null)
-            return ret._doget(this);
-        return null;*/
+    public final PyObject __findattr__(String name) {
+        try {
+            return  __findattr_ex__(name);
+        } catch (PyException exc) {
+            if (exc.match(Py.AttributeError)) {
+                return null;
+            }
+            throw exc;
+        }
+    }
 
+    /**
+     * Attribute lookup hook. If the attribute is not found, null may be
+     * returned or a Py.AttributeError can be thrown, whatever is more
+     * correct, efficient and/or convenient for the implementing class.
+     *
+     * Client code should use {@link #__getattr__(String)} or
+     * {@link #__findattr__(String)}. Both methods have a clear policy for
+     * failed lookups.
+     *
+     * @return The looked up value. May return null if the attribute is not found
+     * @throws PyException(AttributeError) if the attribute is not found. This
+     * is not mandatory, null can be returned if it fits the implementation
+     * better, or for performance reasons.
+     */
+    public PyObject __findattr_ex__(String name) {
         return object___findattr__(name);
     }
 
     /**
      * Equivalent to the standard Python __getattr__ method.
-     * This method can not be overridden.
-     * Override the <code>__findattr__</code> method instead.
+     *
+     * By default, this method will call
+     * <code>__getattr__(name.internedString)</code> with the appropriate
+     * args.
      *
      * @param name the name to lookup in this namespace
      * @return the value corresponding to name
      * @exception Py.AttributeError if the name is not found.
      *
-     * @see #__findattr__(PyString)
+     * @see #__findattr_ex__(String)
      **/
     public final PyObject __getattr__(PyString name) {
-        PyObject ret = __findattr__(name);
-        if (ret == null)
-            noAttributeError(name.toString());
-        return ret;
+        return __getattr__(name.internedString());
     }
 
     /**
      * A variant of the __getattr__ method which accepts a Java
      * <code>String</code> as the name.
      * This method can not be overridden.
-     * Override the <code>__findattr__</code> method instead.
+     * Override the <code>__findattr_ex__</code> method instead.
      *
      * <b>Warning: name must be an interned string!!!!!!!!</b>
      *
@@ -982,20 +920,22 @@ public class PyObject implements java.io.Serializable {
      * @see #__findattr__(java.lang.String)
      **/
     public final PyObject __getattr__(String name) {
-        PyObject ret = __findattr__(name);
+        PyObject ret = __findattr_ex__(name);
         if (ret == null)
             noAttributeError(name);
         return ret;
     }
 
     public void noAttributeError(String name) {
-        throw Py.AttributeError(
-            safeRepr() + " has no attribute '" + name + "'");
+        throw Py.AttributeError(String.format("'%.50s' object has no attribute '%.400s'",
+                                              getType().fastGetName(), name));
     }
 
     public void readonlyAttributeError(String name) {
-        throw Py.AttributeError(
-            safeRepr() + " attribute '" + name + "' is read-only");
+        // XXX: Should be an AttributeError but CPython throws TypeError for read only
+        // member descriptors (in structmember.c::PyMember_SetOne), which is expected by a
+        // few tests. fixed in py3k: http://bugs.python.org/issue1687163
+        throw Py.TypeError("readonly attribute");
     }
 
     /**
@@ -1061,26 +1001,54 @@ public class PyObject implements java.io.Serializable {
         return __findattr__(name);
     }
 
-    protected void addKeys(PyDictionary accum, String attr) {
+    protected void mergeListAttr(PyDictionary accum, String attr) {
         PyObject obj = __findattr__(attr);
-        if (obj == null)
+        if (obj == null) {
             return;
+        }
         if (obj instanceof PyList) {
-            PyObject lst_iter = obj.__iter__();
-            PyObject name;
-            for (; (name = lst_iter.__iternext__())!= null; ) {
+            for (PyObject name : obj.asIterable()) {
                 accum.__setitem__(name, Py.None);
             }
-        } else {
+        }
+    }
+
+    protected void mergeDictAttr(PyDictionary accum, String attr) {
+        PyObject obj = __findattr__(attr);
+        if (obj == null) {
+            return;
+        }
+        if (obj instanceof PyDictionary || obj instanceof PyStringMap
+            || obj instanceof PyDictProxy) {
             accum.update(obj);
         }
     }
 
+    protected void mergeClassDict(PyDictionary accum, PyObject aClass) {
+        // Merge in the type's dict (if any)
+        aClass.mergeDictAttr(accum, "__dict__");
+
+        // Recursively merge in the base types' (if any) dicts
+        PyObject bases = aClass.__findattr__("__bases__");
+        if (bases == null) {
+            return;
+        }
+        // We have no guarantee that bases is a real tuple
+        int len = bases.__len__();
+        for (int i = 0; i < len; i++) {
+            mergeClassDict(accum, bases.__getitem__(i));
+        }
+    }
+
     protected void __rawdir__(PyDictionary accum) {
-        addKeys(accum, "__dict__");
-        addKeys(accum, "__methods__");
-        addKeys(accum, "__members__");
-        fastGetClass().__rawdir__(accum);
+        mergeDictAttr(accum, "__dict__");
+        mergeListAttr(accum, "__methods__");
+        mergeListAttr(accum, "__members__");
+        // Class dict is a slower, more manual merge to match CPython
+        PyObject itsClass = __findattr__("__class__");
+        if (itsClass != null) {
+            mergeClassDict(accum, itsClass);
+        }
     }
 
     /**
@@ -1108,10 +1076,6 @@ public class PyObject implements java.io.Serializable {
         return false;
     }
 
-    boolean jtryset(PyObject container, PyObject value) {
-        return _doset(container, value);
-    }
-
     boolean jdontdel() {
         return false;
     }
@@ -1122,9 +1086,10 @@ public class PyObject implements java.io.Serializable {
      * Implements numeric coercion
      *
      * @param o the other object involved in the coercion
-     * @return null if no coercion is possible;
-     * a single PyObject to use to replace o if this is unchanged;
-     * or a PyObject[2] consisting of replacements for this and o.
+     * @return null if coercion is not implemented
+     *         Py.None if coercion was not possible
+     *         a single PyObject to use to replace o if this is unchanged;
+     *         or a PyObject[2] consisting of replacements for this and o.
      **/
     public Object __coerce_ex__(PyObject o) {
         return null;
@@ -1167,24 +1132,44 @@ public class PyObject implements java.io.Serializable {
      * This method can not be overridden.
      * To implement __coerce__ functionality, override __coerce_ex__ instead.
      *
+     * Also, <b>do not</b> call this method from exposed 'coerce' methods.
+     * Instead, Use adaptToCoerceTuple over the result of the overriden
+     * __coerce_ex__.
+     *
      * @param pyo the other object involved in the coercion.
      * @return a tuple of this object and pyo coerced to the same type
-     *         or Py.None if no coercion is possible.
+     *         or Py.NotImplemented if no coercion is possible.
      * @see org.python.core.PyObject#__coerce_ex__(org.python.core.PyObject)
      **/
     public final PyObject __coerce__(PyObject pyo) {
         Object o = __coerce_ex__(pyo);
-        if (o == null)
+        if (o == null) {
             throw Py.AttributeError("__coerce__");
-        if (o == Py.None)
-            return (PyObject) o;
-        if (o instanceof PyObject[])
-            return new PyTuple((PyObject[]) o);
-        else
-            return new PyTuple(new PyObject[] { this, (PyObject) o });
+        }
+        return adaptToCoerceTuple(o);
     }
 
-
+    /**
+     * Adapts the result of __coerce_ex__ to a tuple of two elements, with the
+     * resulting coerced values, or to Py.NotImplemented, if o is Py.None.
+     *
+     * This is safe to be used from subclasses exposing '__coerce__'
+     * (as opposed to {@link #__coerce__(PyObject)}, which calls the virtual
+     * method {@link #__coerce_ex__(PyObject)})
+     *
+     * @param o either a PyObject[2] or a PyObject, as given by
+     *        {@link #__coerce_ex__(PyObject)}.
+     */
+    protected final PyObject adaptToCoerceTuple(Object o) {
+        if (o == Py.None) {
+            return Py.NotImplemented;
+        }
+        if (o instanceof PyObject[]) {
+            return new PyTuple((PyObject[]) o);
+        } else {
+            return new PyTuple(this, (PyObject) o );
+        }
+    }
 
     /* The basic comparision operations */
 
@@ -1192,7 +1177,7 @@ public class PyObject implements java.io.Serializable {
      * Equivalent to the standard Python __cmp__ method.
      *
      * @param other the object to compare this with.
-     * @return -1 if this < 0; 0 if this == o; +1 if this > o; -2 if no
+     * @return -1 if this < o; 0 if this == o; +1 if this > o; -2 if no
      * comparison is implemented
      **/
     public int __cmp__(PyObject other) {
@@ -1266,6 +1251,10 @@ public class PyObject implements java.io.Serializable {
      * @return -1 if this < 0; 0 if this == o; +1 if this > o
      **/
     public final int _cmp(PyObject o) {
+        if (this == o) {
+            return 0;
+        }
+
         PyObject token = null;
         ThreadState ts = Py.getThreadState();
         try {
@@ -1274,27 +1263,30 @@ public class PyObject implements java.io.Serializable {
                     return 0;
             }
 
-            PyObject r;
-            r = __eq__(o);
-            if (r != null && r.__nonzero__())
+            PyObject result;
+            result = __eq__(o);
+            if (result == null) {
+                result = o.__eq__(this);
+            }
+            if (result != null && result.__nonzero__()) {
                 return 0;
-            r = o.__eq__(this);
-            if (r != null && r.__nonzero__())
-                return 0;
+            }
 
-            r = __lt__(o);
-            if (r != null && r.__nonzero__())
+            result = __lt__(o);
+            if (result == null) {
+                result = o.__gt__(this);
+            }
+            if (result != null && result.__nonzero__()) {
                 return -1;
-            r = o.__gt__(this);
-            if (r != null && r.__nonzero__())
-                return -1;
+            }
 
-            r = __gt__(o);
-            if (r != null && r.__nonzero__())
+            result = __gt__(o);
+            if (result == null) {
+                result = o.__lt__(this);
+            }
+            if (result != null && result.__nonzero__()) {
                 return 1;
-            r = o.__lt__(this);
-            if (r != null && r.__nonzero__())
-                return 1;
+            }
 
             return _cmp_unsafe(o);
         } finally {
@@ -1312,25 +1304,33 @@ public class PyObject implements java.io.Serializable {
 
     private final int _default_cmp(PyObject other) {
         int result;
-        if (this._is(other).__nonzero__())
+        if (_is(other).__nonzero__())
             return 0;
 
         /* None is smaller than anything */
-        if (this == Py.None)
+        if (this == Py.None) {
             return -1;
-        if (other == Py.None)
+        }
+        if (other == Py.None) {
             return 1;
+        }
 
         // No rational way to compare these, so ask their classes to compare
-        PyType this_type = this.getType();
-        PyType other_type = other.getType();
-        if (this_type == other_type) {
-            return Py.id(this) < Py.id(other)? -1: 1;
+        PyType type = getType();
+        PyType otherType = other.getType();
+        if (type == otherType) {
+            return Py.id(this) < Py.id(other) ? -1 : 1;
         }
-        result = this_type.fastGetName().compareTo(other_type.fastGetName());
-        if (result == 0)
-            return Py.id(this_type)<Py.id(other_type)? -1: 1;
-        return result < 0? -1: 1;
+
+        // different type: compare type names; numbers are smaller
+        String typeName = isNumberType() ? "" : type.fastGetName();
+        String otherTypeName = other.isNumberType() ? "" : otherType.fastGetName();
+        result = typeName.compareTo(otherTypeName);
+        if (result == 0) {
+            // Same type name, or (more likely) incomparable numeric types
+            return Py.id(type) < Py.id(otherType) ? -1 : 1;
+        }
+        return result < 0 ? -1 : 1;
     }
 
     private final int _cmp_unsafe(PyObject other) {
@@ -1338,29 +1338,40 @@ public class PyObject implements java.io.Serializable {
         if (this == other)
             return 0;
 
-        int result;
-        result = this.__cmp__(other);
-        if (result != -2)
+        int result = _try__cmp__(other);
+        if (result != -2) {
             return result;
-
-        if (!(this instanceof PyInstance)) {
-            result = other.__cmp__(this);
-            if (result != -2)
-                return -result;
         }
-
         return this._default_cmp(other);
     }
 
     /*
      *  Like _cmp_unsafe but limited to ==/!= as 0/!=0,
-     *  avoids to invoke Py.id
+     *  thus it avoids to invoke _default_cmp.
      */
     private final int _cmpeq_unsafe(PyObject other) {
         // Shortcut for equal objects
         if (this == other)
             return 0;
 
+        int result = _try__cmp__(other);
+        if (result != -2) {
+            return result;
+        }
+
+        return this._is(other).__nonzero__()?0:1;
+    }
+
+    /**
+     * Tries a 3-way comparison, using __cmp__. It tries the following
+     * operations until one of them succeed:<ul>
+     *  <li>this.__cmp__(other)
+     *  <li>other.__cmp__(this)
+     *  <li>this._coerce(other) followed by coerced_this.__cmp__(coerced_other)</ul>
+     *
+     * @return -1, 0, -1 or -2, according to the {@link #__cmp__} protocol.
+     */
+    private int _try__cmp__(PyObject other) {
         int result;
         result = this.__cmp__(other);
         if (result != -2)
@@ -1371,8 +1382,23 @@ public class PyObject implements java.io.Serializable {
             if (result != -2)
                 return -result;
         }
+        // Final attempt: coerce both arguments and compare that. We are doing
+        // this the same point where CPython 2.5 does. (See
+        // <http://svn.python.org/projects/python/tags/r252/Objects/object.c> at
+        // the end of try_3way_compare).
+        //
+        // This is not exactly was is specified on
+        // <http://docs.python.org/ref/coercion-rules.html>, where coercion is
+        // supposed to happen before trying __cmp__.
 
-        return this._is(other).__nonzero__()?0:1;
+        PyObject[] coerced = _coerce(other);
+        if (coerced != null) {
+            result = coerced[0].__cmp__(coerced[1]);
+            if (result != -2) {
+                return result;
+            }
+        }
+        return -2;
     }
 
 
@@ -1410,7 +1436,7 @@ public class PyObject implements java.io.Serializable {
         PyObject token = null;
         PyType t1 = this.getType();
         PyType t2 = o.getType();
-        
+
         if (t1 != t2 && t2.isSubType(t1)) {
             return o._eq(this);
         }
@@ -1419,7 +1445,7 @@ public class PyObject implements java.io.Serializable {
         try {
             if (++ts.compareStateNesting > 10) {
                 if ((token = check_recursion(ts, this, o)) == null)
-                    return Py.One;
+                    return Py.True;
             }
             PyObject res = __eq__(o);
             if (res != null)
@@ -1427,12 +1453,7 @@ public class PyObject implements java.io.Serializable {
             res = o.__eq__(this);
             if (res != null)
                 return res;
-            return _cmpeq_unsafe(o) == 0 ? Py.One : Py.Zero;
-        } catch (PyException e) {
-            if (Py.matchException(e, Py.AttributeError)) {
-                return Py.Zero;
-            }
-            throw e;
+            return _cmpeq_unsafe(o) == 0 ? Py.True : Py.False;
         } finally {
             delete_token(ts, token);
             ts.compareStateNesting--;
@@ -1449,7 +1470,7 @@ public class PyObject implements java.io.Serializable {
         PyObject token = null;
         PyType t1 = this.getType();
         PyType t2 = o.getType();
-        
+
         if (t1 != t2 && t2.isSubType(t1)) {
             return o._ne(this);
         }
@@ -1458,7 +1479,7 @@ public class PyObject implements java.io.Serializable {
         try {
             if (++ts.compareStateNesting > 10) {
                 if ((token = check_recursion(ts, this, o)) == null)
-                    return Py.Zero;
+                    return Py.False;
             }
             PyObject res = __ne__(o);
             if (res != null)
@@ -1466,7 +1487,7 @@ public class PyObject implements java.io.Serializable {
             res = o.__ne__(this);
             if (res != null)
                 return res;
-            return _cmpeq_unsafe(o) != 0 ? Py.One : Py.Zero;
+            return _cmpeq_unsafe(o) != 0 ? Py.True : Py.False;
         } finally {
             delete_token(ts, token);
             ts.compareStateNesting--;
@@ -1483,7 +1504,7 @@ public class PyObject implements java.io.Serializable {
         PyObject token = null;
         PyType t1 = this.getType();
         PyType t2 = o.getType();
-        
+
         if (t1 != t2 && t2.isSubType(t1)) {
             return o._ge(this);
         }
@@ -1500,7 +1521,7 @@ public class PyObject implements java.io.Serializable {
             res = o.__ge__(this);
             if (res != null)
                 return res;
-            return _cmp_unsafe(o) <= 0 ? Py.One : Py.Zero;
+            return _cmp_unsafe(o) <= 0 ? Py.True : Py.False;
         } finally {
             delete_token(ts, token);
             ts.compareStateNesting--;
@@ -1517,7 +1538,7 @@ public class PyObject implements java.io.Serializable {
         PyObject token = null;
         PyType t1 = this.getType();
         PyType t2 = o.getType();
-        
+
         if (t1 != t2 && t2.isSubType(t1)) {
             return o._gt(this);
         }
@@ -1534,7 +1555,7 @@ public class PyObject implements java.io.Serializable {
             res = o.__gt__(this);
             if (res != null)
                 return res;
-            return _cmp_unsafe(o) < 0 ? Py.One : Py.Zero;
+            return _cmp_unsafe(o) < 0 ? Py.True : Py.False;
         } finally {
             delete_token(ts, token);
             ts.compareStateNesting--;
@@ -1551,7 +1572,7 @@ public class PyObject implements java.io.Serializable {
         PyObject token = null;
         PyType t1 = this.getType();
         PyType t2 = o.getType();
-        
+
         if (t1 != t2 && t2.isSubType(t1)) {
             return o._le(this);
         }
@@ -1568,7 +1589,7 @@ public class PyObject implements java.io.Serializable {
             res = o.__le__(this);
             if (res != null)
                 return res;
-            return _cmp_unsafe(o) >= 0 ? Py.One : Py.Zero;
+            return _cmp_unsafe(o) >= 0 ? Py.True : Py.False;
         } finally {
             delete_token(ts, token);
             ts.compareStateNesting--;
@@ -1585,7 +1606,7 @@ public class PyObject implements java.io.Serializable {
         PyObject token = null;
         PyType t1 = this.getType();
         PyType t2 = o.getType();
-        
+
         if (t1 != t2 && t2.isSubType(t1)) {
             return o._lt(this);
         }
@@ -1602,7 +1623,7 @@ public class PyObject implements java.io.Serializable {
             res = o.__lt__(this);
             if (res != null)
                 return res;
-            return _cmp_unsafe(o) > 0 ? Py.One : Py.Zero;
+            return _cmp_unsafe(o) > 0 ? Py.True : Py.False;
         } finally {
             delete_token(ts, token);
             ts.compareStateNesting--;
@@ -1617,7 +1638,9 @@ public class PyObject implements java.io.Serializable {
      * @return the result of the comparison
      **/
     public PyObject _is(PyObject o) {
-        return this == o ? Py.One : Py.Zero;
+        // Access javaProxy directly here as is is for object identity, and at best getJavaProxy
+        // will initialize a new object with a different identity
+        return this == o || (javaProxy != null && javaProxy == o.javaProxy) ? Py.True : Py.False;
     }
 
     /**
@@ -1627,7 +1650,9 @@ public class PyObject implements java.io.Serializable {
      * @return the result of the comparison
      **/
     public PyObject _isnot(PyObject o) {
-        return this != o ? Py.One : Py.Zero;
+        // Access javaProxy directly here as is is for object identity, and at best getJavaProxy
+        // will initialize a new object with a different identity
+        return this != o && (javaProxy == null || javaProxy != o.javaProxy) ? Py.True : Py.False;
     }
 
     /**
@@ -1661,10 +1686,10 @@ public class PyObject implements java.io.Serializable {
     }
 
     final boolean object___contains__(PyObject o) {
-        PyObject iter = __iter__();
-        for (PyObject item = null;(item = iter.__iternext__()) != null;) {
-            if (o._eq(item).__nonzero__())
+        for (PyObject item : asIterable()) {
+            if (o.equals(item)) {
                 return true;
+            }
         }
         return false;
     }
@@ -1675,7 +1700,7 @@ public class PyObject implements java.io.Serializable {
      * @return not this.
      **/
     public PyObject __not__() {
-        return __nonzero__() ? Py.Zero : Py.One;
+        return __nonzero__() ? Py.False : Py.True;
     }
 
     /* The basic numeric operations */
@@ -1688,7 +1713,7 @@ public class PyObject implements java.io.Serializable {
      * @return a string representing this object as a hexadecimal number.
      **/
     public PyString __hex__() {
-        throw Py.AttributeError("__hex__");
+        throw Py.TypeError("hex() argument can't be converted to hex");
     }
 
     /**
@@ -1699,7 +1724,7 @@ public class PyObject implements java.io.Serializable {
      * @return a string representing this object as an octal number.
      **/
     public PyString __oct__() {
-        throw Py.AttributeError("__oct__");
+        throw Py.TypeError("oct() argument can't be converted to oct");
     }
 
     /**
@@ -1718,9 +1743,9 @@ public class PyObject implements java.io.Serializable {
      * Should only be overridden by numeric objects that can be
      * reasonably coerced into a python long.
      *
-     * @return a PyLong corresponding to the value of this object.
+     * @return a PyLong or PyInteger corresponding to the value of this object.
      **/
-    public PyLong __long__() {
+    public PyObject __long__() {
         throw Py.AttributeError("__long__");
     }
 
@@ -1752,7 +1777,8 @@ public class PyObject implements java.io.Serializable {
      * @return +this.
      **/
     public PyObject __pos__() {
-        throw Py.AttributeError("__pos__");
+        throw Py.TypeError(String.format("bad operand type for unary +: '%.200s'",
+                                         getType().fastGetName()));
     }
 
     /**
@@ -1761,7 +1787,8 @@ public class PyObject implements java.io.Serializable {
      * @return -this.
      **/
     public PyObject __neg__() {
-        throw Py.AttributeError("__neg__");
+        throw Py.TypeError(String.format("bad operand type for unary -: '%.200s'",
+                                         getType().fastGetName()));
     }
 
     /**
@@ -1770,7 +1797,8 @@ public class PyObject implements java.io.Serializable {
      * @return abs(this).
      **/
     public PyObject __abs__() {
-        throw Py.AttributeError("__abs__");
+        throw Py.TypeError(String.format("bad operand type for abs(): '%.200s'",
+                                         getType().fastGetName()));
     }
 
     /**
@@ -1779,9 +1807,21 @@ public class PyObject implements java.io.Serializable {
      * @return ~this.
      **/
     public PyObject __invert__() {
-        throw Py.AttributeError("__invert__");
+        throw Py.TypeError(String.format("bad operand type for unary ~: '%.200s'",
+                                         getType().fastGetName()));
     }
-    
+
+    /**
+     * Equivalent to the standard Python __index__ method.
+     *
+     * @return a PyInteger or PyLong
+     * @throws a Py.TypeError if not supported
+     **/
+    public PyObject __index__() {
+        throw Py.TypeError(String.format("'%.200s' object cannot be interpreted as an index",
+                                         getType().fastGetName()));
+    }
+
     /**
      * @param op the String form of the op (e.g. "+")
      * @param o2 the right operand
@@ -1808,7 +1848,7 @@ public class PyObject implements java.io.Serializable {
     protected String unsupportedopMessage(String op, PyObject o2) {
         return null;
     }
-    
+
     /**
      * Should return an error message suitable for substitution where.
      *
@@ -1832,6 +1872,30 @@ public class PyObject implements java.io.Serializable {
         return null;
     }
 
+    /**
+     * Determine if the binary op on types t1 and t2 is an add
+     * operation dealing with a str/unicode and a str/unicode
+     * subclass.
+     *
+     * This operation is special cased in _binop_rule to match
+     * CPython's handling; CPython uses tp_as_number and
+     * tp_as_sequence to allow string/unicode subclasses to override
+     * the left side's __add__ when that left side is an actual str or
+     * unicode object (see test_concat_jy for examples).
+     *
+     * @param t1 left side PyType
+     * @param t2 right side PyType
+     * @param op the binary operation's String
+     * @return true if this is a special case
+     */
+    private boolean isStrUnicodeSpecialCase(PyType t1, PyType t2, String op) {
+        // XXX: We may need to generalize this rule to apply to other
+        // situations
+        // XXX: This method isn't expensive but could (and maybe
+        // should?) be optimized for worst case scenarios
+        return (op == "+") && (t1 == PyString.TYPE || t1 == PyUnicode.TYPE) &&
+                (t2.isSubType(PyString.TYPE) || t2.isSubType(PyUnicode.TYPE));
+    }
 
     private PyObject _binop_rule(PyType t1, PyObject o2, PyType t2,
             String left, String right, String op) {
@@ -1851,7 +1915,10 @@ public class PyObject implements java.io.Serializable {
         where1 = where[0];
         PyObject impl2 = t2.lookup_where(right, where);
         where2 = where[0];
-        if (impl2 != null && where1 != where2 && t2.isSubType(t1)) {
+        if (impl2 != null && impl1 != null && where1 != where2 &&
+            (t2.isSubType(t1) && !Py.isSubClass(where1, where2)
+                              && !Py.isSubClass(t1, where2)     ||
+             isStrUnicodeSpecialCase(t1, t2, op))) {
             PyObject tmp = o1;
             o1 = o2;
             o2 = tmp;
@@ -1907,11 +1974,11 @@ public class PyObject implements java.io.Serializable {
      * Equivalent to the standard Python __iadd__ method
      * @param     other the object to perform this binary operation with
      *            (the right-hand operand).
-     * @return    the result of the add, or null if this operation
+     * @return    the result of the iadd, or null if this operation
      *            is not defined
      **/
     public PyObject __iadd__(PyObject other) {
-        return _add(other);
+        return null;
     }
 
     /**
@@ -1940,12 +2007,55 @@ public class PyObject implements java.io.Serializable {
      **/
     final PyObject _basic_add(PyObject o2) {
         PyObject x=__add__(o2);
-        if (x!=null)
+        if (x!=null) {
             return x;
+        }
         x=o2.__radd__(this);
-        if (x!=null)
+        if (x!=null) {
             return x;
+        }
         throw Py.TypeError(_unsupportedop("+",o2));
+    }
+
+    /**
+      * Implements the Python expression <code>this += o2</code>
+      * @param     o2 the object to perform this inplace binary
+      *            operation with.
+      * @return    the result of the iadd.
+      * @exception Py.TypeError if this operation can't be performed
+      *            with these operands.
+      **/
+    public final PyObject _iadd(PyObject o2) {
+        PyType t1=this.getType();
+        PyType t2=o2.getType();
+        if (t1==t2||t1.builtin&&t2.builtin) {
+            return this._basic_iadd(o2);
+        }
+        PyObject impl=t1.lookup("__iadd__");
+        if (impl!=null) {
+            PyObject res=impl.__get__(this,t1).__call__(o2);
+            if (res!=Py.NotImplemented) {
+                return res;
+            }
+        }
+        return _binop_rule(t1,o2,t2,"__add__","__radd__","+");
+    }
+
+    /**
+     * Implements the Python expression <code>this += o2</code>
+     * when this and o2 have the same type or are builtin types.
+     * @param     o2 the object to perform this inplace binary
+     *            operation with.
+     * @return    the result of the iadd.
+     * @exception Py.TypeError if this operation can't be performed
+     *            with these operands.
+     **/
+    final PyObject _basic_iadd(PyObject o2) {
+        PyObject x=__iadd__(o2);
+        if (x!=null) {
+            return x;
+        }
+        return this._basic_add(o2);
     }
 
     /**
@@ -1974,11 +2084,11 @@ public class PyObject implements java.io.Serializable {
      * Equivalent to the standard Python __isub__ method
      * @param     other the object to perform this binary operation with
      *            (the right-hand operand).
-     * @return    the result of the sub, or null if this operation
+     * @return    the result of the isub, or null if this operation
      *            is not defined
      **/
     public PyObject __isub__(PyObject other) {
-        return _sub(other);
+        return null;
     }
 
     /**
@@ -2007,12 +2117,55 @@ public class PyObject implements java.io.Serializable {
      **/
     final PyObject _basic_sub(PyObject o2) {
         PyObject x=__sub__(o2);
-        if (x!=null)
+        if (x!=null) {
             return x;
+        }
         x=o2.__rsub__(this);
-        if (x!=null)
+        if (x!=null) {
             return x;
+        }
         throw Py.TypeError(_unsupportedop("-",o2));
+    }
+
+    /**
+      * Implements the Python expression <code>this -= o2</code>
+      * @param     o2 the object to perform this inplace binary
+      *            operation with.
+      * @return    the result of the isub.
+      * @exception Py.TypeError if this operation can't be performed
+      *            with these operands.
+      **/
+    public final PyObject _isub(PyObject o2) {
+        PyType t1=this.getType();
+        PyType t2=o2.getType();
+        if (t1==t2||t1.builtin&&t2.builtin) {
+            return this._basic_isub(o2);
+        }
+        PyObject impl=t1.lookup("__isub__");
+        if (impl!=null) {
+            PyObject res=impl.__get__(this,t1).__call__(o2);
+            if (res!=Py.NotImplemented) {
+                return res;
+            }
+        }
+        return _binop_rule(t1,o2,t2,"__sub__","__rsub__","-");
+    }
+
+    /**
+     * Implements the Python expression <code>this -= o2</code>
+     * when this and o2 have the same type or are builtin types.
+     * @param     o2 the object to perform this inplace binary
+     *            operation with.
+     * @return    the result of the isub.
+     * @exception Py.TypeError if this operation can't be performed
+     *            with these operands.
+     **/
+    final PyObject _basic_isub(PyObject o2) {
+        PyObject x=__isub__(o2);
+        if (x!=null) {
+            return x;
+        }
+        return this._basic_sub(o2);
     }
 
     /**
@@ -2041,11 +2194,11 @@ public class PyObject implements java.io.Serializable {
      * Equivalent to the standard Python __imul__ method
      * @param     other the object to perform this binary operation with
      *            (the right-hand operand).
-     * @return    the result of the mul, or null if this operation
+     * @return    the result of the imul, or null if this operation
      *            is not defined
      **/
     public PyObject __imul__(PyObject other) {
-        return _mul(other);
+        return null;
     }
 
     /**
@@ -2074,12 +2227,55 @@ public class PyObject implements java.io.Serializable {
      **/
     final PyObject _basic_mul(PyObject o2) {
         PyObject x=__mul__(o2);
-        if (x!=null)
+        if (x!=null) {
             return x;
+        }
         x=o2.__rmul__(this);
-        if (x!=null)
+        if (x!=null) {
             return x;
+        }
         throw Py.TypeError(_unsupportedop("*",o2));
+    }
+
+    /**
+      * Implements the Python expression <code>this *= o2</code>
+      * @param     o2 the object to perform this inplace binary
+      *            operation with.
+      * @return    the result of the imul.
+      * @exception Py.TypeError if this operation can't be performed
+      *            with these operands.
+      **/
+    public final PyObject _imul(PyObject o2) {
+        PyType t1=this.getType();
+        PyType t2=o2.getType();
+        if (t1==t2||t1.builtin&&t2.builtin) {
+            return this._basic_imul(o2);
+        }
+        PyObject impl=t1.lookup("__imul__");
+        if (impl!=null) {
+            PyObject res=impl.__get__(this,t1).__call__(o2);
+            if (res!=Py.NotImplemented) {
+                return res;
+            }
+        }
+        return _binop_rule(t1,o2,t2,"__mul__","__rmul__","*");
+    }
+
+    /**
+     * Implements the Python expression <code>this *= o2</code>
+     * when this and o2 have the same type or are builtin types.
+     * @param     o2 the object to perform this inplace binary
+     *            operation with.
+     * @return    the result of the imul.
+     * @exception Py.TypeError if this operation can't be performed
+     *            with these operands.
+     **/
+    final PyObject _basic_imul(PyObject o2) {
+        PyObject x=__imul__(o2);
+        if (x!=null) {
+            return x;
+        }
+        return this._basic_mul(o2);
     }
 
     /**
@@ -2108,11 +2304,11 @@ public class PyObject implements java.io.Serializable {
      * Equivalent to the standard Python __idiv__ method
      * @param     other the object to perform this binary operation with
      *            (the right-hand operand).
-     * @return    the result of the div, or null if this operation
+     * @return    the result of the idiv, or null if this operation
      *            is not defined
      **/
     public PyObject __idiv__(PyObject other) {
-        return _div(other);
+        return null;
     }
 
     /**
@@ -2123,6 +2319,8 @@ public class PyObject implements java.io.Serializable {
       *            with these operands.
       **/
     public final PyObject _div(PyObject o2) {
+        if (Options.Qnew)
+            return _truediv(o2);
         PyType t1=this.getType();
         PyType t2=o2.getType();
         if (t1==t2||t1.builtin&&t2.builtin) {
@@ -2140,15 +2338,58 @@ public class PyObject implements java.io.Serializable {
      *            with these operands.
      **/
     final PyObject _basic_div(PyObject o2) {
-        if (Options.Qnew)
-            return _truediv(o2);
         PyObject x=__div__(o2);
-        if (x!=null)
+        if (x!=null) {
             return x;
+        }
         x=o2.__rdiv__(this);
-        if (x!=null)
+        if (x!=null) {
             return x;
+        }
         throw Py.TypeError(_unsupportedop("/",o2));
+    }
+
+    /**
+      * Implements the Python expression <code>this /= o2</code>
+      * @param     o2 the object to perform this inplace binary
+      *            operation with.
+      * @return    the result of the idiv.
+      * @exception Py.TypeError if this operation can't be performed
+      *            with these operands.
+      **/
+    public final PyObject _idiv(PyObject o2) {
+        if (Options.Qnew)
+            return _itruediv(o2);
+        PyType t1=this.getType();
+        PyType t2=o2.getType();
+        if (t1==t2||t1.builtin&&t2.builtin) {
+            return this._basic_idiv(o2);
+        }
+        PyObject impl=t1.lookup("__idiv__");
+        if (impl!=null) {
+            PyObject res=impl.__get__(this,t1).__call__(o2);
+            if (res!=Py.NotImplemented) {
+                return res;
+            }
+        }
+        return _binop_rule(t1,o2,t2,"__div__","__rdiv__","/");
+    }
+
+    /**
+     * Implements the Python expression <code>this /= o2</code>
+     * when this and o2 have the same type or are builtin types.
+     * @param     o2 the object to perform this inplace binary
+     *            operation with.
+     * @return    the result of the idiv.
+     * @exception Py.TypeError if this operation can't be performed
+     *            with these operands.
+     **/
+    final PyObject _basic_idiv(PyObject o2) {
+        PyObject x=__idiv__(o2);
+        if (x!=null) {
+            return x;
+        }
+        return this._basic_div(o2);
     }
 
     /**
@@ -2177,11 +2418,11 @@ public class PyObject implements java.io.Serializable {
      * Equivalent to the standard Python __ifloordiv__ method
      * @param     other the object to perform this binary operation with
      *            (the right-hand operand).
-     * @return    the result of the floordiv, or null if this operation
+     * @return    the result of the ifloordiv, or null if this operation
      *            is not defined
      **/
     public PyObject __ifloordiv__(PyObject other) {
-        return _floordiv(other);
+        return null;
     }
 
     /**
@@ -2210,12 +2451,55 @@ public class PyObject implements java.io.Serializable {
      **/
     final PyObject _basic_floordiv(PyObject o2) {
         PyObject x=__floordiv__(o2);
-        if (x!=null)
+        if (x!=null) {
             return x;
+        }
         x=o2.__rfloordiv__(this);
-        if (x!=null)
+        if (x!=null) {
             return x;
+        }
         throw Py.TypeError(_unsupportedop("//",o2));
+    }
+
+    /**
+      * Implements the Python expression <code>this //= o2</code>
+      * @param     o2 the object to perform this inplace binary
+      *            operation with.
+      * @return    the result of the ifloordiv.
+      * @exception Py.TypeError if this operation can't be performed
+      *            with these operands.
+      **/
+    public final PyObject _ifloordiv(PyObject o2) {
+        PyType t1=this.getType();
+        PyType t2=o2.getType();
+        if (t1==t2||t1.builtin&&t2.builtin) {
+            return this._basic_ifloordiv(o2);
+        }
+        PyObject impl=t1.lookup("__ifloordiv__");
+        if (impl!=null) {
+            PyObject res=impl.__get__(this,t1).__call__(o2);
+            if (res!=Py.NotImplemented) {
+                return res;
+            }
+        }
+        return _binop_rule(t1,o2,t2,"__floordiv__","__rfloordiv__","//");
+    }
+
+    /**
+     * Implements the Python expression <code>this //= o2</code>
+     * when this and o2 have the same type or are builtin types.
+     * @param     o2 the object to perform this inplace binary
+     *            operation with.
+     * @return    the result of the ifloordiv.
+     * @exception Py.TypeError if this operation can't be performed
+     *            with these operands.
+     **/
+    final PyObject _basic_ifloordiv(PyObject o2) {
+        PyObject x=__ifloordiv__(o2);
+        if (x!=null) {
+            return x;
+        }
+        return this._basic_floordiv(o2);
     }
 
     /**
@@ -2244,11 +2528,11 @@ public class PyObject implements java.io.Serializable {
      * Equivalent to the standard Python __itruediv__ method
      * @param     other the object to perform this binary operation with
      *            (the right-hand operand).
-     * @return    the result of the truediv, or null if this operation
+     * @return    the result of the itruediv, or null if this operation
      *            is not defined
      **/
     public PyObject __itruediv__(PyObject other) {
-        return _truediv(other);
+        return null;
     }
 
     /**
@@ -2277,12 +2561,55 @@ public class PyObject implements java.io.Serializable {
      **/
     final PyObject _basic_truediv(PyObject o2) {
         PyObject x=__truediv__(o2);
-        if (x!=null)
+        if (x!=null) {
             return x;
+        }
         x=o2.__rtruediv__(this);
-        if (x!=null)
+        if (x!=null) {
             return x;
+        }
         throw Py.TypeError(_unsupportedop("/",o2));
+    }
+
+    /**
+      * Implements the Python expression <code>this /= o2</code>
+      * @param     o2 the object to perform this inplace binary
+      *            operation with.
+      * @return    the result of the itruediv.
+      * @exception Py.TypeError if this operation can't be performed
+      *            with these operands.
+      **/
+    public final PyObject _itruediv(PyObject o2) {
+        PyType t1=this.getType();
+        PyType t2=o2.getType();
+        if (t1==t2||t1.builtin&&t2.builtin) {
+            return this._basic_itruediv(o2);
+        }
+        PyObject impl=t1.lookup("__itruediv__");
+        if (impl!=null) {
+            PyObject res=impl.__get__(this,t1).__call__(o2);
+            if (res!=Py.NotImplemented) {
+                return res;
+            }
+        }
+        return _binop_rule(t1,o2,t2,"__truediv__","__rtruediv__","/");
+    }
+
+    /**
+     * Implements the Python expression <code>this /= o2</code>
+     * when this and o2 have the same type or are builtin types.
+     * @param     o2 the object to perform this inplace binary
+     *            operation with.
+     * @return    the result of the itruediv.
+     * @exception Py.TypeError if this operation can't be performed
+     *            with these operands.
+     **/
+    final PyObject _basic_itruediv(PyObject o2) {
+        PyObject x=__itruediv__(o2);
+        if (x!=null) {
+            return x;
+        }
+        return this._basic_truediv(o2);
     }
 
     /**
@@ -2311,11 +2638,11 @@ public class PyObject implements java.io.Serializable {
      * Equivalent to the standard Python __imod__ method
      * @param     other the object to perform this binary operation with
      *            (the right-hand operand).
-     * @return    the result of the mod, or null if this operation
+     * @return    the result of the imod, or null if this operation
      *            is not defined
      **/
     public PyObject __imod__(PyObject other) {
-        return _mod(other);
+        return null;
     }
 
     /**
@@ -2344,12 +2671,55 @@ public class PyObject implements java.io.Serializable {
      **/
     final PyObject _basic_mod(PyObject o2) {
         PyObject x=__mod__(o2);
-        if (x!=null)
+        if (x!=null) {
             return x;
+        }
         x=o2.__rmod__(this);
-        if (x!=null)
+        if (x!=null) {
             return x;
+        }
         throw Py.TypeError(_unsupportedop("%",o2));
+    }
+
+    /**
+      * Implements the Python expression <code>this %= o2</code>
+      * @param     o2 the object to perform this inplace binary
+      *            operation with.
+      * @return    the result of the imod.
+      * @exception Py.TypeError if this operation can't be performed
+      *            with these operands.
+      **/
+    public final PyObject _imod(PyObject o2) {
+        PyType t1=this.getType();
+        PyType t2=o2.getType();
+        if (t1==t2||t1.builtin&&t2.builtin) {
+            return this._basic_imod(o2);
+        }
+        PyObject impl=t1.lookup("__imod__");
+        if (impl!=null) {
+            PyObject res=impl.__get__(this,t1).__call__(o2);
+            if (res!=Py.NotImplemented) {
+                return res;
+            }
+        }
+        return _binop_rule(t1,o2,t2,"__mod__","__rmod__","%");
+    }
+
+    /**
+     * Implements the Python expression <code>this %= o2</code>
+     * when this and o2 have the same type or are builtin types.
+     * @param     o2 the object to perform this inplace binary
+     *            operation with.
+     * @return    the result of the imod.
+     * @exception Py.TypeError if this operation can't be performed
+     *            with these operands.
+     **/
+    final PyObject _basic_imod(PyObject o2) {
+        PyObject x=__imod__(o2);
+        if (x!=null) {
+            return x;
+        }
+        return this._basic_mod(o2);
     }
 
     /**
@@ -2378,11 +2748,11 @@ public class PyObject implements java.io.Serializable {
      * Equivalent to the standard Python __idivmod__ method
      * @param     other the object to perform this binary operation with
      *            (the right-hand operand).
-     * @return    the result of the divmod, or null if this operation
+     * @return    the result of the idivmod, or null if this operation
      *            is not defined
      **/
     public PyObject __idivmod__(PyObject other) {
-        return _divmod(other);
+        return null;
     }
 
     /**
@@ -2411,12 +2781,55 @@ public class PyObject implements java.io.Serializable {
      **/
     final PyObject _basic_divmod(PyObject o2) {
         PyObject x=__divmod__(o2);
-        if (x!=null)
+        if (x!=null) {
             return x;
+        }
         x=o2.__rdivmod__(this);
-        if (x!=null)
+        if (x!=null) {
             return x;
+        }
         throw Py.TypeError(_unsupportedop("divmod",o2));
+    }
+
+    /**
+      * Implements the Python expression <code>this divmod= o2</code>
+      * @param     o2 the object to perform this inplace binary
+      *            operation with.
+      * @return    the result of the idivmod.
+      * @exception Py.TypeError if this operation can't be performed
+      *            with these operands.
+      **/
+    public final PyObject _idivmod(PyObject o2) {
+        PyType t1=this.getType();
+        PyType t2=o2.getType();
+        if (t1==t2||t1.builtin&&t2.builtin) {
+            return this._basic_idivmod(o2);
+        }
+        PyObject impl=t1.lookup("__idivmod__");
+        if (impl!=null) {
+            PyObject res=impl.__get__(this,t1).__call__(o2);
+            if (res!=Py.NotImplemented) {
+                return res;
+            }
+        }
+        return _binop_rule(t1,o2,t2,"__divmod__","__rdivmod__","divmod");
+    }
+
+    /**
+     * Implements the Python expression <code>this divmod= o2</code>
+     * when this and o2 have the same type or are builtin types.
+     * @param     o2 the object to perform this inplace binary
+     *            operation with.
+     * @return    the result of the idivmod.
+     * @exception Py.TypeError if this operation can't be performed
+     *            with these operands.
+     **/
+    final PyObject _basic_idivmod(PyObject o2) {
+        PyObject x=__idivmod__(o2);
+        if (x!=null) {
+            return x;
+        }
+        return this._basic_divmod(o2);
     }
 
     /**
@@ -2445,11 +2858,11 @@ public class PyObject implements java.io.Serializable {
      * Equivalent to the standard Python __ipow__ method
      * @param     other the object to perform this binary operation with
      *            (the right-hand operand).
-     * @return    the result of the pow, or null if this operation
+     * @return    the result of the ipow, or null if this operation
      *            is not defined
      **/
     public PyObject __ipow__(PyObject other) {
-        return _pow(other);
+        return null;
     }
 
     /**
@@ -2478,12 +2891,55 @@ public class PyObject implements java.io.Serializable {
      **/
     final PyObject _basic_pow(PyObject o2) {
         PyObject x=__pow__(o2);
-        if (x!=null)
+        if (x!=null) {
             return x;
+        }
         x=o2.__rpow__(this);
-        if (x!=null)
+        if (x!=null) {
             return x;
+        }
         throw Py.TypeError(_unsupportedop("**",o2));
+    }
+
+    /**
+      * Implements the Python expression <code>this **= o2</code>
+      * @param     o2 the object to perform this inplace binary
+      *            operation with.
+      * @return    the result of the ipow.
+      * @exception Py.TypeError if this operation can't be performed
+      *            with these operands.
+      **/
+    public final PyObject _ipow(PyObject o2) {
+        PyType t1=this.getType();
+        PyType t2=o2.getType();
+        if (t1==t2||t1.builtin&&t2.builtin) {
+            return this._basic_ipow(o2);
+        }
+        PyObject impl=t1.lookup("__ipow__");
+        if (impl!=null) {
+            PyObject res=impl.__get__(this,t1).__call__(o2);
+            if (res!=Py.NotImplemented) {
+                return res;
+            }
+        }
+        return _binop_rule(t1,o2,t2,"__pow__","__rpow__","**");
+    }
+
+    /**
+     * Implements the Python expression <code>this **= o2</code>
+     * when this and o2 have the same type or are builtin types.
+     * @param     o2 the object to perform this inplace binary
+     *            operation with.
+     * @return    the result of the ipow.
+     * @exception Py.TypeError if this operation can't be performed
+     *            with these operands.
+     **/
+    final PyObject _basic_ipow(PyObject o2) {
+        PyObject x=__ipow__(o2);
+        if (x!=null) {
+            return x;
+        }
+        return this._basic_pow(o2);
     }
 
     /**
@@ -2512,11 +2968,11 @@ public class PyObject implements java.io.Serializable {
      * Equivalent to the standard Python __ilshift__ method
      * @param     other the object to perform this binary operation with
      *            (the right-hand operand).
-     * @return    the result of the lshift, or null if this operation
+     * @return    the result of the ilshift, or null if this operation
      *            is not defined
      **/
     public PyObject __ilshift__(PyObject other) {
-        return _lshift(other);
+        return null;
     }
 
     /**
@@ -2545,12 +3001,55 @@ public class PyObject implements java.io.Serializable {
      **/
     final PyObject _basic_lshift(PyObject o2) {
         PyObject x=__lshift__(o2);
-        if (x!=null)
+        if (x!=null) {
             return x;
+        }
         x=o2.__rlshift__(this);
-        if (x!=null)
+        if (x!=null) {
             return x;
+        }
         throw Py.TypeError(_unsupportedop("<<",o2));
+    }
+
+    /**
+      * Implements the Python expression <code>this <<= o2</code>
+      * @param     o2 the object to perform this inplace binary
+      *            operation with.
+      * @return    the result of the ilshift.
+      * @exception Py.TypeError if this operation can't be performed
+      *            with these operands.
+      **/
+    public final PyObject _ilshift(PyObject o2) {
+        PyType t1=this.getType();
+        PyType t2=o2.getType();
+        if (t1==t2||t1.builtin&&t2.builtin) {
+            return this._basic_ilshift(o2);
+        }
+        PyObject impl=t1.lookup("__ilshift__");
+        if (impl!=null) {
+            PyObject res=impl.__get__(this,t1).__call__(o2);
+            if (res!=Py.NotImplemented) {
+                return res;
+            }
+        }
+        return _binop_rule(t1,o2,t2,"__lshift__","__rlshift__","<<");
+    }
+
+    /**
+     * Implements the Python expression <code>this <<= o2</code>
+     * when this and o2 have the same type or are builtin types.
+     * @param     o2 the object to perform this inplace binary
+     *            operation with.
+     * @return    the result of the ilshift.
+     * @exception Py.TypeError if this operation can't be performed
+     *            with these operands.
+     **/
+    final PyObject _basic_ilshift(PyObject o2) {
+        PyObject x=__ilshift__(o2);
+        if (x!=null) {
+            return x;
+        }
+        return this._basic_lshift(o2);
     }
 
     /**
@@ -2579,11 +3078,11 @@ public class PyObject implements java.io.Serializable {
      * Equivalent to the standard Python __irshift__ method
      * @param     other the object to perform this binary operation with
      *            (the right-hand operand).
-     * @return    the result of the rshift, or null if this operation
+     * @return    the result of the irshift, or null if this operation
      *            is not defined
      **/
     public PyObject __irshift__(PyObject other) {
-        return _rshift(other);
+        return null;
     }
 
     /**
@@ -2612,12 +3111,55 @@ public class PyObject implements java.io.Serializable {
      **/
     final PyObject _basic_rshift(PyObject o2) {
         PyObject x=__rshift__(o2);
-        if (x!=null)
+        if (x!=null) {
             return x;
+        }
         x=o2.__rrshift__(this);
-        if (x!=null)
+        if (x!=null) {
             return x;
+        }
         throw Py.TypeError(_unsupportedop(">>",o2));
+    }
+
+    /**
+      * Implements the Python expression <code>this >>= o2</code>
+      * @param     o2 the object to perform this inplace binary
+      *            operation with.
+      * @return    the result of the irshift.
+      * @exception Py.TypeError if this operation can't be performed
+      *            with these operands.
+      **/
+    public final PyObject _irshift(PyObject o2) {
+        PyType t1=this.getType();
+        PyType t2=o2.getType();
+        if (t1==t2||t1.builtin&&t2.builtin) {
+            return this._basic_irshift(o2);
+        }
+        PyObject impl=t1.lookup("__irshift__");
+        if (impl!=null) {
+            PyObject res=impl.__get__(this,t1).__call__(o2);
+            if (res!=Py.NotImplemented) {
+                return res;
+            }
+        }
+        return _binop_rule(t1,o2,t2,"__rshift__","__rrshift__",">>");
+    }
+
+    /**
+     * Implements the Python expression <code>this >>= o2</code>
+     * when this and o2 have the same type or are builtin types.
+     * @param     o2 the object to perform this inplace binary
+     *            operation with.
+     * @return    the result of the irshift.
+     * @exception Py.TypeError if this operation can't be performed
+     *            with these operands.
+     **/
+    final PyObject _basic_irshift(PyObject o2) {
+        PyObject x=__irshift__(o2);
+        if (x!=null) {
+            return x;
+        }
+        return this._basic_rshift(o2);
     }
 
     /**
@@ -2646,11 +3188,11 @@ public class PyObject implements java.io.Serializable {
      * Equivalent to the standard Python __iand__ method
      * @param     other the object to perform this binary operation with
      *            (the right-hand operand).
-     * @return    the result of the and, or null if this operation
+     * @return    the result of the iand, or null if this operation
      *            is not defined
      **/
     public PyObject __iand__(PyObject other) {
-        return _and(other);
+        return null;
     }
 
     /**
@@ -2679,12 +3221,55 @@ public class PyObject implements java.io.Serializable {
      **/
     final PyObject _basic_and(PyObject o2) {
         PyObject x=__and__(o2);
-        if (x!=null)
+        if (x!=null) {
             return x;
+        }
         x=o2.__rand__(this);
-        if (x!=null)
+        if (x!=null) {
             return x;
+        }
         throw Py.TypeError(_unsupportedop("&",o2));
+    }
+
+    /**
+      * Implements the Python expression <code>this &= o2</code>
+      * @param     o2 the object to perform this inplace binary
+      *            operation with.
+      * @return    the result of the iand.
+      * @exception Py.TypeError if this operation can't be performed
+      *            with these operands.
+      **/
+    public final PyObject _iand(PyObject o2) {
+        PyType t1=this.getType();
+        PyType t2=o2.getType();
+        if (t1==t2||t1.builtin&&t2.builtin) {
+            return this._basic_iand(o2);
+        }
+        PyObject impl=t1.lookup("__iand__");
+        if (impl!=null) {
+            PyObject res=impl.__get__(this,t1).__call__(o2);
+            if (res!=Py.NotImplemented) {
+                return res;
+            }
+        }
+        return _binop_rule(t1,o2,t2,"__and__","__rand__","&");
+    }
+
+    /**
+     * Implements the Python expression <code>this &= o2</code>
+     * when this and o2 have the same type or are builtin types.
+     * @param     o2 the object to perform this inplace binary
+     *            operation with.
+     * @return    the result of the iand.
+     * @exception Py.TypeError if this operation can't be performed
+     *            with these operands.
+     **/
+    final PyObject _basic_iand(PyObject o2) {
+        PyObject x=__iand__(o2);
+        if (x!=null) {
+            return x;
+        }
+        return this._basic_and(o2);
     }
 
     /**
@@ -2713,11 +3298,11 @@ public class PyObject implements java.io.Serializable {
      * Equivalent to the standard Python __ior__ method
      * @param     other the object to perform this binary operation with
      *            (the right-hand operand).
-     * @return    the result of the or, or null if this operation
+     * @return    the result of the ior, or null if this operation
      *            is not defined
      **/
     public PyObject __ior__(PyObject other) {
-        return _or(other);
+        return null;
     }
 
     /**
@@ -2746,12 +3331,55 @@ public class PyObject implements java.io.Serializable {
      **/
     final PyObject _basic_or(PyObject o2) {
         PyObject x=__or__(o2);
-        if (x!=null)
+        if (x!=null) {
             return x;
+        }
         x=o2.__ror__(this);
-        if (x!=null)
+        if (x!=null) {
             return x;
+        }
         throw Py.TypeError(_unsupportedop("|",o2));
+    }
+
+    /**
+      * Implements the Python expression <code>this |= o2</code>
+      * @param     o2 the object to perform this inplace binary
+      *            operation with.
+      * @return    the result of the ior.
+      * @exception Py.TypeError if this operation can't be performed
+      *            with these operands.
+      **/
+    public final PyObject _ior(PyObject o2) {
+        PyType t1=this.getType();
+        PyType t2=o2.getType();
+        if (t1==t2||t1.builtin&&t2.builtin) {
+            return this._basic_ior(o2);
+        }
+        PyObject impl=t1.lookup("__ior__");
+        if (impl!=null) {
+            PyObject res=impl.__get__(this,t1).__call__(o2);
+            if (res!=Py.NotImplemented) {
+                return res;
+            }
+        }
+        return _binop_rule(t1,o2,t2,"__or__","__ror__","|");
+    }
+
+    /**
+     * Implements the Python expression <code>this |= o2</code>
+     * when this and o2 have the same type or are builtin types.
+     * @param     o2 the object to perform this inplace binary
+     *            operation with.
+     * @return    the result of the ior.
+     * @exception Py.TypeError if this operation can't be performed
+     *            with these operands.
+     **/
+    final PyObject _basic_ior(PyObject o2) {
+        PyObject x=__ior__(o2);
+        if (x!=null) {
+            return x;
+        }
+        return this._basic_or(o2);
     }
 
     /**
@@ -2780,11 +3408,11 @@ public class PyObject implements java.io.Serializable {
      * Equivalent to the standard Python __ixor__ method
      * @param     other the object to perform this binary operation with
      *            (the right-hand operand).
-     * @return    the result of the xor, or null if this operation
+     * @return    the result of the ixor, or null if this operation
      *            is not defined
      **/
     public PyObject __ixor__(PyObject other) {
-        return _xor(other);
+        return null;
     }
 
     /**
@@ -2813,32 +3441,67 @@ public class PyObject implements java.io.Serializable {
      **/
     final PyObject _basic_xor(PyObject o2) {
         PyObject x=__xor__(o2);
-        if (x!=null)
+        if (x!=null) {
             return x;
+        }
         x=o2.__rxor__(this);
-        if (x!=null)
+        if (x!=null) {
             return x;
+        }
         throw Py.TypeError(_unsupportedop("^",o2));
+    }
+
+    /**
+      * Implements the Python expression <code>this ^= o2</code>
+      * @param     o2 the object to perform this inplace binary
+      *            operation with.
+      * @return    the result of the ixor.
+      * @exception Py.TypeError if this operation can't be performed
+      *            with these operands.
+      **/
+    public final PyObject _ixor(PyObject o2) {
+        PyType t1=this.getType();
+        PyType t2=o2.getType();
+        if (t1==t2||t1.builtin&&t2.builtin) {
+            return this._basic_ixor(o2);
+        }
+        PyObject impl=t1.lookup("__ixor__");
+        if (impl!=null) {
+            PyObject res=impl.__get__(this,t1).__call__(o2);
+            if (res!=Py.NotImplemented) {
+                return res;
+            }
+        }
+        return _binop_rule(t1,o2,t2,"__xor__","__rxor__","^");
+    }
+
+    /**
+     * Implements the Python expression <code>this ^= o2</code>
+     * when this and o2 have the same type or are builtin types.
+     * @param     o2 the object to perform this inplace binary
+     *            operation with.
+     * @return    the result of the ixor.
+     * @exception Py.TypeError if this operation can't be performed
+     *            with these operands.
+     **/
+    final PyObject _basic_ixor(PyObject o2) {
+        PyObject x=__ixor__(o2);
+        if (x!=null) {
+            return x;
+        }
+        return this._basic_xor(o2);
     }
 
     // Generated by make_binops.py (End)
 
-    /* A convenience function for PyProxy's */
-    // Possibly add _jcall(), _jcall(Object, ...) as future optimization
     /**
-     * A convenience function for PyProxy's.
-     * @param args call arguments.
-     * @exception Throwable
+     * A convenience function for PyProxys.
      */
     public PyObject _jcallexc(Object[] args) throws Throwable {
-        PyObject[] pargs = new PyObject[args.length];
         try {
-            int n = args.length;
-            for (int i = 0; i < n; i++)
-                pargs[i] = Py.java2py(args[i]);
-            return __call__(pargs);
+            return __call__(Py.javas2pys(args));
         } catch (PyException e) {
-            if (e.value instanceof PyJavaInstance) {
+            if (e.value.getJavaProxy() != null) {
                 Object t = e.value.__tojava__(Throwable.class);
                 if (t != null && t != Py.NoConversion) {
                     throw (Throwable) t;
@@ -2936,6 +3599,23 @@ public class PyObject implements java.io.Serializable {
         return f.__call__(arg1, arg2);
     }
 
+    /**
+     * Shortcut for calling a method on a PyObject with one extra
+     * initial argument.
+     *
+     * @param name the name of the method to call.  This must be an
+     *        interned string!
+     * @param arg1 the first argument of the method.
+     * @param args an array of the arguments to the call.
+     * @param keywords the keywords to use in the call.
+     * @return the result of calling the method name with arg1 args
+     * and keywords
+     **/
+    public PyObject invoke(String name, PyObject arg1, PyObject[] args, String[] keywords) {
+        PyObject f = __getattr__(name);
+        return f.__call__(arg1, args, keywords);
+    }
+
     /* descriptors and lookup protocols */
 
     /** xxx implements where meaningful
@@ -2953,74 +3633,107 @@ public class PyObject implements java.io.Serializable {
     }
 
     public void setDict(PyObject newDict) {
-    	// fallback if setDict not implemented in subclass
-    	throw Py.TypeError("can't set attribute '__dict__' of instance of " + getType().safeRepr());
+        // fallback if setDict not implemented in subclass
+        throw Py.TypeError("can't set attribute '__dict__' of instance of " + getType().fastGetName());
     }
 
     public void delDict() {
         // fallback to error
-        throw Py.TypeError("can't delete attribute '__dict__' of instance of '" + getType().safeRepr()+ "'");
+        throw Py.TypeError("can't delete attribute '__dict__' of instance of '" + getType().fastGetName()+ "'");
+    }
+
+    public boolean implementsDescrGet() {
+        return objtype.hasGet;
     }
 
     public boolean implementsDescrSet() {
-        return objtype.has_set;
+        return objtype.hasSet;
     }
 
     public boolean implementsDescrDelete() {
-        return objtype.has_delete;
+        return objtype.hasDelete;
     }
 
-    public boolean isDataDescr() { // implements either __set__ or __delete__
-        return objtype.has_set || objtype.has_delete;
+    public boolean isDataDescr() {
+        return objtype.hasSet || objtype.hasDelete;
     }
 
-    // doc & xxx ok this way?
-    // can return null meaning set-only or throw exception
-
-    // backward comp impls.
+    /**
+     * Get descriptor for this PyObject.
+     *
+     * @param obj -
+     *            the instance accessing this descriptor. Can be null if this is
+     *            being accessed by a type.
+     * @param type -
+     *            the type accessing this descriptor. Will be null if obj exists
+     *            as obj is of the type accessing the descriptor.
+     * @return - the object defined for this descriptor for the given obj and
+     *         type.
+     */
     public PyObject __get__(PyObject obj, PyObject type) {
         return _doget(obj, type);
     }
 
     public void __set__(PyObject obj, PyObject value) {
-        throw Py.AttributeError("object internal __set__ impl is abstract");
+        if (!_doset(obj, value)) {
+            throw Py.AttributeError("object internal __set__ impl is abstract");
+        }
     }
 
     public void __delete__(PyObject obj) {
         throw Py.AttributeError("object internal __delete__ impl is abstract");
     }
 
+    @ExposedMethod(doc = BuiltinDocs.object___getattribute___doc)
+    final PyObject object___getattribute__(PyObject arg0) {
+        String name = asName(arg0);
+        PyObject ret = object___findattr__(name);
+        if (ret == null) {
+            noAttributeError(name);
+        }
+        return ret;
+    }
+
     // name must be interned
     final PyObject object___findattr__(String name) {
-
         PyObject descr = objtype.lookup(name);
         PyObject res;
+        boolean get = false;
 
         if (descr != null) {
-            if (descr.isDataDescr()) {
-                res = descr.__get__(this, objtype);
-                if (res != null)
-                    return res;
+            get = descr.implementsDescrGet();
+            if (get && descr.isDataDescr()) {
+                return descr.__get__(this, objtype);
             }
         }
 
         PyObject obj_dict = fastGetDict();
         if (obj_dict != null) {
             res = obj_dict.__finditem__(name);
-            if (res != null)
+            if (res != null) {
                 return res;
+            }
+        }
+
+        if (get) {
+            return descr.__get__(this, objtype);
         }
 
         if (descr != null) {
-            return descr.__get__(this, objtype);
+            return descr;
         }
 
         return null;
     }
 
+    @ExposedMethod(doc = BuiltinDocs.object___setattr___doc)
+    final void object___setattr__(PyObject name, PyObject value) {
+        hackCheck("__setattr__");
+        object___setattr__(asName(name), value);
+    }
+
     final void object___setattr__(String name, PyObject value) {
         PyObject descr = objtype.lookup(name);
-
         boolean set = false;
 
         if (descr != null) {
@@ -3048,9 +3761,22 @@ public class PyObject implements java.io.Serializable {
         noAttributeError(name);
     }
 
+    @ExposedMethod(doc = BuiltinDocs.object___delattr___doc)
+    final void object___delattr__(PyObject name) {
+        hackCheck("__delattr__");
+        object___delattr__(asName(name));
+    }
+
+    public static final String asName(PyObject obj) {
+        try {
+            return obj.asName(0);
+        } catch(PyObject.ConversionException e) {
+            throw Py.TypeError("attribute name must be a string");
+        }
+    }
+
     final void object___delattr__(String name) {
         PyObject descr = objtype.lookup(name);
-
         boolean delete = false;
 
         if (descr != null) {
@@ -3066,10 +3792,11 @@ public class PyObject implements java.io.Serializable {
             try {
                 obj_dict.__delitem__(name);
             } catch (PyException exc) {
-                if (Py.matchException(exc, Py.KeyError))
+                if (exc.match(Py.KeyError)) {
                     noAttributeError(name);
-                else
+                } else {
                     throw exc;
+                }
             }
             return;
         }
@@ -3086,7 +3813,20 @@ public class PyObject implements java.io.Serializable {
     }
 
     /**
-     * Used for pickling.
+     * Helper to check for object.__setattr__ or __delattr__ applied to a type (The Carlo
+     * Verre hack).
+     *
+     * @param what String method name to check for
+     */
+    private void hackCheck(String what) {
+        if (this instanceof PyType && ((PyType)this).builtin) {
+            throw Py.TypeError(String.format("can't apply this %s to %s object", what,
+                                             objtype.fastGetName()));
+        }
+    }
+
+    /**
+     * Used for pickling.  Default implementation calls object___reduce__.
      *
      * @return a tuple of (class, tuple)
      */
@@ -3094,11 +3834,143 @@ public class PyObject implements java.io.Serializable {
         return object___reduce__();
     }
 
+    @ExposedMethod(doc = BuiltinDocs.object___reduce___doc)
     final PyObject object___reduce__() {
-        PyTuple newargs = __getnewargs__();
-        return new PyTuple(new PyObject[]{
-            getType(), newargs
-        });
+        return object___reduce_ex__(0);
+    }
+
+    /** Used for pickling.  If the subclass specifies __reduce__, it will
+     * override __reduce_ex__ in the base-class, even if __reduce_ex__ was
+     * called with an argument.
+     *
+     * @param arg PyInteger specifying reduce algorithm (method without this
+     * argument defaults to 0).
+     * @return a tuple of (class, tuple)
+     */
+    public PyObject __reduce_ex__(int arg) {
+        return object___reduce_ex__(arg);
+    }
+    public PyObject __reduce_ex__() {
+        return object___reduce_ex__(0);
+    }
+
+    @ExposedMethod(defaults = "0", doc = BuiltinDocs.object___reduce___doc)
+    final PyObject object___reduce_ex__(int arg) {
+        PyObject res;
+
+        PyObject clsreduce = this.getType().__findattr__("__reduce__");
+        PyObject objreduce = (new PyObject()).getType().__findattr__("__reduce__");
+
+        if (clsreduce != objreduce) {
+            res = this.__reduce__();
+        } else if (arg >= 2) {
+            res = reduce_2();
+        } else {
+            PyObject copyreg = __builtin__.__import__("copy_reg", null, null, Py.EmptyTuple);
+            PyObject copyreg_reduce = copyreg.__findattr__("_reduce_ex");
+            res = copyreg_reduce.__call__(this, new PyInteger(arg));
+        }
+        return res;
+    }
+
+    private static PyObject slotnames(PyObject cls) {
+        PyObject slotnames;
+
+        slotnames = cls.fastGetDict().__finditem__("__slotnames__");
+        if (null != slotnames) {
+            return slotnames;
+        }
+
+        PyObject copyreg = __builtin__.__import__("copy_reg", null, null, Py.EmptyTuple);
+        PyObject copyreg_slotnames = copyreg.__findattr__("_slotnames");
+        slotnames = copyreg_slotnames.__call__(cls);
+        if (null != slotnames && Py.None != slotnames && (!(slotnames instanceof PyList))) {
+            throw Py.TypeError("copy_reg._slotnames didn't return a list or None");
+        }
+
+        return slotnames;
+    }
+
+    private PyObject reduce_2() {
+        PyObject args, state;
+        PyObject res = null;
+        int n,i;
+
+        PyObject cls = this.__findattr__("__class__");
+
+        PyObject getnewargs = this.__findattr__("__getnewargs__");
+        if (null != getnewargs) {
+            args = getnewargs.__call__();
+            if (null != args && !(args instanceof PyTuple)) {
+                throw Py.TypeError("__getnewargs__ should return a tuple");
+            }
+        } else {
+            args = Py.EmptyTuple;
+        }
+
+        PyObject getstate = this.__findattr__("__getstate__");
+        if (null != getstate) {
+            state = getstate.__call__();
+            if (null == state) {
+                return res;
+            }
+        } else {
+            state = this.__findattr__("__dict__");
+            if (null == state) {
+                state = Py.None;
+            }
+
+            PyObject names = slotnames(cls);
+            if (null == names) {
+                return res;
+            }
+
+            if (names != Py.None) {
+                if (!(names instanceof PyList)) {
+                    throw Py.AssertionError("slots not a list");
+                }
+                PyObject slots = new PyDictionary();
+
+                n = 0;
+                for (i = 0; i < ((PyList)names).size(); i++) {
+                    PyObject name = ((PyList)names).pyget(i);
+                    PyObject value = this.__findattr__(name.toString());
+                    if (null == value) {
+                        // do nothing
+                    } else {
+                        slots.__setitem__(name, value);
+                        n++;
+                    }
+                }
+                if (n > 0) {
+                    state = new PyTuple(state, slots);
+                }
+            }
+        }
+        PyObject listitems;
+        PyObject dictitems;
+        if (!(this instanceof PyList)) {
+            listitems = Py.None;
+        } else {
+            listitems = ((PyList)this).__iter__();
+        }
+        if (!(this instanceof PyDictionary)) {
+            dictitems = Py.None;
+        } else {
+            dictitems = invoke("iteritems");
+        }
+
+        PyObject copyreg = __builtin__.__import__("copy_reg", null, null, Py.EmptyTuple);
+        PyObject newobj = copyreg.__findattr__("__newobj__");
+
+        n = ((PyTuple)args).size();
+        PyObject args2[] = new PyObject[n+1];
+        args2[0] = cls;
+        for(i = 0; i < n; i++) {
+            args2[i+1] = ((PyTuple)args).pyget(i);
+        }
+
+        return new PyTuple(newobj, new PyTuple(args2), state, listitems, dictitems);
     }
 
     public PyTuple __getnewargs__() {
@@ -3122,22 +3994,115 @@ public class PyObject implements java.io.Serializable {
         throw new ConversionException(index);
     }
 
+    public String asString(){
+        throw Py.TypeError("expected a str");
+    }
+
     public String asStringOrNull(int index) throws ConversionException {
        return asString(index);
     }
 
+    public String asStringOrNull(){
+        return asString();
+    }
+
+    // TODO - remove when all asName users are moved to the @Exposed annotation
     public String asName(int index) throws ConversionException {
         throw new ConversionException(index);
     }
 
+    // TODO - remove when all generated users are migrated to @Exposed and asInt()
     public int asInt(int index) throws ConversionException {
         throw new ConversionException(index);
+    }
+
+    /**
+     * Convert this object into an int. Throws a PyException on failure.
+     *
+     * @return an int value
+     */
+    public int asInt() {
+        PyObject intObj;
+        try {
+            intObj = __int__();
+        } catch (PyException pye) {
+            if (pye.match(Py.AttributeError)) {
+                throw Py.TypeError("an integer is required");
+            }
+            throw pye;
+        }
+        if (!(intObj instanceof PyInteger || intObj instanceof PyLong)) {
+            // Shouldn't happen except with buggy builtin types
+            throw Py.TypeError("nb_int should return int object");
+        }
+        return intObj.asInt();
     }
 
     public long asLong(int index) throws ConversionException {
         throw new ConversionException(index);
     }
 
+    /**
+     * Convert this object longo an long. Throws a PyException on failure.
+     *
+     * @return an long value
+     */
+    public long asLong() {
+        PyObject longObj;
+        try {
+            longObj = __long__();
+        } catch (PyException pye) {
+            if (pye.match(Py.AttributeError)) {
+                throw Py.TypeError("an integer is required");
+            }
+            throw pye;
+        }
+        if (!(longObj instanceof PyLong || longObj instanceof PyInteger)) {
+            // Shouldn't happen except with buggy builtin types
+            throw Py.TypeError("integer conversion failed");
+        }
+        return longObj.asLong();
+    }
+
+    /**
+     * Convert this object into a double. Throws a PyException on failure.
+     *
+     * @return a double value
+     */
+    public double asDouble() {
+        PyFloat floatObj;
+        try {
+            floatObj = __float__();
+        } catch (PyException pye) {
+            if (pye.match(Py.AttributeError)) {
+                throw Py.TypeError("a float is required");
+            }
+            throw pye;
+        }
+        return floatObj.asDouble();
+    }
+
+    /**
+     * Convert this object into an index-sized integer. Throws a PyException on failure.
+     *
+     * @return an index-sized int
+     */
+    public int asIndex() {
+        return asIndex(null);
+    }
+
+    /**
+     * Convert this object into an index-sized integer.
+     *
+     * Throws a Python exception on Overflow if specified an exception type for err.
+     *
+     * @param err the Python exception to raise on OverflowErrors
+     * @return an index-sized int
+     */
+    public int asIndex(PyObject err) {
+        // OverflowErrors are handled in PyLong.asIndex
+        return __index__().asInt();
+    }
 }
 
 /*
@@ -3154,6 +4119,7 @@ class PyIdentityTuple extends PyObject {
         list = elements;
     }
 
+    @Override
     public int hashCode() {
         int x, y;
         int len = list.length;
@@ -3167,6 +4133,7 @@ class PyIdentityTuple extends PyObject {
         return x;
     }
 
+    @Override
     public boolean equals(Object o) {
         if (!(o instanceof PyIdentityTuple))
             return false;

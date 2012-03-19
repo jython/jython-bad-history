@@ -1,7 +1,6 @@
 /*
  * Jython Database Specification API 2.0
  *
- * $Id$
  *
  * Copyright (c) 2001 brian zimmer <bzimmer@ziclix.com>
  *
@@ -19,8 +18,6 @@ import com.ziclix.python.sql.util.*;
  * Connect using DriverManager.
  *
  * @author brian zimmer
- * @author last revised by $Author$
- * @version $Revision$
  */
 public class Connect extends PyObject {
 
@@ -32,19 +29,11 @@ public class Connect extends PyObject {
     public Connect() {
     }
 
-    /**
-     * Method __findattr__
-     *
-     * @param String name
-     * @return PyObject
-     */
-    public PyObject __findattr__(String name) {
-
+    public PyObject __findattr_ex__(String name) {
         if ("__doc__".equals(name)) {
             return _doc;
         }
-
-        return super.__findattr__(name);
+        return super.__findattr_ex__(name);
     }
 
     /**
@@ -116,21 +105,5 @@ public class Connect extends PyObject {
      */
     public String toString() {
         return "<connect object instance at " + Py.id(this) + ">";
-    }
-
-    // __class__ boilerplate -- see PyObject for details
-
-    /**
-     * Field __class__
-     */
-    public static PyClass __class__;
-
-    /**
-     * Method getPyClass
-     *
-     * @return PyClass
-     */
-    protected PyClass getPyClass() {
-        return __class__;
     }
 }

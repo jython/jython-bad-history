@@ -1,114 +1,180 @@
-// Copyright (c) Corporation for National Research Initiatives
 package org.python.util;
-import org.python.core.*;
-import java.util.*;
+
+import java.io.Reader;
+import java.io.StringReader;
+import java.util.Properties;
+
+import org.python.antlr.base.mod;
+import org.python.core.CompileMode;
+import org.python.core.CompilerFlags;
+import org.python.core.ParserFacade;
+import org.python.core.Py;
+import org.python.core.PyCode;
+import org.python.core.PyException;
+import org.python.core.PyFile;
+import org.python.core.PyFileWriter;
+import org.python.core.PyModule;
+import org.python.core.PyObject;
+import org.python.core.PyString;
+import org.python.core.PyStringMap;
+import org.python.core.PySystemState;
+import org.python.core.__builtin__;
+import org.python.core.PyFileReader;
 
 /**
- * The PythonInterpreter class is a standard wrapper for a Jython
- * interpreter for use embedding in a Java application.
- *
- * @author  Jim Hugunin
- * @version 1.0, 02/23/97
+ * The PythonInterpreter class is a standard wrapper for a Jython interpreter
+ * for embedding in a Java application.
  */
-
 public class PythonInterpreter {
-    PyModule module;
-    protected PySystemState systemState;
-    PyObject locals;
 
-    protected CompilerFlags cflags = null;
+    // Defaults if the interpreter uses thread-local state
+    protected PySystemState systemState;
+    PyObject globals;
+
+    protected ThreadLocal<PyObject> threadLocals;
+
+    protected CompilerFlags cflags = new CompilerFlags();
 
     /**
-     * Initializes the jython runtime. This should only be called once, and
-     * should be called before any other python objects are created (including a
-     * PythonInterpreter).
-     * 
+     * Initializes the Jython runtime. This should only be called
+     * once, before any other Python objects (including
+     * PythonInterpreter) are created.
+     *
      * @param preProperties
-     *            A set of properties. Typically System.getProperties() is used.
+     *            A set of properties. Typically
+     *            System.getProperties() is used.  preProperties
+     *            override properties from the registry file.
      * @param postProperties
-     *            An other set of properties. Values like python.home,
-     *            python.path and all other values from the registry files can
-     *            be added to this property set. PostProperties will override
-     *            system properties and registry properties.
+     *            Another set of properties. Values like python.home,
+     *            python.path and all other values from the registry
+     *            files can be added to this property
+     *            set. postProperties override system properties and
+     *            registry properties.
      * @param argv
-     *            Command line argument. These values will assigned to sys.argv.
+     *            Command line arguments, assigned to sys.argv.
      */
-    public static void initialize(Properties preProperties,
-                                  Properties postProperties,
-                                  String[] argv) {
+    public static void initialize(Properties preProperties, Properties postProperties, String[] argv) {
         PySystemState.initialize(preProperties, postProperties, argv);
     }
 
     /**
-     * Create a new Interpreter with an empty dictionary
+     * Creates a new interpreter with an empty local namespace.
      */
     public PythonInterpreter() {
         this(null, null);
     }
 
     /**
-     * Create a new interpreter with the given dictionary to use as its
-     * namespace
+     * Creates a new interpreter with the ability to maintain a
+     * separate local namespace for each thread (set by invoking
+     * setLocals()).
      *
-     * @param dict      the dictionary to use
+     * @param dict
+     *            a Python mapping object (e.g., a dictionary) for use
+     *            as the default namespace
      */
+    public static PythonInterpreter threadLocalStateInterpreter(PyObject dict) {
+        return new PythonInterpreter(dict, null, true);
+    }
 
-    // Optional dictionary will be used for locals namespace
+    /**
+     * Creates a new interpreter with a specified local namespace.
+     *
+     * @param dict 
+     *            a Python mapping object (e.g., a dictionary) for use
+     *            as the namespace
+     */
     public PythonInterpreter(PyObject dict) {
         this(dict, null);
     }
 
     public PythonInterpreter(PyObject dict, PySystemState systemState) {
-        if (dict == null)
-            dict = new PyStringMap();
-        if (systemState == null) {
-            systemState = Py.getSystemState();
-            if (systemState == null)
-                systemState = new PySystemState();
-        }
-        module = new PyModule("__main__", dict);
-        this.systemState = systemState;
-        locals = module.__dict__;
-        setState();
+        this(dict, systemState, false);
     }
 
-    protected void setState() {
-        Py.setSystemState(systemState);
+    protected PythonInterpreter(PyObject dict, PySystemState systemState, boolean useThreadLocalState) {
+        if (dict == null) {
+            dict = Py.newStringMap();
+        }
+        globals = dict;
+
+        if (systemState == null)
+            systemState = Py.getSystemState();
+        this.systemState = systemState;
+        setSystemState();
+
+        if (useThreadLocalState) {
+            threadLocals = new ThreadLocal<PyObject>();
+        } else {
+            PyModule module = new PyModule("__main__", dict);
+            systemState.modules.__setitem__("__main__", module);
+        }
+    }
+
+    public PySystemState getSystemState() {
+        return systemState;
+    }
+
+    protected void setSystemState() {
+        Py.setSystemState(getSystemState());
     }
 
     /**
-     * Set the Python object to use for the standard output stream
+     * Sets a Python object to use for the standard input stream.
      *
-     * @param outStream Python file-like object to use as output stream
+     * @param inStream
+     *            a Python file-like object to use as input stream
+     */
+    public void setIn(PyObject inStream) {
+        getSystemState().stdin = inStream;
+    }
+
+    public void setIn(java.io.Reader inStream) {
+        setIn(new PyFileReader(inStream));
+    }
+
+    /**
+     * Sets a java.io.InputStream to use for the standard input
+     * stream.
+     *
+     * @param inStream
+     *            InputStream to use as input stream
+     */
+    public void setIn(java.io.InputStream inStream) {
+        setIn(new PyFile(inStream));
+    }
+
+    /**
+     * Sets a Python object to use for the standard output stream.
+     *
+     * @param outStream
+     *            Python file-like object to use as output stream
      */
     public void setOut(PyObject outStream) {
-        systemState.stdout = outStream;
+        getSystemState().stdout = outStream;
     }
 
-    /**
-     * Set a java.io.Writer to use for the standard output stream
-     *
-     * @param outStream Writer to use as output stream
-     */
     public void setOut(java.io.Writer outStream) {
-        setOut(new PyFile(outStream));
+        setOut(new PyFileWriter(outStream));
     }
 
     /**
-     * Set a java.io.OutputStream to use for the standard output stream
+     * Sets a java.io.OutputStream to use for the standard output
+     * stream.
      *
-     * @param outStream OutputStream to use as output stream
+     * @param outStream
+     *            OutputStream to use as output stream
      */
     public void setOut(java.io.OutputStream outStream) {
         setOut(new PyFile(outStream));
     }
 
     public void setErr(PyObject outStream) {
-        systemState.stderr = outStream;
+        getSystemState().stderr = outStream;
     }
 
     public void setErr(java.io.Writer outStream) {
-        setErr(new PyFile(outStream));
+        setErr(new PyFileWriter(outStream));
     }
 
     public void setErr(java.io.OutputStream outStream) {
@@ -116,44 +182,48 @@ public class PythonInterpreter {
     }
 
     /**
-     * Evaluate a string as Python source and return the result
-     *
-     * @param s the string to evaluate
+     * Evaluates a string as a Python expression and returns the
+     * result.
      */
     public PyObject eval(String s) {
-        setState();
-        return __builtin__.eval(new PyString(s), locals);
+        setSystemState();
+        return __builtin__.eval(new PyString(s), getLocals());
     }
 
     /**
-     * Execute a string of Python source in the local namespace
-     *
-     * @param s the string to execute
+     * Evaluates a Python code object and returns the result.
+     */
+    public PyObject eval(PyObject code) {
+        setSystemState();
+        return __builtin__.eval(code, getLocals());
+    }
+
+    /**
+     * Executes a string of Python source in the local namespace.
      */
     public void exec(String s) {
-        setState();
-        Py.exec(Py.compile_flags(s, "<string>", "exec",cflags),
-                locals, locals);
+        setSystemState();
+        Py.exec(Py.compile_flags(s, "<string>", CompileMode.exec, cflags), getLocals(), null);
+        Py.flushLine();
     }
 
     /**
-     * Execute a Python code object in the local namespace
-     *
-     * @param code the code object to execute
+     * Executes a Python code object in the local namespace.
      */
     public void exec(PyObject code) {
-        setState();
-        Py.exec(code, locals, locals);
+        setSystemState();
+        Py.exec(code, getLocals(), null);
+        Py.flushLine();
     }
 
     /**
-     * Execute a file of Python source in the local namespace
-     *
-     * @param s the name of the file to execute
+     * Executes a file of Python source in the local namespace.
      */
-    public void execfile(String s) {
-        setState();
-        __builtin__.execfile_flags(s, locals, locals, cflags);
+    public void execfile(String filename) {
+        PyObject locals = getLocals();
+        setSystemState();
+        __builtin__.execfile_flags(filename, locals, locals, cflags);
+        Py.flushLine();
     }
 
     public void execfile(java.io.InputStream s) {
@@ -161,73 +231,127 @@ public class PythonInterpreter {
     }
 
     public void execfile(java.io.InputStream s, String name) {
-        setState();
-        Py.runCode(Py.compile_flags(s, name, "exec",cflags), locals, locals);
+        setSystemState();
+        Py.runCode(Py.compile_flags(s, name, CompileMode.exec, cflags), null, getLocals());
+        Py.flushLine();
     }
 
-    // Getting and setting the locals dictionary
+    /**
+     * Compiles a string of Python source as either an expression (if
+     * possible) or a module.
+     *
+     * Designed for use by a JSR 223 implementation: "the Scripting
+     * API does not distinguish between scripts which return values
+     * and those which do not, nor do they make the corresponding
+     * distinction between evaluating or executing objects."
+     * (SCR.4.2.1)
+     */
+    public PyCode compile(String script) {
+        return compile(script, "<script>");
+    }
+    public PyCode compile(Reader reader) {
+        return compile(reader, "<script>");
+    }
+    public PyCode compile(String script, String filename) {
+        return compile(new StringReader(script), filename);
+    }
+    public PyCode compile(Reader reader, String filename) {
+        mod node = ParserFacade.parseExpressionOrModule(reader, filename, cflags);
+        setSystemState();
+        return Py.compile_flags(node, filename, CompileMode.eval, cflags);
+    }
+
+
     public PyObject getLocals() {
-        return locals;
+        if (threadLocals == null)
+            return globals;
+
+        PyObject locals = threadLocals.get();
+        if (locals != null)
+            return locals;
+        return globals;
     }
 
     public void setLocals(PyObject d) {
-        locals = d;
+        if (threadLocals == null)
+            globals = d;
+        else
+            threadLocals.set(d);
     }
 
     /**
-     * Set a variable in the local namespace
+     * Sets a variable in the local namespace.
      *
-     * @param name      the name of the variable
-     * @param value the value to set the variable to.
-     Will be automatically converted to an appropriate Python object.
-    */
-    public void set(String name, Object value) {
-        locals.__setitem__(name.intern(), Py.java2py(value));
-    }
-
-    /**
-     * Set a variable in the local namespace
-     *
-     * @param name      the name of the variable
-     * @param value the value to set the variable to
-     */
-    public void set(String name, PyObject value) {
-        locals.__setitem__(name.intern(), value);
-    }
-
-    /**
-     * Get the value of a variable in the local namespace
-     * 
      * @param name
      *            the name of the variable
-     * @return the value of the variable, or null if that name isn't assigned
+     * @param value
+     *            the object to set the variable to (as converted to
+     *            an appropriate Python object)
      */
-    public PyObject get(String name) {
-        return locals.__finditem__(name.intern());
+    public void set(String name, Object value) {
+        getLocals().__setitem__(name.intern(), Py.java2py(value));
     }
 
     /**
-     * Get the value of a variable in the local namespace Value will be returned
-     * as an instance of the given Java class.
+     * Sets a variable in the local namespace.
+     *
+     * @param name
+     *            the name of the variable
+     * @param value
+     *            the Python object to set the variable to
+     */
+    public void set(String name, PyObject value) {
+        getLocals().__setitem__(name.intern(), value);
+    }
+
+    /**
+     * Returns the value of a variable in the local namespace.
+     *
+     * @param name
+     *            the name of the variable
+     * @return the value of the variable, or null if that name isn't
+     * assigned
+     */
+    public PyObject get(String name) {
+        return getLocals().__finditem__(name.intern());
+    }
+
+    /**
+     * Returns the value of a variable in the local namespace.
+     * 
+     * The value will be returned as an instance of the given Java class.
      * <code>interp.get("foo", Object.class)</code> will return the most
      * appropriate generic Java object.
-     * 
+     *
      * @param name
      *            the name of the variable
      * @param javaclass
      *            the class of object to return
-     * @return the value of the variable as the given class, or null if that
-     *         name isn't assigned
+     * @return the value of the variable as the given class, or null
+     * if that name isn't assigned
      */
-    public Object get(String name, Class javaclass) {
-        PyObject val = locals.__finditem__(name.intern());
-        if(val == null) {
+    public <T> T get(String name, Class<T> javaclass) {
+        PyObject val = getLocals().__finditem__(name.intern());
+        if (val == null) {
             return null;
         }
         return Py.tojava(val, javaclass);
     }
 
     public void cleanup() {
-        systemState.callExitFunc();
+        setSystemState();
+        PySystemState sys = Py.getSystemState();
+        sys.callExitFunc();
+        try {
+            sys.stdout.invoke("flush");
+        } catch (PyException pye) {
+            // fall through
+        }
+        try {
+            sys.stderr.invoke("flush");
+        } catch (PyException pye) {
+            // fall through
+        }
+        sys.cleanup();
     }
 }

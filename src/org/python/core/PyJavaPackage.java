@@ -3,6 +3,8 @@
 
 package org.python.core;
 
+import org.python.core.packagecache.PackageManager;
+
 import java.util.StringTokenizer;
 
 /**
@@ -83,24 +85,17 @@ public class PyJavaPackage extends PyObject {
         else return p;
     }
 
-    public PyObject addClass(String name,Class c) {
-        // xxx what to do with PyObject subclasses?
-        //PyObject ret = PyJavaClass.lookup(c);  // xxx java2py?
-        // perhaps introduce class2py
+    public PyObject addClass(String name, Class<?> c) {
         PyObject ret = Py.java2py(c);
         __dict__.__setitem__(name.intern(), ret);
         return ret;
     }
 
-    public PyObject addLazyClass(String name) {
-        // xxx what to do with PyObject subclasses? this now fails on them
-        PyObject ret = PyJavaClass.lookup(__name__+'.'+name,__mgr__);
-        __dict__.__setitem__(name.intern(), ret);
-        return ret;
-    }
-
-    /** Add statically known classes.
-     * @param classes their names as comma-separated string
+    /**
+     * Add statically known classes.
+     *
+     * @param classes
+     *            their names as comma-separated string
      */
     public void addPlaceholders(String classes) {
         StringTokenizer tok = new StringTokenizer(classes, ",@");
@@ -117,11 +112,10 @@ public class PyJavaPackage extends PyObject {
     }
 
     /**
-     * Used for 'from xyz import *', dynamically dir pkg filling up __dict__.
-     * It uses {@link PackageManager#doDir} implementation furnished by
-     * the control package manager with instatiate true. The package
-     * manager should lazily load classes with {@link #addLazyClass} in
-     * the package.
+     * Used for 'from xyz import *', dynamically dir pkg filling up __dict__. It uses
+     * {@link PackageManager#doDir} implementation furnished by the control package manager with
+     * instantiate true. The package manager should load classes with {@link #addClass} in the
+     * package.
      *
      * @return list of member names
      */
@@ -130,7 +124,7 @@ public class PyJavaPackage extends PyObject {
     }
 
 
-    public PyObject __findattr__(String name) {
+    public PyObject __findattr_ex__(String name) {
 
         PyObject ret = __dict__.__finditem__(name);
         if (ret != null) return ret;
@@ -157,7 +151,7 @@ public class PyJavaPackage extends PyObject {
 
     public void __setattr__(String attr, PyObject value) {
         if (attr == "__mgr__") {
-            PackageManager newMgr = (PackageManager)Py.tojava(value,
+            PackageManager newMgr = Py.tojava(value,
                                                        PackageManager.class);
             if (newMgr == null) {
                 throw Py.TypeError("cannot set java package __mgr__ to None");
@@ -176,13 +170,4 @@ public class PyJavaPackage extends PyObject {
     public String toString()  {
         return "<java package "+__name__+" "+Py.idstr(this)+">";
     }
-    
-    
-    /**
-     * @see org.python.core.PyObject#safeRepr()
-     */
-    public String safeRepr() throws PyIgnoreMethodTag {
-        return "java package '"+__name__+"'";       
-    }
-
 }

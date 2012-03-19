@@ -3,6 +3,8 @@ package org.python.core;
 import java.io.IOException;
 import java.io.InputStream;
 
+import org.python.core.util.StringUtil;
+
 public class FilelikeInputStream extends InputStream {
 
     private PyObject filelike;
@@ -29,12 +31,12 @@ public class FilelikeInputStream extends InputStream {
         } else if(len == 0) {
             return 0;
         }
-        String result = ((PyString)filelike.__getattr__("read")
-                .__call__(new PyInteger(len))).string;
+        String result = ((PyString) filelike.__getattr__("read")
+                .__call__(new PyInteger(len))).getString();
         if(result.length() == 0) {
             return -1;
         }
-        System.arraycopy(PyString.to_bytes(result), 0, b, off, result.length());
+        System.arraycopy(StringUtil.toBytes(result), 0, b, off, result.length());
         return result.length();
     }
 

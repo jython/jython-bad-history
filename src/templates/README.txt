@@ -1,15 +1,24 @@
-Some classes have generated code to enable their usage within Jython.  Each 
-such file will have a generated section that is created with the gexpose.py 
-script.  For the PyIntger class it is created thus:
+Derived classes (classes that allow for user extension) are created as follows:
 
-  python gexpose.py int.expose ../../jython/src/org/python/core/PyInteger.java
+1. Create a template file xxx.derived
+2. Modify mappings, which associates a template with a specific class in
+   the source tree to be generated
+3. Run (with CPython) gderived.py against the the template file
 
-For each class their is an xxx.expose file describing what should be exposed.
+Example: creating a derivable version of int
 
-In addition their is an xxxDerived.java class that is completely generated 
-with the script gderived.py.  For the PyInteger class it is created thus:
+from the file int.derived:
 
-  python gderived.py int.derived >../../jython/src/org/python/core/PyIntegerDerived.java
+  base_class: PyInteger
+  want_dict: true
+  ctr: int v
+  incl: object
 
-Note:  The above examples assume that the whole jython trunk is checked out so 
-that the trunk/sandbox directory is a sibling of the trunk/jython directory.
+from mappings, the relevant entry (please keep sorted):
+
+  int.derived:org.python.core.PyIntegerDerived
+
+To generate the source of the class, src/org/python/core/PyInteger.java:
+
+  python gderived.py int.derived
+

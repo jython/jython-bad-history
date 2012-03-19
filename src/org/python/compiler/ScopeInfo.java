@@ -2,16 +2,23 @@
 
 package org.python.compiler;
 
-import java.util.*;
-import org.python.parser.SimpleNode;
+import java.util.Enumeration;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Hashtable;
+import java.util.Vector;
+
+import org.python.antlr.ParseException;
+import org.python.antlr.PythonTree;
+import org.python.antlr.ast.Return;
+import org.python.antlr.base.expr;
 
 public class ScopeInfo extends Object implements ScopeConstants {
 
-    public SimpleNode scope_node;
+    public PythonTree scope_node;
     public String scope_name;
     public int level;
     public int func_level;
-    public int list_comprehension_count;
 
     public void dump() { // for debugging
         if (org.python.core.Options.verbose < org.python.core.Py.DEBUG)
@@ -19,9 +26,9 @@ public class ScopeInfo extends Object implements ScopeConstants {
         for(int i=0; i<level; i++) System.err.print(' ');
         System.err.print(((kind != CLASSSCOPE)?scope_name:"class "+
                          scope_name)+": ");
-        for (Enumeration e = tbl.keys(); e.hasMoreElements(); ) {
-            String name = (String)e.nextElement();
-            SymInfo info = (SymInfo)tbl.get(name);
+        for (Map.Entry<String, SymInfo> entry : tbl.entrySet()) {
+            String name = entry.getKey();
+            SymInfo info = entry.getValue();
             int flags = info.flags;
             System.err.print(name);
             if ((flags&BOUND) != 0) System.err.print('=');
@@ -38,7 +45,7 @@ public class ScopeInfo extends Object implements ScopeConstants {
         System.err.println();
     }
 
-    public ScopeInfo(String name, SimpleNode node, int level, int kind,
+    public ScopeInfo(String name, PythonTree node, int level, int kind,
                      int func_level, ArgListCompiler ac) {
         scope_name = name;
         scope_node = node;
@@ -53,18 +60,21 @@ public class ScopeInfo extends Object implements ScopeConstants {
     public boolean unqual_exec;
     public boolean exec;
     public boolean from_import_star;
+    public boolean contains_ns_free_vars;
     public boolean generator;
+    private boolean hasReturnWithValue;
     public int yield_count;
+    public int max_with_count;
 
     public ArgListCompiler ac;
 
-    public Hashtable tbl = new Hashtable();
-    public Vector names = new Vector();
+    public Map<String, SymInfo> tbl = new LinkedHashMap<String, SymInfo>();
+    public Vector<String> names = new Vector<String>();
 
     public int addGlobal(String name) {
         // global kind = func vs. class
         int global = kind==CLASSSCOPE?CLASS_GLOBAL:NGLOBAL;
-        SymInfo info = (SymInfo)tbl.get(name);
+        SymInfo info = tbl.get(name);
         if (info == null) {
             tbl.put(name,new SymInfo(global|BOUND));
             return -1;
@@ -83,14 +93,13 @@ public class ScopeInfo extends Object implements ScopeConstants {
     }
 
     public void markFromParam() {
-        for (Enumeration e=tbl.elements(); e.hasMoreElements(); ) {
-            SymInfo info = (SymInfo)e.nextElement();
+        for (SymInfo info : tbl.values()) {
             info.flags |= FROM_PARAM;
         }
     }
 
     public void addBound(String name) {
-        SymInfo info = (SymInfo)tbl.get(name);
+        SymInfo info = tbl.get(name);
         if (info == null) {
             tbl.put(name, new SymInfo(BOUND));
             return;
@@ -107,16 +116,16 @@ public class ScopeInfo extends Object implements ScopeConstants {
 
     private final static Object PRESENT = new Object();
 
-    public Hashtable inner_free = new Hashtable();
+    public Hashtable<String,Object> inner_free = new Hashtable<String,Object>();
 
-    public Vector cellvars = new Vector();
+    public Vector<String> cellvars = new Vector<String>();
 
-    public Vector jy_paramcells = new Vector();
+    public Vector<String> jy_paramcells = new Vector<String>();
 
     public int jy_npurecell;
 
     public int cell, distance;
-    
+
     public ScopeInfo up;
 
     //Resolve the names used in the given scope, and mark any freevars used in the up scope
@@ -126,13 +135,13 @@ public class ScopeInfo extends Object implements ScopeConstants {
         this.up = up;
         this.distance = distance;
         boolean func = kind == FUNCSCOPE;
-        Vector purecells = new Vector();
+        Vector<String> purecells = new Vector<String>();
         cell = 0;
         boolean some_inner_free = inner_free.size() > 0;
 
         for (Enumeration e = inner_free.keys(); e.hasMoreElements(); ) {
             String name = (String)e.nextElement();
-            SymInfo info = (SymInfo)tbl.get(name);
+            SymInfo info = tbl.get(name);
             if (info == null) {
                 tbl.put(name,new SymInfo(FREE));
                 continue;
@@ -156,9 +165,9 @@ public class ScopeInfo extends Object implements ScopeConstants {
         boolean some_free = false;
 
         boolean nested = up.kind != TOPSCOPE;
-        for (Enumeration e = tbl.keys(); e.hasMoreElements(); ) {
-            String name = (String)e.nextElement();
-            SymInfo info = (SymInfo)tbl.get(name);
+        for (Map.Entry<String, SymInfo> entry : tbl.entrySet()) {
+            String name = entry.getKey();
+            SymInfo info = entry.getValue();
             int flags = info.flags;
             if (nested && (flags&FREE) != 0) up.inner_free.put(name,PRESENT);
             if ((flags&(GLOBAL|PARAM|CELL)) == 0) {
@@ -179,6 +188,12 @@ public class ScopeInfo extends Object implements ScopeConstants {
                 names.addElement(purecells.elementAt(i));
             }
         }
+
+        if (some_free && nested) {
+            up.contains_ns_free_vars = true;
+        }
+        // XXX - this doesn't catch all cases - may depend subtly
+        // on how visiting NOW works with antlr compared to javacc
         if ((unqual_exec || from_import_star)) {
             if(some_inner_free) dynastuff_trouble(true, ctxt);
             else if(func_level > 1 && some_free)
@@ -187,26 +202,28 @@ public class ScopeInfo extends Object implements ScopeConstants {
 
     }
 
-    private void dynastuff_trouble(boolean inner_free,
-                                   CompilationContext ctxt) throws Exception {
-        String illegal;
-        if (unqual_exec && from_import_star)
-            illegal = "function '"+scope_name+
-                      "' uses import * and bare exec, which are illegal";
-        else if (unqual_exec)
-            illegal = "unqualified exec is not allowed in function '"+
-                      scope_name+"'";
-        else
-            illegal = "import * is not allowed in function '"+scope_name+"'";
-        String why;
-        if (inner_free)
-            why = " because it contains a function with free variables";
-        else
-            why = " because it contains free variables";
-        ctxt.error(illegal + why, true, scope_node);
+    private void dynastuff_trouble(boolean inner_free, CompilationContext ctxt) throws Exception {
+        StringBuilder illegal = new StringBuilder();
+        if (unqual_exec && from_import_star) {
+            illegal.append("function '")
+                    .append(scope_name)
+                    .append("' uses import * and bare exec, which are illegal");
+        } else if (unqual_exec) {
+            illegal.append("unqualified exec is not allowed in function '")
+                    .append(scope_name)
+                    .append("'");
+        } else {
+            illegal.append("import * is not allowed in function '").append(scope_name).append("'");
+        }
+        if (inner_free) {
+            illegal.append(" because it contains a function with free variables");
+        } else {
+            illegal.append(" because it contains free variables");
+        }
+        ctxt.error(illegal.toString(), true, scope_node);
     }
 
-    public Vector freevars = new Vector();
+    public Vector<String> freevars = new Vector<String>();
 
     /**
      * setup the closure on this scope using the scope passed into cook as up as
@@ -215,21 +232,21 @@ public class ScopeInfo extends Object implements ScopeConstants {
     public void setup_closure() {
         setup_closure(up);
     }
-    
+
     /**
      * setup the closure on this scope using the passed in scope. This is used
      * by jythonc to setup its closures.
      */
     public void setup_closure(ScopeInfo up){
         int free = cell; // env = cell...,free...
-        Hashtable up_tbl = up.tbl;
+        Map<String, SymInfo> up_tbl = up.tbl;
         boolean nested = up.kind != TOPSCOPE;
-        for (Enumeration e = tbl.keys(); e.hasMoreElements(); ) {
-            String name = (String)e.nextElement();
-            SymInfo info = (SymInfo)tbl.get(name);
+        for (Map.Entry<String, SymInfo> entry : tbl.entrySet()) {
+            String name = entry.getKey();
+            SymInfo info = entry.getValue();
             int flags = info.flags;
             if ((flags&FREE) != 0) {
-                SymInfo up_info = (SymInfo)up_tbl.get(name);
+                SymInfo up_info = up_tbl.get(name);
                 // ?? differs from CPython -- what is the intended behaviour?
                 if (up_info != null) {
                     int up_flags = up_info.flags;
@@ -250,8 +267,25 @@ public class ScopeInfo extends Object implements ScopeConstants {
 
     }
 
+    @Override
     public String toString() {
         return "ScopeInfo[" + scope_name + " " + kind + "]@" +
                 System.identityHashCode(this);
+    }
+
+    public void defineAsGenerator(expr node) {
+        generator = true;
+        if (hasReturnWithValue) {
+            throw new ParseException("'return' with argument " +
+                    "inside generator", node);
+        }
+    }
+
+    public void noteReturnValue(Return node) {
+        if (generator) {
+            throw new ParseException("'return' with argument " +
+                    "inside generator", node);
+        }
+        hasReturnWithValue = true;
     }
 }

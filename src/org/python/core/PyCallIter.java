@@ -1,12 +1,13 @@
 package org.python.core;
 
 public class PyCallIter extends PyIterator {
+
     private PyObject callable;
+
     private PyObject sentinel;
-    private int idx;
 
     public PyCallIter(PyObject callable, PyObject sentinel) {
-        if(!__builtin__.callable(callable)) {
+        if (!callable.isCallable()) {
             throw Py.TypeError("iter(v, w): v must be callable");
         }
         this.callable = callable;
@@ -14,20 +15,25 @@ public class PyCallIter extends PyIterator {
     }
 
     public PyObject __iternext__() {
-        PyObject val = null;
+        if (callable == null) {
+            return null;
+        }
+
+        PyObject result;
         try {
-            val = callable.__call__();
+            result = callable.__call__();
         } catch (PyException exc) {
-            if (Py.matchException(exc, Py.StopIteration)){
+            if (exc.match(Py.StopIteration)) {
+                callable = null;
                 stopException = exc;
                 return null;
             }
             throw exc;
         }
-        if (val._eq(sentinel).__nonzero__())
+        if (result._eq(sentinel).__nonzero__()) {
+            callable = null;
             return null;
-        return val;
+        }
+        return result;
     }
-
 }
-
