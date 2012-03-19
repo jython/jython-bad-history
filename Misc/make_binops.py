@@ -97,17 +97,32 @@ comment = """\
      **/
 """
 
-template1 = comment + """\
+template1 = """\
+    @Override
     public %(ret)s __%(name)s__() {
+        return instance___%(name)s__();
+    }
+
+""" + comment + """\
+    @ExposedMethod
+    final %(ret)s instance___%(name)s__() {
         PyObject ret = invoke("__%(name)s__");
-        if (ret instanceof %(ret)s)
-            return (%(ret)s)ret;
+        if (%(checks)s)
+            return %(cast)sret;
         throw Py.TypeError("__%(name)s__() should return a %(retname)s");
     }
 
 """
-template2 = comment + """\
+
+template2 = """\
+    @Override
     public PyObject __%(name)s__() {
+        return instance___%(name)s__();
+    }
+
+""" + comment + """\
+    @ExposedMethod
+    public PyObject instance___%(name)s__() {
         return invoke("__%(name)s__");
     }
 
@@ -115,40 +130,80 @@ template2 = comment + """\
 
 string = 'PyString', 'string'
 ops = [('hex', string), ('oct', string), 
-		('int', ('PyInteger', 'int')), ('float', ('PyFloat', 'float')), 
-		('long', ('PyLong', 'long')), ('complex', ('PyComplex', 'complex')),
+		('int', ('PyObject', 'int'), ('PyLong', 'PyInteger')),
+		('float', ('PyFloat', 'float')), 
+		('long', ('PyObject', 'long'), ('PyLong', 'PyInteger')),
+		('complex', ('PyComplex', 'complex')),
 		('pos', None), ('neg', None), ('abs', None), ('invert', None)]
 	
 fp.write('    // Unary ops\n\n')	
-for name, ret in ops:
+for item in ops:
+        checks = None
+        if len(item) == 2:
+                name, ret = item
+        else:
+                name, ret, checks = item
 	if ret is None:
 		fp.write(template2 % {'name':name})
 	else:
 		ret, retname = ret
-		fp.write(template1 % {'name':name, 'ret':ret, 'retname':retname})
+		if checks:
+                        checks = ' || '.join(['ret instanceof %s' % check for check in checks])
+                else:
+                        checks = 'ret instanceof %s' % ret
+                if ret == 'PyObject':
+                        cast = ''
+                else:
+                        cast = '(%s)' % ret
+		fp.write(template1 % {'name':name, 'ret':ret, 'retname':retname,
+                                      'checks':checks, 'cast':cast})
 
 
 
-template = comment + """\
+template = """\
+    @Override
     public PyObject __%(name)s__(PyObject o) {
+        return instance___%(name)s__(o);
+    }
+
+""" + comment + """\
+    @ExposedMethod(type = MethodType.BINARY)
+    public PyObject instance___%(name)s__(PyObject o) {
         Object ctmp = __coerce_ex__(o);
         if (ctmp == null || ctmp == Py.None)
             return invoke_ex("__%(name)s__", o);
         else {
             PyObject o1 = ((PyObject[])ctmp)[0];
             PyObject o2 = ((PyObject[])ctmp)[1];
-            if (this == o1) // Prevent recusion if __coerce__ return self
+            if (this == o1) {
+                // Prevent recusion if __coerce__ return self
                 return invoke_ex("__%(name)s__", o2);
-            else
-                return %(function)s;
+            }
+            else {
+                ThreadState ts = Py.getThreadState();
+                if (ts.recursion_depth++ > ts.systemState.getrecursionlimit())
+                    throw Py.RuntimeError("maximum recursion depth exceeded");
+                try {
+                    return %(function)s;
+                } finally {
+                    --ts.recursion_depth;
+                }
+            }
         }
     }
 
 """
 
 
-template2 = comment + """\
+template2 = """\
+    @Override
     public PyObject __%(name)s__(PyObject o) {
+        return instance___%(name)s__(o);
+    }
+
+""" + comment + """\
+    @ExposedMethod(type = MethodType.BINARY)
+    public PyObject instance___%(name)s__(PyObject o) {
         PyObject ret = invoke_ex("__%(name)s__", o);
         if (ret != null)
             return ret;

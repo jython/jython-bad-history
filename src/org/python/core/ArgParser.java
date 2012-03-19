@@ -1,5 +1,10 @@
 package org.python.core;
 
+import java.util.HashSet;
+import java.util.Set;
+
+import org.python.antlr.AST;
+
 /**
  * A utility class for handling mixed positional and keyword arguments.
  * 
@@ -112,10 +117,20 @@ public class ArgParser {
         this(funcname, args, kws);
         this.params = paramnames;
         check();
-        if (!PyBuiltinFunction.DefaultInfo.check(args.length, minargs,
+        if (!PyBuiltinCallable.DefaultInfo.check(args.length, minargs,
                 this.params.length)) {
-            throw PyBuiltinFunction.DefaultInfo.unexpectedCall(args.length,
+            throw PyBuiltinCallable.DefaultInfo.unexpectedCall(args.length,
                     false, funcname, minargs, this.params.length);
+        }
+    }
+
+    public ArgParser(String funcname, PyObject[] args, String[] kws,
+            String[] paramnames, int minargs, boolean takesZeroArgs) {
+        this(funcname, args, kws);
+        this.params = paramnames;
+        check();
+        if (!AST.check(args.length - kws.length, minargs, takesZeroArgs)) {
+            throw AST.unexpectedCall(minargs,  funcname);
         }
     }
 
@@ -143,7 +158,7 @@ public class ArgParser {
      * @param pos The position of the argument. First argument is numbered 0.
      */
     public int getInt(int pos) {
-        return ((PyInteger) getRequiredArg(pos).__int__()).getValue();
+        return asInt(getRequiredArg(pos));
     }
 
     /**
@@ -156,7 +171,21 @@ public class ArgParser {
         if (value == null) {
             return def;
         }
-        return ((PyInteger) value.__int__()).getValue();
+        return asInt(value);
+    }
+
+    /**
+     * Convert a PyObject to a Java integer.
+     *
+     * @param value a PyObject
+     * @return value as an int
+     */
+    private int asInt(PyObject value) {
+        if (value instanceof PyFloat) {
+            Py.warning(Py.DeprecationWarning, "integer argument expected, got float");
+            value = value.__int__();
+        }
+        return value.asInt();
     }
 
     /**
@@ -182,6 +211,23 @@ public class ArgParser {
     }
 
     /**
+     * Return a required argument as a PyObject, ensuring the object
+     * is of the specified type.
+     *
+     * @param pos the position of the argument. First argument is numbered 0
+     * @param type the desired PyType of the argument
+     * @return the PyObject of PyType
+     */
+    public PyObject getPyObjectByType(int pos, PyType type) {
+        PyObject arg = getRequiredArg(pos);
+        if (!Py.isInstance(arg, type)) {
+            throw Py.TypeError(String.format("argument %d must be %s, not %s", pos + 1,
+                                             type.fastGetName(), arg.getType().fastGetName()));
+        }
+        return arg;
+    }
+
+    /**
      * Return the remaining arguments as a tuple.
      * 
      * @param pos The position of the argument. First argument is numbered 0.
@@ -196,20 +242,38 @@ public class ArgParser {
         return Py.EmptyTuple;
     }
 
+    /**
+     * Ensure no keyword arguments were passed, raising a TypeError if
+     * so.
+     *
+     */
+    public void noKeywords() {
+        if (kws.length > 0) {
+            throw Py.TypeError(String.format("%s does not take keyword arguments", funcname));
+        }
+    }
+
     private void check() {
-        int nargs = this.args.length - this.kws.length;
-        l1: for (int i = 0; i < this.kws.length; i++) {
-            for (int j = 0; j < this.params.length; j++) {
-                if (this.kws[i].equals(this.params[j])) {
+        Set<Integer> usedKws = new HashSet<Integer>();
+        int nargs = args.length - kws.length;
+        l1: for (int i = 0; i < kws.length; i++) {
+            for (int j = 0; j < params.length; j++) {
+                if (kws[i].equals(params[j])) {
                     if (j < nargs) {
                         throw Py.TypeError("keyword parameter '"
-                                + this.params[j]
+                                + params[j]
                                 + "' was given by position and by name");
                     }
+                    if (usedKws.contains(j)) {
+                        throw Py.TypeError(String.format(
+                                "%s got multiple values for keyword argument '%s'",
+                                funcname, params[j]));
+                    }
+                    usedKws.add(j);
                     continue l1;
                 }
             }
-            throw Py.TypeError("'" + this.kws[i] + "' is an invalid keyword "
+            throw Py.TypeError("'" + kws[i] + "' is an invalid keyword "
                     + "argument for this function");
         }
     }
@@ -254,7 +318,7 @@ public class ArgParser {
         Object ret = value.__tojava__(clss);
         if (ret == Py.NoConversion) {
             throw Py.TypeError("argument " + (pos + 1) + ": expected "
-                    + classname + ", " + Py.safeRepr(value) + " found");
+                    + classname + ", " + value.getType().fastGetName() + " found");
         }
         return ret;
     }

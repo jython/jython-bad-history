@@ -1,7 +1,6 @@
 /*
  * Jython Database Specification API 2.0
  *
- * $Id$
  *
  * Copyright (c) 2001 brian zimmer <bzimmer@ziclix.com>
  *
@@ -18,7 +17,6 @@ import javax.sql.ConnectionPoolDataSource;
 import javax.sql.DataSource;
 
 import org.python.core.Py;
-import org.python.core.PyClass;
 import org.python.core.PyObject;
 import org.python.core.PyString;
 
@@ -30,56 +28,40 @@ import com.ziclix.python.sql.util.PyArgParser;
  * Connect using through a javax.sql.DataSource or javax.sql.ConnectionPooledDataSource.
  *
  * @author brian zimmer
- * @author last revised by $Author$
- * @version $Revision$
  */
 public class Connectx extends PyObject {
 
     private final String SET = "set";
-    private final PyString doc = new PyString("establish a connection through a javax.sql.DataSource or javax.sql.ConnectionPooledDataSource");
+    private final PyString doc =
+            new PyString("establish a connection through a javax.sql.DataSource or "
+                         + "javax.sql.ConnectionPooledDataSource");
 
-    /**
-     * Constructor Connectx
-     */
-    public Connectx() {
-    }
-
-    /**
-     * Method __findattr__
-     *
-     * @param String name
-     * @return PyObject
-     */
-    public PyObject __findattr__(String name) {
-
+    @Override
+    public PyObject __findattr_ex__(String name) {
         if ("__doc__".equals(name)) {
             return doc;
         }
-
-        return super.__findattr__(name);
+        return super.__findattr_ex__(name);
     }
 
     /**
      * Construct a javax.sql.DataSource or javax.sql.ConnectionPooledDataSource
      */
+    @Override
     public PyObject __call__(PyObject[] args, String[] keywords) {
-
         Connection c = null;
         PyConnection pc = null;
         Object datasource = null;
         PyArgParser parser = new PyArgParser(args, keywords);
 
         try {
-            String _class = (String) parser.arg(0).__tojava__(String.class);
-
-            datasource = Class.forName(_class).newInstance();
+            String klass = (String) parser.arg(0).__tojava__(String.class);
+            datasource = Class.forName(klass).newInstance();
         } catch (Exception e) {
             throw zxJDBC.makeException(zxJDBC.DatabaseError, "unable to instantiate datasource");
         }
 
         String[] kws = parser.kws();
-        Class clazz = datasource.getClass();
-
         for (int i = 0; i < kws.length; i++) {
             String methodName = kws[i];
 
@@ -88,21 +70,21 @@ public class Connectx extends PyObject {
             }
 
             Object value = parser.kw(kws[i]).__tojava__(Object.class);
-
             if (methodName.length() > SET.length()) {
                 if (!SET.equals(methodName.substring(0, SET.length()))) {
-
                     // prepend "set"
-                    invoke(datasource, SET + methodName.substring(0, 1).toUpperCase() + methodName.substring(1), value);
+                    invoke(datasource, SET + methodName.substring(0, 1).toUpperCase()
+                           + methodName.substring(1), value);
                 } else {
-
                     // starts with "set" so just pass it on
                     invoke(datasource, methodName, value);
                 }
             } else {
 
                 // shorter than "set" so it can't be a full method name
-                invoke(datasource, SET + methodName.substring(0, 1).toUpperCase() + methodName.substring(1), value);
+                invoke(datasource,
+                       SET + methodName.substring(0, 1).toUpperCase() + methodName.substring(1),
+                       value);
             }
         }
 
@@ -117,7 +99,7 @@ public class Connectx extends PyObject {
         }
 
         try {
-            if ((c == null) || c.isClosed()) {
+            if (c == null || c.isClosed()) {
                 throw zxJDBC.makeException(zxJDBC.DatabaseError, "unable to establish connection");
             }
 
@@ -134,8 +116,9 @@ public class Connectx extends PyObject {
      *
      * @return String
      */
+    @Override
     public String toString() {
-        return "<connectx object instance at " + Py.id(this) + ">";
+        return String.format("<connectx object at %s>", Py.id(this));
     }
 
     /**
@@ -146,19 +129,17 @@ public class Connectx extends PyObject {
      * @param Object value
      */
     protected void invoke(Object src, String methodName, Object value) {
-
         Method method = null;
-        StringBuffer exceptionMsg = new StringBuffer("method [").append(methodName).append("] using arg type [");
-
-        exceptionMsg.append(value.getClass()).append("], value [").append(value.toString()).append("]");
+        StringBuffer exceptionMsg = new StringBuffer("method [");
+        exceptionMsg.append(methodName).append("] using arg type [");
+        exceptionMsg.append(value.getClass()).append("], value [");
+        exceptionMsg.append(value.toString()).append("]");
 
         try {
             method = getMethod(src.getClass(), methodName, value.getClass());
-
             if (method == null) {
                 throw zxJDBC.makeException("no such " + exceptionMsg);
             }
-
             method.invoke(src, new Object[]{value});
         } catch (IllegalAccessException e) {
             throw zxJDBC.makeException("illegal access for " + exceptionMsg);
@@ -174,45 +155,27 @@ public class Connectx extends PyObject {
      * is perhaps a primitive and attempt to recurse using the primitive type.  Failing
      * that return null.
      */
-    protected Method getMethod(Class srcClass, String methodName, Class valueClass) {
-
+    protected Method getMethod(Class<?> srcClass, String methodName, Class<?> valueClass) {
         Method method = null;
 
         try {
             method = srcClass.getMethod(methodName, new Class[]{valueClass});
         } catch (NoSuchMethodException e) {
-            Class primitive = null;
+            Class<?> primitive = null;
 
             try {
                 Field f = valueClass.getField("TYPE");
-
-                primitive = (Class) f.get(valueClass);
+                primitive = (Class<?>) f.get(valueClass);
             } catch (NoSuchFieldException ex) {
             } catch (IllegalAccessException ex) {
             } catch (ClassCastException ex) {
             }
 
-            if ((primitive != null) && primitive.isPrimitive()) {
+            if (primitive != null && primitive.isPrimitive()) {
                 return getMethod(srcClass, methodName, primitive);
             }
         }
 
         return method;
-    }
-
-    // __class__ boilerplate -- see PyObject for details
-
-    /**
-     * Field __class__
-     */
-    public static PyClass __class__;
-
-    /**
-     * Method getPyClass
-     *
-     * @return PyClass
-     */
-    protected PyClass getPyClass() {
-        return __class__;
     }
 }

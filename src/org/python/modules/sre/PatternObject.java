@@ -10,7 +10,7 @@
  *
  * Portions of this engine have been developed in cooperation with
  * CNRI.  Hewlett-Packard provided funding for 1.6 integration and
- * other compatibility work.
+ ther compatibility work.
  */
 
 
@@ -20,7 +20,7 @@ import java.util.*;
 import org.python.core.*;
 
 public class PatternObject extends PyObject {
-    char[] code; /* link to the code string object */
+    int[] code; /* link to the code string object */
     public PyString pattern; /* link to the pattern source (or None) */
     public int groups;
     public org.python.core.PyObject groupindex;
@@ -29,7 +29,7 @@ public class PatternObject extends PyObject {
     public int codesize;
 
 
-    public PatternObject(PyString pattern, int flags, char[] code,
+    public PatternObject(PyString pattern, int flags, int[] code,
             int groups, PyObject groupindex, PyObject indexgroup) {
 
         if (pattern != null)
@@ -48,7 +48,7 @@ public class PatternObject extends PyObject {
         PyString string = extractPyString(ap, 0);
         int start = ap.getInt(1, 0);
         int end = ap.getInt(2, string.__len__());
-        SRE_STATE state = new SRE_STATE(string.toString(), start, end, flags);
+        SRE_STATE state = new SRE_STATE(string, start, end, flags);
 
         state.ptr = state.start;
         int status = state.SRE_MATCH(code, 0, 1);
@@ -63,7 +63,7 @@ public class PatternObject extends PyObject {
         int start = ap.getInt(1, 0);
         int end = ap.getInt(2, string.__len__());
 
-        SRE_STATE state = new SRE_STATE(string.toString(), start, end, flags);
+        SRE_STATE state = new SRE_STATE(string, start, end, flags);
 
         int status = state.SRE_SEARCH(code, 0);
 
@@ -95,7 +95,7 @@ public class PatternObject extends PyObject {
     private PyObject subx(PyObject template, PyString instring, int count,
                           boolean subn)
     {
-        String string = instring.toString();
+        final PyString string = instring; 
         PyObject filter = null;
         boolean filter_is_callable = false;
         if (template.isCallable()) {
@@ -110,7 +110,7 @@ public class PatternObject extends PyObject {
                 filter = template;
                 filter_is_callable = false;
             } else {
-                filter = call("sre", "_subx", new PyObject[] {
+                filter = call("re", "_subx", new PyObject[] {
                     this, template});
                 filter_is_callable = filter.isCallable();
             }
@@ -118,11 +118,11 @@ public class PatternObject extends PyObject {
 
         SRE_STATE state = new SRE_STATE(string, 0, Integer.MAX_VALUE, flags);
 
-        StringBuffer buf = new StringBuffer();
+        PyList list = new PyList();
 
         int n = 0;
         int i = 0;
-        
+
         while (count == 0 || n < count) {
             state.state_reset();
             state.ptr = state.start;
@@ -137,7 +137,7 @@ public class PatternObject extends PyObject {
 
             if (i < b) {
                 /* get segment before this match */
-                buf.append(string.substring(i, b));
+                list.append(string.__getslice__(Py.newInteger(i), Py.newInteger(b)));
             }
             if (! (i == b && i == e && n > 0)) {
                 PyObject item;
@@ -150,7 +150,7 @@ public class PatternObject extends PyObject {
                 }
     
                 if (item != Py.None) {
-                    buf.append(item.toString());
+                    list.append(item);
                 }
                 i = e;
                 n++;
@@ -163,17 +163,23 @@ public class PatternObject extends PyObject {
                 state.start = state.ptr;
         }
         if (i < state.endpos) {
-            buf.append(string.substring(i, state.endpos));
+            list.append(string.__getslice__(Py.newInteger(i), Py.newInteger(state.endpos)));
         }
 
-        if (subn)
-            return new PyTuple(new PyObject[] {
-                instring.createInstance(buf.toString()), Py.newInteger(n)
-            });
-        else
-            return instring.createInstance(buf.toString());
+        PyObject outstring = join_list(list, string);
+        if (subn) {
+            return new PyTuple(outstring, Py.newInteger(n));
+        }
+        return outstring;
     }
 
+    private PyObject join_list(PyList list, PyString string) {
+        PyObject joiner = string.__getslice__(Py.Zero, Py.Zero);
+        if (list.size() == 0) {
+            return joiner;
+        }
+        return joiner.__getattr__("join").__call__(list);
+    }
 
     public PyObject split(PyObject[] args, String[] kws) {
         ArgParser ap = new ArgParser("split", args, kws,
@@ -181,7 +187,7 @@ public class PatternObject extends PyObject {
         PyString string = extractPyString(ap, 0);
         int maxsplit = ap.getInt(1, 0);
 
-        SRE_STATE state = new SRE_STATE(string.toString(), 0, Integer.MAX_VALUE, flags);
+        SRE_STATE state = new SRE_STATE(string, 0, Integer.MAX_VALUE, flags);
 
         PyList list = new PyList();
 
@@ -238,9 +244,9 @@ public class PatternObject extends PyObject {
         int start = ap.getInt(1, 0);
         int end = ap.getInt(2, Integer.MAX_VALUE);
 
-        SRE_STATE state = new SRE_STATE(string.toString(), start, end, flags);
+        SRE_STATE state = new SRE_STATE(string, start, end, flags);
 
-        Vector list = new Vector();
+        final List<PyObject> list = new ArrayList<PyObject>();
 
         while (state.start <= state.end) {
             state.state_reset();
@@ -265,7 +271,7 @@ public class PatternObject extends PyObject {
                     break;
                 }
 
-                list.addElement(item);
+                list.add(item);
 
                 if (state.ptr == state.start)
                     state.start = state.ptr + 1;
@@ -294,7 +300,7 @@ public class PatternObject extends PyObject {
         PyString string = extractPyString(ap, 0);
 
         ScannerObject self = new ScannerObject();
-        self.state = new SRE_STATE(string.toString(),
+        self.state = new SRE_STATE(string,
                                    ap.getInt(1, 0),
                                    ap.getInt(2, Integer.MAX_VALUE),
                                    flags);
@@ -360,9 +366,12 @@ public class PatternObject extends PyObject {
     private static PyString extractPyString(ArgParser ap, int pos){
         PyObject obj = ap.getPyObject(pos);
         if(!(obj instanceof PyString)){
+            if (obj instanceof PyArray) {
+                return new PyString(obj.toString());
+            }
             throw Py.TypeError("expected str or unicode but got " + obj.getType());
         }
-        return (PyString)ap.getPyObject(pos);
+        return (PyString)obj;
     }
 }
 

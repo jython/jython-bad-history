@@ -1,8 +1,13 @@
 // Copyright (c) Corporation for National Research Initiatives
 package org.python.modules;
 
-import org.python.core.*;
-import java.lang.Math;
+import org.python.core.ClassDictInit;
+import org.python.core.Py;
+import org.python.core.PyFloat;
+import org.python.core.PyInteger;
+import org.python.core.PyLong;
+import org.python.core.PyObject;
+import org.python.core.PyTuple;
 
 public class math implements ClassDictInit {
     public static PyFloat pi = new PyFloat(Math.PI);
@@ -48,7 +53,7 @@ public class math implements ClassDictInit {
     }
 
     public static double floor(PyObject v) {
-        return floor(v.__float__().getValue());
+        return floor(v.asDouble());
     }
 
     public static double floor(double v) {
@@ -56,13 +61,37 @@ public class math implements ClassDictInit {
     }
 
     public static double log(PyObject v) {
+        return log(v, null);
+    }
+
+    public static double log(PyObject v, PyObject base) {
+        double doubleValue;
         if (v instanceof PyLong) {
-            int e[] = new int[1];
-            double x = ((PyLong)v).scaledDoubleValue(e);
-            if (x <= 0.0) throw Py.ValueError("math domain error");
-            return log(x) + (e[0]*8.0)*log(2.0);
+            doubleValue = calculateLongLog((PyLong)v);
+        } else {
+            doubleValue = log(v.asDouble());
         }
-        return log(v.__float__().getValue());
+        if (base != null) {
+            return check(applyLoggedBase(doubleValue, base));
+        }
+        return doubleValue;
+    }
+
+    private static double calculateLongLog(PyLong v) {
+        int e[] = new int[1];
+        double x = v.scaledDoubleValue(e);
+        if (x <= 0.0) throw Py.ValueError("math domain error");
+        return log(x) + (e[0]*8.0)*log(2.0);
+    }
+
+    private static double applyLoggedBase(double loggedValue, PyObject base) {
+        double loggedBase;
+        if (base instanceof PyLong) {
+            loggedBase = calculateLongLog((PyLong)base);
+        } else {
+            loggedBase = log(base.asDouble());
+        }
+        return check(loggedValue / loggedBase);
     }
 
     private static double log(double v) {
@@ -74,7 +103,7 @@ public class math implements ClassDictInit {
     }
 
     public static double sin(PyObject v) {
-        return sin(v.__float__().getValue());
+        return sin(v.asDouble());
     }
 
     public static double sin(double v) {
@@ -82,7 +111,7 @@ public class math implements ClassDictInit {
     }
 
     public static double sqrt(PyObject v) {
-        return sqrt(v.__float__().getValue());
+        return sqrt(v.asDouble());
     }
 
     public static double sqrt(double v) {
@@ -100,11 +129,11 @@ public class math implements ClassDictInit {
             if (x <= 0.0) throw Py.ValueError("math domain error");
             return log10(x) + (e[0]*8.0)*log10(2.0);
         }
-        return log10(v.__float__().getValue());
+        return log10(v.asDouble());
     }
 
     private static double log10(double v) {
-        return check(ExtraMath.log10(v));
+        return check(Math.log10(v));
     }
 
     public static double sinh(double v) {
@@ -130,36 +159,45 @@ public class math implements ClassDictInit {
     public static PyTuple modf(double v) {
         double w = v % 1.0;
         v -= w;
-        return new PyTuple(new PyObject[] {new PyFloat(w), new PyFloat(v)});
+        return new PyTuple(new PyFloat(w), new PyFloat(v));
     }
 
-    public static PyTuple frexp(double v) {
-        int i = 0;
-        if (v != 0.0) {
-            int sign = 1;
-            if (v < 0) {
+    public static PyTuple frexp(double x) {
+        int exponent = 0;
+
+        if (Double.isNaN(x) || Double.isInfinite(x) || x == 0.0) {
+            exponent = 0;
+        } else {
+            short sign = 1;
+
+            if (x < 0.0) {
+                x = -x;
                 sign = -1;
-                v = -v;
             }
-            // slow...
-            while (v < 0.5) {
-                v = v*2.0;
-                i = i-1;
-            }
-            while (v >= 1.0) {
-                v = v*0.5;
-                i = i+1;
-            }
-            v = v*sign;
+
+            for (; x < 0.5; x *= 2.0, exponent--);
+
+            for (; x >= 1.0; x *= 0.5, exponent++);
+
+            x *= sign;
         }
-        return new PyTuple(new PyObject[] {new PyFloat(v), new PyInteger(i)});
+        return new PyTuple(new PyFloat(x), new PyInteger(exponent));
     }
 
-    public static double ldexp(double v, int w) {
+    public static double ldexp(double v, PyObject wObj) {
+        int w = wObj.asInt();
         return check(v * Math.pow(2.0, w));
     }
 
     public static double hypot(double v, double w) {
-        return check(ExtraMath.hypot(v, w));
+        return check(Math.hypot(v, w));
+    }
+
+    public static double radians(double v) {
+    	return check(Math.toRadians(v));
+    }
+
+    public static double degrees(double v) {
+    	return check(Math.toDegrees(v));
     }
 }

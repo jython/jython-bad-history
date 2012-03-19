@@ -4,18 +4,17 @@ import java.lang.reflect.*;
 
 public class PyBeanProperty extends PyReflectedField {
     public Method getMethod, setMethod;
-    public Class myType;
+    public Class<?> myType;
     String __name__;
 
-    public PyBeanProperty(String name, Class myType,
-                          Method getMethod, Method setMethod)
-    {
+    public PyBeanProperty(String name, Class<?> myType, Method getMethod, Method setMethod) {
         __name__ = name;
         this.getMethod = getMethod;
         this.setMethod = setMethod;
         this.myType = myType;
     }
 
+    @Override
     public PyObject _doget(PyObject self) {
         if (self == null) {
             if (field != null) {
@@ -38,6 +37,7 @@ public class PyBeanProperty extends PyReflectedField {
         }
     }
 
+    @Override
     public boolean _doset(PyObject self, PyObject value) {
         if (self == null) {
             if (field != null) {
@@ -52,24 +52,18 @@ public class PyBeanProperty extends PyReflectedField {
 
         Object iself = Py.tojava(self, setMethod.getDeclaringClass());
 
-        Object jvalue=null;
-
-        // Special handling of tuples
-        // try to call a class constructor
-        if (value instanceof PyTuple) {
+        // Special handling of tuples - try to call a class constructor
+        if (value instanceof PyTuple && myType != PyObject.class) {
             try {
-                PyTuple vtup = (PyTuple)value;
-                value = PyJavaClass.lookup(myType).__call__(vtup.getArray()); // xxx PyObject subclasses
+                value = Py.java2py(myType).__call__(((PyTuple)value).getArray());
             } catch (Throwable t) {
-                // If something goes wrong ignore it?
+                throw Py.JavaError(t);
             }
         }
-        if (jvalue == null) {
-            jvalue = Py.tojava(value, myType);
-        }
+        Object jvalue = Py.tojava(value, myType);
 
         try {
-            setMethod.invoke(iself, new Object[] {jvalue});
+            setMethod.invoke(iself, jvalue);
         } catch (Exception e) {
             throw Py.JavaError(e);
         }
@@ -80,6 +74,7 @@ public class PyBeanProperty extends PyReflectedField {
         return new PyBeanProperty(__name__, myType, getMethod, setMethod);
     }
 
+    @Override
     public String toString() {
         String typeName = "unknown";
         if (myType != null) {

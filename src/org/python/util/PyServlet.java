@@ -1,27 +1,31 @@
-
 package org.python.util;
 
-import java.io.*;
-import java.util.*;
-import javax.servlet.*;
-import javax.servlet.http.*;
-import org.python.core.*;
+import java.io.File;
+import java.io.IOException;
+import java.util.Enumeration;
+import java.util.Map;
+import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+
+import org.python.core.Py;
+import org.python.core.PyException;
+import org.python.core.PyObject;
+import org.python.core.PyString;
+import org.python.core.PyStringMap;
+import org.python.core.PySystemState;
 
 /**
- * This servlet is used to re-serve Jython servlets.  It stores
- * bytecode for Jython servlets and re-uses it if the underlying .py
- * file has not changed.
+ * This servlet is used to re-serve Jython servlets. It stores bytecode for Jython servlets and
+ * re-uses it if the underlying .py file has not changed.
  * <p>
- * Many people have been involved with this class:
- * <ul>
- * <li>Chris Gokey
- * <li>David Syer
- * <li>Finn Bock
- * </ul>
- * If somebody is missing from this list, let us know.
- * <p>
- *
  * e.g. http://localhost:8080/test/hello.py
  * <pre>
  *
@@ -36,7 +40,6 @@ import org.python.core.*;
  *         print >>out, "</body>"
  *         print >>out, "</html>"
  *         out.close()
- *         return
  * </pre>
  *
  * in web.xml for the PyServlet context:
@@ -47,7 +50,7 @@ import org.python.core.*;
  *         &lt;servlet-class>org.python.util.PyServlet&lt;/servlet-class>
  *         &lt;init-param>
  *             &lt;param-name>python.home&lt;/param-name>
- *             &lt;param-value>/usr/home/jython-2.1&lt;/param-value>
+ *             &lt;param-value>/usr/home/jython-2.5&lt;/param-value>
  *         &lt;/init-param>
  *     &lt;/servlet>
  *     &lt;servlet-mapping>
@@ -58,62 +61,83 @@ import org.python.core.*;
  *
  * </pre>
  */
-
 public class PyServlet extends HttpServlet {
-    private PythonInterpreter interp;
-    private Hashtable cache = new Hashtable();
-    private String rootPath;
 
+    public static final String SKIP_INIT_NAME = "skip_jython_initialization";
 
+    protected static final String INIT_ATTR = "__jython_initialized__";
+
+    @Override
     public void init() {
-        rootPath = getServletContext().getRealPath("/");
-        if (!rootPath.endsWith(File.separator))
-            rootPath += File.separator;
-
         Properties props = new Properties();
-        Properties baseProps = PySystemState.getBaseProperties();
-
-        // Context parameters
-        ServletContext context = getServletContext();
-        Enumeration e = context.getInitParameterNames();
-        while (e.hasMoreElements()) {
-            String name = (String) e.nextElement();
-            props.put(name, context.getInitParameter(name));
-        }
-
         // Config parameters
-        e = getInitParameterNames();
+        Enumeration<?> e = getInitParameterNames();
         while (e.hasMoreElements()) {
-            String name = (String) e.nextElement();
+            String name = (String)e.nextElement();
             props.put(name, getInitParameter(name));
         }
-
-        if(props.getProperty("python.home") == null
-                && baseProps.getProperty("python.home") == null) {
-            props.put("python.home", rootPath + "WEB-INF" +
-                                             File.separator + "lib");
+        boolean initialize = getServletConfig().getInitParameter(SKIP_INIT_NAME) != null;
+        if (getServletContext().getAttribute(INIT_ATTR) != null) {
+            if (initialize) {
+                System.err.println("Jython has already been initialized in this context, not "
+                        + "initializing for " + getServletName() + ".  Add " + SKIP_INIT_NAME
+                        + " to as an init param to this servlet's configuration to indicate this "
+                        + "is expected.");
+            }
+        } else if (initialize) {
+            init(props, getServletContext());
         }
-
-        PySystemState.initialize(baseProps, props, new String[0]);
         reset();
+    }
 
+    /**
+     * PyServlet's initialization can be performed as a ServletContextListener or as a regular
+     * servlet, and this is the shared init code. If both initializations are used in a single
+     * context, the system state initialization code only runs once.
+     */
+    protected static void init(Properties props, ServletContext context) {
+        String rootPath = getRootPath(context);
+        context.setAttribute(INIT_ATTR, true);
+        Properties baseProps = PySystemState.getBaseProperties();
+        // Context parameters
+        Enumeration<?> e = context.getInitParameterNames();
+        while (e.hasMoreElements()) {
+            String name = (String)e.nextElement();
+            props.put(name, context.getInitParameter(name));
+        }
+        if (props.getProperty("python.home") == null
+                && baseProps.getProperty("python.home") == null) {
+            props.put("python.home", rootPath + "WEB-INF" + File.separator + "lib");
+        }
+        PySystemState.initialize(baseProps, props, new String[0]);
         PySystemState.add_package("javax.servlet");
         PySystemState.add_package("javax.servlet.http");
         PySystemState.add_package("javax.servlet.jsp");
         PySystemState.add_package("javax.servlet.jsp.tagext");
-
         PySystemState.add_classdir(rootPath + "WEB-INF" + File.separator + "classes");
-
         PySystemState.add_extdir(rootPath + "WEB-INF" + File.separator + "lib", true);
     }
 
-    /**
-     * Implementation of the HttpServlet main method.
-     * @param req the request parameter.
-     * @param res the response parameter.
-     * @exception ServletException
-     * @exception IOException
-     */
+    protected static PythonInterpreter createInterpreter(ServletContext servletContext) {
+        String rootPath = getRootPath(servletContext);
+        PySystemState sys = new PySystemState();
+        PythonInterpreter interp = new PythonInterpreter(Py.newStringMap(), sys);
+        sys.path.append(new PyString(rootPath));
+
+        String modulesDir = rootPath + "WEB-INF" + File.separator + "jython";
+        sys.path.append(new PyString(modulesDir));
+        return interp;
+    }
+
+    protected static String getRootPath(ServletContext context) {
+        String rootPath = context.getRealPath("/");
+        if (!rootPath.endsWith(File.separator)) {
+            rootPath += File.separator;
+        }
+        return rootPath;
+    }
+
+    @Override
     public void service(ServletRequest req, ServletResponse res)
         throws ServletException, IOException
     {
@@ -121,107 +145,105 @@ public class PyServlet extends HttpServlet {
 
         String spath = (String) req.getAttribute("javax.servlet.include.servlet_path");
         if (spath == null) {
-            spath = ((HttpServletRequest) req).getServletPath();
+            spath = ((HttpServletRequest)req).getServletPath();
             if (spath == null || spath.length() == 0) {
-                // Servlet 2.1 puts the path of an extension-matched
-                // servlet in PathInfo.
-                spath = ((HttpServletRequest) req).getPathInfo();
+                // Servlet 2.1 puts the path of an extension-matched servlet in PathInfo.
+                spath = ((HttpServletRequest)req).getPathInfo();
             }
         }
         String rpath = getServletContext().getRealPath(spath);
-
-        interp.set("__file__", rpath);
-
-        HttpServlet servlet = getServlet(rpath);
-        if (servlet !=  null)
-            servlet.service(req, res);
-        else
-            throw new ServletException("No python servlet found at:" + spath);
+        getServlet(rpath).service(req, res);
     }
 
+    @Override
+    public void destroy() {
+        super.destroy();
+        destroyCache();
+    }
+
+    /**
+     * Clears the cache of loaded servlets and makes a new PythonInterpreter to service further
+     * requests.
+     */
     public void reset() {
         destroyCache();
-        interp = new PythonInterpreter(null, new PySystemState());
-        cache.clear();
-        
-        PySystemState sys = Py.getSystemState();
-        sys.path.append(new PyString(rootPath));
-
-        String modulesDir = rootPath + "WEB-INF" + File.separator + "jython";
-        sys.path.append(new PyString(modulesDir));
+        interp = createInterpreter(getServletContext());
     }
 
     private synchronized HttpServlet getServlet(String path)
         throws ServletException, IOException
     {
-        CacheEntry entry = (CacheEntry) cache.get(path);
-        if (entry == null)
+        CacheEntry entry = cache.get(path);
+        if (entry == null || new File(path).lastModified() > entry.date) {
             return loadServlet(path);
-        File file = new File(path);
-        if (file.lastModified() > entry.date)
-            return loadServlet(path);
+        }
         return entry.servlet;
     }
 
     private HttpServlet loadServlet(String path)
         throws ServletException, IOException
     {
-        HttpServlet servlet = null;
         File file = new File(path);
 
-        // Extract servlet name from path (strip ".../" and ".py")
-        int start = path.lastIndexOf(File.separator);
-        if (start < 0)
-            start = 0;
-        else
-            start++;
-        int end = path.lastIndexOf('.');
-        if ((end < 0) || (end <= start))
-            end = path.length();
-        String name = path.substring(start, end);
-
+        HttpServlet servlet = createInstance(interp, file, HttpServlet.class);
         try {
-            interp.execfile(path);
-            PyObject cls = interp.get(name);
-            if (cls == null) {
-                throw new ServletException("No callable (class or function) named " + name + " in "
-                        + path);
-            }
-            PyObject pyServlet = cls.__call__();
-            Object o = pyServlet.__tojava__(HttpServlet.class);
-            if (o == Py.NoConversion) {
-                throw new ServletException("The value from " + name + " must extend HttpServlet");
-            }
-            servlet = (HttpServlet)o;
             servlet.init(getServletConfig());
-
         } catch (PyException e) {
             throw new ServletException(e);
         }
-        CacheEntry entry = new CacheEntry(servlet, file.lastModified());
-        cache.put(path, entry);
+        cache.put(path, new CacheEntry(servlet, file.lastModified()));
         return servlet;
     }
 
-    public void destroy() {
-        destroyCache();
-    }
-
-    private void destroyCache() {
-        for (Enumeration e = cache.elements(); e.hasMoreElements(); ) {
-            CacheEntry entry = (CacheEntry) e.nextElement();
-            entry.servlet.destroy();
+    protected static <T> T createInstance(PythonInterpreter interp, File file, Class<T> type)
+            throws ServletException {
+        Matcher m = FIND_NAME.matcher(file.getName());
+        if (!m.find()) {
+            throw new ServletException("I can't guess the name of the class from "
+                    + file.getAbsolutePath());
+        }
+        String name = m.group(1);
+        try {
+            interp.set("__file__", file.getAbsolutePath());
+            interp.execfile(file.getAbsolutePath());
+            PyObject cls = interp.get(name);
+            if (cls == null) {
+                throw new ServletException("No callable (class or function) named " + name + " in "
+                        + file.getAbsolutePath());
+            }
+            PyObject pyServlet = cls.__call__();
+            Object o = pyServlet.__tojava__(type);
+            if (o == Py.NoConversion) {
+                throw new ServletException("The value from " + name + " must extend "
+                        + type.getSimpleName());
+            }
+            @SuppressWarnings("unchecked")
+            T asT = (T)o;
+            return asT;
+        } catch (PyException e) {
+            throw new ServletException(e);
         }
     }
 
-}
-
-class CacheEntry {
-    public long date;
-    public HttpServlet servlet;
-
-    CacheEntry(HttpServlet servlet, long date) {
-        this.servlet=  servlet;
-        this.date = date;
+    private void destroyCache() {
+        for (CacheEntry entry : cache.values()) {
+            entry.servlet.destroy();
+        }
+        cache.clear();
     }
+
+    private static class CacheEntry {
+        public long date;
+        public HttpServlet servlet;
+
+        CacheEntry(HttpServlet servlet, long date) {
+            this.servlet=  servlet;
+            this.date = date;
+        }
+    }
+
+    private static final Pattern FIND_NAME = Pattern.compile("([^/]+)\\.py$");
+
+    private PythonInterpreter interp;
+    private Map<String, CacheEntry> cache = Generic.map();
 }

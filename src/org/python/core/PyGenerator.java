@@ -1,59 +1,167 @@
-// Copyright 2002 Finn Bock
-
+/* Copyright (c) Jython Developers */
 package org.python.core;
 
+import org.python.expose.ExposedGet;
+import org.python.expose.ExposedMethod;
+import org.python.expose.ExposedType;
 
+@ExposedType(name = "generator", base = PyObject.class, isBaseType = false)
 public class PyGenerator extends PyIterator {
-    public PyFrame gi_frame;
-    PyObject closure;
-    public boolean gi_running;
+
+    public static final PyType TYPE = PyType.fromClass(PyGenerator.class);
+
+    @ExposedGet
+    protected PyFrame gi_frame;
+
+    @ExposedGet
+    protected boolean gi_running;
+
+    private PyObject closure;
 
     public PyGenerator(PyFrame frame, PyObject closure) {
-        this.gi_frame = frame;
+        super(TYPE);
+        gi_frame = frame;
         this.closure = closure;
-        this.gi_running = false;
     }
 
-    private static final String[] __members__ = {
-        "gi_frame", "gi_running", "next",
-    };
-
-    public PyObject __dir__() {
-        PyString members[] = new PyString[__members__.length];
-        for (int i = 0; i < __members__.length; i++)
-            members[i] = new PyString(__members__[i]);
-        PyList ret = new PyList(members);
-        PyDictionary accum = new PyDictionary();
-        addKeys(accum, "__dict__");
-        ret.extend(accum.keys());
-        ret.sort();
-        return ret;
+    public PyObject send(PyObject value) {
+        return generator_send(value);
     }
 
+    @ExposedMethod
+    final PyObject generator_send(PyObject value) {
+        if (gi_frame == null) {
+            throw Py.StopIteration("");
+        }
+        if (gi_frame.f_lasti == 0 && value != Py.None) {
+            throw Py.TypeError("can't send non-None value to a just-started generator");
+        }
+        gi_frame.setGeneratorInput(value);
+        return next();
+    }
+
+    public PyObject throw$(PyObject type, PyObject value, PyObject tb) {
+        return generator_throw$(type, value, tb);
+    }
+
+    @ExposedMethod(names="throw", defaults={"null", "null"})
+    final PyObject generator_throw$(PyObject type, PyObject value, PyObject tb) {
+        if (tb == Py.None) {
+            tb = null;
+        } else if (tb != null && !(tb instanceof PyTraceback)) {
+            throw Py.TypeError("throw() third argument must be a traceback object");
+        }
+        return raiseException(Py.makeException(type, value, tb));
+    }
+
+    public PyObject close() {
+        return generator_close();
+    }
+
+    @ExposedMethod
+    final PyObject generator_close() {
+        try {
+            raiseException(Py.makeException(Py.GeneratorExit));
+            throw Py.RuntimeError("generator ignored GeneratorExit");
+        } catch (PyException e) {
+            if (!(e.type == Py.StopIteration || e.type == Py.GeneratorExit)) {
+                throw e;
+            }
+        }
+        return Py.None;
+    }
+
+    @Override
+    public PyObject next() {
+        return generator_next();
+    }
+
+    @ExposedMethod(doc="x.next() -> the next value, or raise StopIteration")
+    final PyObject generator_next() {
+        return super.next();
+    }
+
+    @Override
+    public PyObject __iter__() {
+        return generator___iter__();
+    }
+
+    @ExposedMethod
+    final PyObject generator___iter__() {
+        return this;
+    }
+
+    private PyObject raiseException(PyException ex) {
+        if (gi_frame == null || gi_frame.f_lasti == 0) {
+            gi_frame = null;
+            throw ex;
+        }
+        gi_frame.setGeneratorInput(ex);
+        return next();
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+        if (gi_frame == null || gi_frame.f_lasti == -1) {
+            return;
+        }
+        try {
+            close();
+        } catch (PyException pye) {
+            // PEP 342 specifies that if an exception is raised by close,
+            // we output to stderr and then forget about it;
+            String className =  PyException.exceptionClassName(pye.type);
+            int lastDot = className.lastIndexOf('.');
+            if (lastDot != -1) {
+                className = className.substring(lastDot + 1);
+            }
+            String msg = String.format("Exception %s: %s in %s", className, pye.value.__repr__(),
+                                       __repr__());
+            Py.println(Py.getSystemState().stderr, Py.newString(msg));
+        } catch (Throwable t) {
+            // but we currently ignore any Java exception completely. perhaps we
+            // can also output something meaningful too?
+        } finally {
+            super.finalize();
+        }
+    }
+
+    @Override
     public PyObject __iternext__() {
-        if (gi_running)
+        return __iternext__(Py.getThreadState());
+    }
+
+    public PyObject __iternext__(ThreadState state) {
+        if (gi_running) {
             throw Py.ValueError("generator already executing");
-        if (gi_frame.f_lasti == -1)
+        }
+        if (gi_frame == null) {
             return null;
+        }
+
+        if (gi_frame.f_lasti == -1) {
+            gi_frame = null;
+            return null;
+        }
         gi_running = true;
         PyObject result = null;
         try {
-            result = gi_frame.f_code.call(gi_frame, closure);
-        } catch(PyException e) {
-            if(!e.type.equals(Py.StopIteration)) {
-                throw e;
-            }else{
-                stopException = e;
+            result = gi_frame.f_code.call(state, gi_frame, closure);
+        } catch (PyException pye) {
+            if (!(pye.type == Py.StopIteration || pye.type == Py.GeneratorExit)) {
+                gi_frame = null;
+                throw pye;
+            } else {
+                stopException = pye;
+                gi_frame = null;
                 return null;
             }
         } finally {
             gi_running = false;
         }
-//        System.out.println("lasti:" + gi_frame.f_lasti);
-//if (result == Py.None)
-//    new Exception().printStackTrace();
-        if (result == Py.None && gi_frame.f_lasti == -1)
+        if (result == Py.None && gi_frame.f_lasti == -1) {
             return null;
+        }
         return result;
     }
 }

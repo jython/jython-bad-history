@@ -4,7 +4,7 @@ package org.python.core;
 /**
  * A class with static fields for each of the settable options. The options from
  * registry and command line is copied into the fields here and the rest of
- * Jyhton checks these fields.
+ * Jython checks these fields.
  */
 public class Options {
     // Jython options. Some of these can be set from the command line
@@ -17,25 +17,20 @@ public class Options {
     public static boolean showJavaExceptions = false;
 
     /**
-     * When true, python exception raised in overriden methods will be shown on
-     * stderr. This option is remarkable usefull when python is used for
+     * If true, exceptions raised from Python code will include a Java stack
+     * trace in addition to the Python traceback.  This can slow raising
+     * considerably.
+     */
+    public static boolean includeJavaStackInExceptions = true;
+
+    /**
+     * When true, python exception raised in overridden methods will be shown on
+     * stderr. This option is remarkably useful when python is used for
      * implementing CORBA server. Some CORBA servers will turn python exception
      * (say a NameError) into an anonymous user exception without any
      * stacktrace. Setting this option will show the stacktrace.
      */
     public static boolean showPythonProxyExceptions = false;
-
-    /**
-     * To force JIT compilation of Jython code -- should be unnecessary Setting
-     * this to true will cause jdk1.2rc1 to core dump on Windows
-     */
-    public static boolean skipCompile = true;
-
-    /**
-     * Setting this to true will cause the console to poll standard in. This
-     * might be helpful on systems without system-level threads.
-     */
-    public static boolean pollStandardIn = false;
 
     /**
      * If true, Jython respects Java the accessibility flag for fields,
@@ -59,16 +54,10 @@ public class Options {
     public static int verbose = Py.MESSAGE;
 
     /**
-     * Setting this to true will support old 1.0 style keyword+"_" names. This
-     * isn't needed any more due to improvements in the parser
-     */
-    public static boolean deprecatedKeywordMangling = false;
-
-    /**
-     * A directory where the dynamicly generated classes are written. Nothing is
+     * A directory where the dynamically generated classes are written. Nothing is
      * ever read from here, it is only for debugging purposes.
      */
-    public static String proxyDebugDirectory = null;
+    public static String proxyDebugDirectory;
 
     /**
      * If true, Jython will use the first module found on sys.path where java
@@ -82,6 +71,10 @@ public class Options {
      * If true, enable truedivision for the '/' operator.
      */
     public static boolean Qnew = false;
+
+    /** Force stdin, stdout and stderr to be unbuffered, and opened in
+     * binary mode */
+    public static boolean unbuffered = false;
 
     /**
      * Enable division warning. The value maps to the registry values of
@@ -125,18 +118,12 @@ public class Options {
         Options.showJavaExceptions = getBooleanOption(
                 "options.showJavaExceptions", Options.showJavaExceptions);
 
+        Options.includeJavaStackInExceptions = getBooleanOption(
+        	"options.includeJavaStackInExceptions", Options.includeJavaStackInExceptions);
+
         Options.showPythonProxyExceptions = getBooleanOption(
                 "options.showPythonProxyExceptions",
                 Options.showPythonProxyExceptions);
-
-        Options.skipCompile = getBooleanOption("options.skipCompile",
-                Options.skipCompile);
-
-        Options.deprecatedKeywordMangling = getBooleanOption(
-                "deprecated.keywordMangling", Options.deprecatedKeywordMangling);
-
-        Options.pollStandardIn = getBooleanOption("console.poll",
-                Options.pollStandardIn);
 
         Options.respectJavaAccessibility = getBooleanOption(
                 "security.respectJavaAccessibility",
@@ -181,8 +168,5 @@ public class Options {
                         + "setting: '" + prop + "'");
             }
         }
-        // additional initializations which must happen after the registry
-        // is guaranteed to be initialized.
-        JavaAccessibility.initialize();
     }
 }

@@ -1,192 +1,166 @@
+/* Copyright (c) Jython Developers */
 package org.python.core;
 
-public class PySuper extends PyObject implements PyType.Newstyle {
-    //~ BEGIN GENERATED REGION -- DO NOT EDIT SEE gexpose.py
-    /* type info */
+import org.python.expose.ExposedGet;
+import org.python.expose.ExposedMethod;
+import org.python.expose.ExposedNew;
+import org.python.expose.ExposedType;
 
-    public static final String exposed_name="super";
+/**
+ * The Python super type.
+ */
+@ExposedType(name = "super", doc = BuiltinDocs.super_doc)
+public class PySuper extends PyObject {
 
-    public static void typeSetup(PyObject dict,PyType.Newstyle marker) {
-        dict.__setitem__("__thisclass__",new PyGetSetDescr("__thisclass__",PySuper.class,"getThisClass",null,null));
-        dict.__setitem__("__self__",new PyGetSetDescr("__self__",PySuper.class,"getSelf",null,null));
-        dict.__setitem__("__self_class__",new PyGetSetDescr("__self_class__",PySuper.class,"getSelfClass",null,null));
-        class exposed___getattribute__ extends PyBuiltinMethodNarrow {
+    public static final PyType TYPE = PyType.fromClass(PySuper.class);
 
-            exposed___getattribute__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
+    @ExposedGet(name = "__thisclass__", doc = BuiltinDocs.super___thisclass___doc)
+    protected PyType superType;
 
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___getattribute__(self,info);
-            }
+    @ExposedGet(name = "__self__", doc = BuiltinDocs.super___self___doc)
+    protected PyObject obj;
 
-            public PyObject __call__(PyObject arg0) {
-                try {
-                    String name=(arg0.asName(0));
-                    PyObject ret=((PySuper)self).super___findattr__(name);
-                    if (ret==null)
-                        ((PySuper)self).noAttributeError(name);
-                    return ret;
-                } catch (PyObject.ConversionException e) {
-                    String msg;
-                    switch (e.index) {
-                    case 0:
-                        msg="attribute name must be a string";
-                        break;
-                    default:
-                        msg="xxx";
-                    }
-                    throw Py.TypeError(msg);
-                }
-            }
+    @ExposedGet(name = "__self_class__", doc = BuiltinDocs.super___self_class___doc)
+    protected PyType objType;
 
-        }
-        dict.__setitem__("__getattribute__",new PyMethodDescr("__getattribute__",PySuper.class,1,1,new exposed___getattribute__(null,null)));
-        class exposed___get__ extends PyBuiltinMethodNarrow {
-
-            exposed___get__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___get__(self,info);
-            }
-
-            public PyObject __call__(PyObject arg0,PyObject arg1) {
-                PyObject obj=(arg0==Py.None)?null:arg1;
-                PyObject type=(arg1==Py.None)?null:arg0;
-                return((PySuper)self).super___get__(obj,type);
-            }
-
-            public PyObject __call__(PyObject arg0) {
-                PyObject obj=(arg0==Py.None)?null:(null);
-                PyObject type=((null)==Py.None)?null:arg0;
-                return((PySuper)self).super___get__(obj,type);
-            }
-
-        }
-        dict.__setitem__("__get__",new PyMethodDescr("__get__",PySuper.class,1,2,new exposed___get__(null,null)));
-        class exposed___init__ extends PyBuiltinMethod {
-
-            exposed___init__(PyObject self,PyBuiltinFunction.Info info) {
-                super(self,info);
-            }
-
-            public PyBuiltinFunction bind(PyObject self) {
-                return new exposed___init__(self,info);
-            }
-
-            public PyObject __call__(PyObject[]args) {
-                return __call__(args,Py.NoKeywords);
-            }
-
-            public PyObject __call__(PyObject[]args,String[]keywords) {
-                ((PySuper)self).super_init(args,keywords);
-                return Py.None;
-            }
-
-        }
-        dict.__setitem__("__init__",new PyMethodDescr("__init__",PySuper.class,-1,-1,new exposed___init__(null,null)));
-        dict.__setitem__("__new__",new PyNewWrapper(PySuper.class,"__new__",-1,-1) {
-
-                                                                                       public PyObject new_impl(boolean init,PyType subtype,PyObject[]args,String[]keywords) {
-                                                                                           PySuper newobj;
-                                                                                           if (for_type==subtype) {
-                                                                                               newobj=new PySuper();
-                                                                                               if (init)
-                                                                                                   newobj.super_init(args,keywords);
-                                                                                           } else {
-                                                                                               newobj=new PySuperDerived(subtype);
-                                                                                           }
-                                                                                           return newobj;
-                                                                                       }
-
-                                                                                   });
+    public PySuper() {
+        this(TYPE);
     }
-    //~ END GENERATED REGION -- DO NOT EDIT SEE gexpose.py
 
-    private static final PyType SUPERTYPE = PyType.fromClass(PySuper.class);
-   
-    protected PyType thisClass;
-    protected PyObject self;
-    protected PyType selfClass;
-
-    private PyType supercheck(PyType type,PyObject obj) {
-        if (obj instanceof PyType && ((PyType)obj).isSubType(type)) {
-            return (PyType)obj;
-        }
-        PyType obj_type = obj.getType();
-        if (obj_type.isSubType(type))
-            return obj_type;
-        throw Py.TypeError("super(type, obj): "+
-                "obj must be an instance or subtype of type");
+    public PySuper(PyType subType) {
+        super(subType);
     }
-    
-    public void super_init(PyObject[] args, String[] keywords) {
-        if (keywords.length != 0
-                || !PyBuiltinFunction.DefaultInfo.check(args.length, 1, 2)) {
-            throw PyBuiltinFunction.DefaultInfo.unexpectedCall(args.length,
-                    keywords.length != 0, "super", 1, 2);
+
+    @ExposedMethod
+    @ExposedNew
+    public void super___init__(PyObject[] args, String[] keywords) {
+        if (keywords.length != 0 || !PyBuiltinCallable.DefaultInfo.check(args.length, 1, 2)) {
+            throw PyBuiltinCallable.DefaultInfo.unexpectedCall(args.length, keywords.length != 0,
+                                                               "super", 1, 2);
         }
         if (!(args[0] instanceof PyType)) {
             throw Py.TypeError("super: argument 1 must be type");
         }
         PyType type = (PyType)args[0];
         PyObject obj = null;
-        PyType obj_type = null;
-        if (args.length == 2 && args[1] != Py.None)
+        PyType objType = null;
+        if (args.length == 2 && args[1] != Py.None) {
             obj = args[1];
+        }
         if (obj != null) {
-            obj_type = supercheck(type, obj);
+            objType = supercheck(type, obj);
         }
-        this.thisClass = type;
-        this.self = obj;
-        this.selfClass = obj_type;
-    }
-    
-    public PySuper() {
-        this(SUPERTYPE);
+        this.superType = type;
+        this.obj = obj;
+        this.objType = objType;
     }
 
-    public PySuper(PyType subType) {
-        super(subType);
-    }
-    
-    public PyObject getSelf() {
-        return self;
-    }
-    public PyType getSelfClass() {
-        return selfClass;
-    }
-    public PyType getThisClass() {
-        return thisClass;
-    }
-    
-    public PyObject __findattr__(String name) {
-        return super___findattr__(name);
+    /**
+     * Check that a super() call makes sense.  Return a type object.
+     *
+     * obj can be a new-style class, or an instance of one:
+     * 
+     * - If it is a class, it must be a subclass of 'type'.  This case is used for class
+     * methods; the return value is obj.
+     * 
+     * - If it is an instance, it must be an instance of 'type'.  This is the normal case;
+     * the return value is obj.__class__.
+     *
+     * But... when obj is an instance, we want to allow for the case where objType is not
+     * a subclass of type, but obj.__class__ is!  This will allow using super() with a
+     * proxy for obj.
+     *
+     * @param type the PyType superType associated with the super
+     * @param obj a the PyObject obj associated with the super
+     * @return a PyType superType
+     */
+    private PyType supercheck(PyType type, PyObject obj) {
+        // Check for first bullet above (special case)
+        if (obj instanceof PyType && ((PyType)obj).isSubType(type)) {
+            return (PyType)obj;
+        }
+
+        // Normal case
+        PyType objType = obj.getType();
+        if (objType.isSubType(type)) {
+            return objType;
+        } else {
+            // Try the slow way
+            PyObject classAttr = obj.__findattr__("__class__");
+            if (classAttr != null && classAttr instanceof PyType) {
+                if (((PyType)classAttr).isSubType(type)) {
+                    return (PyType)classAttr;
+                }
+            }
+        }
+        throw Py.TypeError("super(type, obj): obj must be an instance or subtype of type");
     }
 
-    final PyObject super___findattr__(String name) {
-        if (selfClass != null && name != "__class__") {
-            PyObject descr = selfClass.super_lookup(thisClass, name);
-            return descr.__get__(selfClass == self ? null : self, selfClass);
+    public PyObject __findattr_ex__(String name) {
+        return super___findattr_ex__(name);
+    }
+
+    final PyObject super___findattr_ex__(String name) {
+        if (objType != null && name != "__class__") {
+            PyObject descr = objType.super_lookup(superType, name);
+            if (descr != null) {
+                return descr.__get__(objType == obj ? null : obj, objType);
+            }
         }
-        return super.__findattr__(name);
+        return super.__findattr_ex__(name);
+    }
+
+    @ExposedMethod(doc = BuiltinDocs.super___getattribute___doc)
+    final PyObject super___getattribute__(PyObject name) {
+        PyObject ret = super___findattr_ex__(asName(name));
+        if (ret == null) {
+            noAttributeError(asName(name));
+        }
+        return ret;
     }
 
     public PyObject __get__(PyObject obj, PyObject type) {
-        return super___get__(obj,type);
+        return super___get__(obj, type);
     }
 
-    final PyObject super___get__(PyObject obj, PyObject type) { //xxx subtype case!
-        if (obj == null || obj == Py.None || self != null)
+    @ExposedMethod(defaults = "null", doc = BuiltinDocs.super___get___doc)
+    final PyObject super___get__(PyObject obj, PyObject type) {
+        if (obj == null || obj == Py.None || this.obj != null) {
             return this;
-        PyType obj_type = supercheck(this.thisClass, obj);
-        PySuper newsuper = new PySuper();
-        newsuper.thisClass = this.thisClass;
-        newsuper.self = obj;
-        newsuper.selfClass = obj_type;
-        return newsuper;
+        }
+        if (getType() != TYPE) {
+            // If an instance of a (strict) subclass of super, call its type
+            return getType().__call__(type, obj);
+        } else {
+            // Inline the common case
+            PyType objType = supercheck(this.superType, obj);
+            PySuper newsuper = new PySuper();
+            newsuper.superType = this.superType;
+            newsuper.obj = obj;
+            newsuper.objType = objType;
+            return newsuper;
+        }
     }
 
+    public String toString() {
+        String superTypeName = superType != null ? superType.fastGetName() : "NULL";
+        if (objType != null) {
+            return String.format("<super: <class '%s'>, <%s object>>", superTypeName,
+                                 objType.fastGetName());
+        } else {
+            return String.format("<super: <class '%s'>, NULL>", superTypeName);
+        }
+    }
+
+    public PyType getSuperType() {
+        return superType;
+    }
+
+    public PyObject getObj() {
+        return obj;
+    }
+
+    public PyType getObjType() {
+        return objType;
+    }
 }
