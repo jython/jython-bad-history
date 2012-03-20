@@ -8,6 +8,7 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 
 import org.python.expose.ExposedClassMethod;
+import org.python.expose.ExposedGet;
 import org.python.expose.ExposedMethod;
 import org.python.expose.ExposedNew;
 import org.python.expose.ExposedType;
@@ -76,6 +77,16 @@ public class PyFloat extends PyObject {
                 return new PyFloatDerived(subtype, floatObject.getValue());
             }
         }
+    }
+
+    @ExposedGet(name = "real", doc = BuiltinDocs.float_real_doc)
+    public PyObject getReal() {
+        return float___float__();
+    }
+
+    @ExposedGet(name = "imag", doc = BuiltinDocs.float_imag_doc)
+    public PyObject getImag() {
+        return Py.newFloat(0.0);
     }
 
     /**
@@ -370,7 +381,7 @@ public class PyFloat extends PyObject {
         if (!canCoerce(right)) {
             return null;
         }
-        if (Options.divisionWarning >= 2) {
+        if (Options.division_warning >= 2) {
             Py.warning(Py.DeprecationWarning, "classic float division");
         }
 
@@ -391,7 +402,7 @@ public class PyFloat extends PyObject {
         if (!canCoerce(left)) {
             return null;
         }
-        if (Options.divisionWarning >= 2) {
+        if (Options.division_warning >= 2) {
             Py.warning(Py.DeprecationWarning, "classic float division");
         }
 
@@ -673,10 +684,7 @@ public class PyFloat extends PyObject {
 
     @ExposedMethod(doc = BuiltinDocs.float___float___doc)
     final PyFloat float___float__() {
-        if (getType() == TYPE) {
-            return this;
-        }
-        return Py.newFloat(getValue());
+        return getType() == TYPE ? this : Py.newFloat(getValue());
     }
 
     @Override

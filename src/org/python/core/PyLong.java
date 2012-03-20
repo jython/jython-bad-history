@@ -8,6 +8,7 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
+import org.python.expose.ExposedGet;
 import org.python.expose.ExposedMethod;
 import org.python.expose.ExposedNew;
 import org.python.expose.ExposedType;
@@ -127,6 +128,26 @@ public class PyLong extends PyObject {
             return BigInteger.valueOf(0);
         }
         return new BigDecimal(value).toBigInteger();
+    }
+
+    @ExposedGet(name = "real", doc = BuiltinDocs.long_real_doc)
+    public PyObject getReal() {
+        return long___long__();
+    }
+
+    @ExposedGet(name = "imag", doc = BuiltinDocs.long_imag_doc)
+    public PyObject getImag() {
+        return Py.newLong(0);
+    }
+
+    @ExposedGet(name = "numerator", doc = BuiltinDocs.long_numerator_doc)
+    public PyObject getNumerator() {
+        return long___long__();
+    }
+
+    @ExposedGet(name = "denominator", doc = BuiltinDocs.long_denominator_doc)
+    public PyObject getDenominator() {
+        return Py.newLong(1);
     }
 
     @Override
@@ -423,7 +444,7 @@ public class PyLong extends PyObject {
         if (!canCoerce(right)) {
             return null;
         }
-        if (Options.divisionWarning > 0) {
+        if (Options.division_warning > 0) {
             Py.warning(Py.DeprecationWarning, "classic long division");
         }
         return Py.newLong(divide( getValue(), coerce(right)));
@@ -439,7 +460,7 @@ public class PyLong extends PyObject {
         if (!canCoerce(left)) {
             return null;
         }
-        if (Options.divisionWarning > 0) {
+        if (Options.division_warning > 0) {
             Py.warning(Py.DeprecationWarning, "classic long division");
         }
         return Py.newLong(divide(coerce(left), getValue()));
@@ -876,10 +897,7 @@ public class PyLong extends PyObject {
 
     @ExposedMethod(doc = BuiltinDocs.long___long___doc)
     final PyObject long___long__() {
-        if (getType() == TYPE) {
-            return this;
-        }
-        return Py.newLong(getValue());
+        return getType() == TYPE ? this : Py.newLong(getValue());
     }
 
     @Override
@@ -966,6 +984,16 @@ public class PyLong extends PyObject {
     @ExposedMethod(doc = BuiltinDocs.long___index___doc)
     final PyObject long___index__() {
         return this;
+    }
+
+    @Override
+    public PyObject __format__(PyObject formatSpec) {
+        return long___format__(formatSpec);
+    }
+
+    @ExposedMethod(doc = BuiltinDocs.long___format___doc)
+    final PyObject long___format__(PyObject formatSpec) {
+        return PyInteger.formatImpl(getValue(), formatSpec);
     }
 
     @Override
