@@ -26,6 +26,7 @@ import org.python.antlr.ast.Compare;
 import org.python.antlr.ast.Continue;
 import org.python.antlr.ast.Delete;
 import org.python.antlr.ast.Dict;
+import org.python.antlr.ast.DictComp;
 import org.python.antlr.ast.Ellipsis;
 import org.python.antlr.ast.ExceptHandler;
 import org.python.antlr.ast.Exec;
@@ -52,6 +53,8 @@ import org.python.antlr.ast.Print;
 import org.python.antlr.ast.Raise;
 import org.python.antlr.ast.Repr;
 import org.python.antlr.ast.Return;
+import org.python.antlr.ast.Set;
+import org.python.antlr.ast.SetComp;
 import org.python.antlr.ast.Slice;
 import org.python.antlr.ast.Str;
 import org.python.antlr.ast.Subscript;
@@ -88,6 +91,7 @@ import org.python.core.PyInteger;
 import org.python.core.PyList;
 import org.python.core.PyLong;
 import org.python.core.PyObject;
+import org.python.core.PySet;
 import org.python.core.PySlice;
 import org.python.core.PyString;
 import org.python.core.PyTuple;
@@ -842,7 +846,7 @@ public class CodeCompiler extends Visitor implements Opcodes, ClassConstants {
         }
         int tmp = 0;
         if (node.getInternalValue() != null) {
-            if (my_scope.generator) {
+            if (my_scope.generator && !(node instanceof LambdaSyntheticReturn)) {
                 throw new ParseException("'return' with argument " +
                         "inside generator", node);
             }
@@ -2133,16 +2137,70 @@ public class CodeCompiler extends Visitor implements Opcodes, ClassConstants {
         code.invokevirtual(p(PyObject.class), "__getattr__", sig(PyObject.class, String.class));
         String tmp_append = "_[" + node.getLine() + "_" + node.getCharPositionInLine() + "]";
 
-        set(new Name(node, tmp_append, expr_contextType.Store));
+        java.util.List<expr> args = new ArrayList<expr>();
+        args.add(node.getInternalElt());
+
+        finishComp(node, args, node.getInternalGenerators(), tmp_append);
+
+        return null;
+    }
+
+
+    @Override
+    public Object visitSetComp(SetComp node) throws Exception {
+        code.new_(p(PySet.class));
+
+        code.dup();
+        code.invokespecial(p(PySet.class), "<init>", sig(Void.TYPE));
+
+        code.dup();
+
+        code.ldc("add");
+
+        code.invokevirtual(p(PyObject.class), "__getattr__", sig(PyObject.class, String.class));
+        String tmp_append = "_{" + node.getLine() + "_" + node.getCharPositionInLine() + "}";
 
         java.util.List<expr> args = new ArrayList<expr>();
         args.add(node.getInternalElt());
-        stmt n = new Expr(node, new Call(node, new Name(node, tmp_append, expr_contextType.Load),
-                args,
-                new ArrayList<keyword>(), null, null));
 
-        for (int i = node.getInternalGenerators().size() - 1; i >= 0; i--) {
-            comprehension lc = node.getInternalGenerators().get(i);
+        finishComp(node, args, node.getInternalGenerators(), tmp_append);
+
+        return null;
+    }
+
+    @Override
+    public Object visitDictComp(DictComp node) throws Exception {
+        code.new_(p(PyDictionary.class));
+
+        code.dup();
+        code.invokespecial(p(PyDictionary.class), "<init>", sig(Void.TYPE));
+
+        code.dup();
+
+        code.ldc("__setitem__");
+
+        code.invokevirtual(p(PyDictionary.class), "__getattr__", sig(PyObject.class, String.class));
+        String tmp_append = "_{" + node.getLine() + "_" + node.getCharPositionInLine() + "}";
+
+        java.util.List<expr> args = new ArrayList<expr>();
+        args.add(node.getInternalKey());
+        args.add(node.getInternalValue());
+
+        finishComp(node, args, node.getInternalGenerators(), tmp_append);
+
+        return null;
+    }
+
+
+    private void finishComp(expr node, java.util.List<expr> args, java.util.List<comprehension> generators,
+            String tmp_append) throws Exception {
+        set(new Name(node, tmp_append, expr_contextType.Store));
+
+        stmt n = new Expr(node, new Call(node, new Name(node, tmp_append, expr_contextType.Load),
+                args, new ArrayList<keyword>(), null, null));
+
+        for (int i = generators.size() - 1; i >= 0; i--) {
+            comprehension lc = generators.get(i);
             for (int j = lc.getInternalIfs().size() - 1; j >= 0; j--) {
                 java.util.List<stmt> body = new ArrayList<stmt>();
                 body.add(n);
@@ -2158,8 +2216,6 @@ public class CodeCompiler extends Visitor implements Opcodes, ClassConstants {
         java.util.List<expr> targets = new ArrayList<expr>();
         targets.add(new Name(n, tmp_append, expr_contextType.Del));
         visit(new Delete(n, targets));
-
-        return null;
     }
 
     @Override
@@ -2180,19 +2236,41 @@ public class CodeCompiler extends Visitor implements Opcodes, ClassConstants {
     }
 
     @Override
+    public Object visitSet(Set node) throws Exception {
+        int content = makeArray(node.getInternalElts());
+
+        code.new_(p(PySet.class));
+        code.dup();
+        code.aload(content);
+        code.invokespecial(p(PySet.class), "<init>", sig(Void.TYPE, PyObject[].class));
+        freeArray(content);
+        return null;
+    }
+
+
+    @Override
     public Object visitRepr(Repr node) throws Exception {
         visit(node.getInternalValue());
         code.invokevirtual(p(PyObject.class), "__repr__", sig(PyString.class));
         return null;
     }
 
+
+    // a marker class to distinguish this usage; future generator rewriting may likely
+    // want to remove this support
+    private class LambdaSyntheticReturn extends Return {
+        private LambdaSyntheticReturn(PythonTree tree, expr value) {
+            super(tree, value);
+        }
+    }
+    
     @Override
     public Object visitLambda(Lambda node) throws Exception {
         String name = "<lambda>";
 
-        //Add a return node onto the outside of suite;
+        //Add a synthetic return node onto the outside of suite;
         java.util.List<stmt> bod = new ArrayList<stmt>();
-        bod.add(new Return(node, node.getInternalBody()));
+        bod.add(new LambdaSyntheticReturn(node, node.getInternalBody()));
         mod retSuite = new Suite(node, bod);
 
         setline(node);
