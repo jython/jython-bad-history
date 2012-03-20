@@ -14,6 +14,7 @@ Jython 2.5.3b2
 
 Jython 2.5.3b1
   Bugs Fixed
+    - [ 1835 ] s/occured/occurred/ :)
     - [ 1727 ] Error in Jython 2.5.2 with os.stat and varargs
     - [ 1735 ] return type of os.read is unicode, not str
     - [ 1755 ] os.utime('/tmp/nonexistent-file', None) fails to raise OSError
