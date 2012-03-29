@@ -6,7 +6,12 @@ package org.python.core;
 
 import java.io.Serializable;
 import java.math.BigInteger;
+import java.text.NumberFormat;
+import java.util.Locale;
 
+import org.python.core.stringlib.InternalFormatSpec;
+import org.python.core.stringlib.InternalFormatSpecParser;
+import org.python.expose.ExposedGet;
 import org.python.expose.ExposedMethod;
 import org.python.expose.ExposedNew;
 import org.python.expose.ExposedType;
@@ -103,6 +108,26 @@ public class PyInteger extends PyObject {
             }
             throw Py.TypeError("int() argument must be a string or a number");
         }
+    }
+
+    @ExposedGet(name = "real", doc = BuiltinDocs.int_real_doc)
+    public PyObject getReal() {
+        return int___int__();
+    }
+
+    @ExposedGet(name = "imag", doc = BuiltinDocs.int_imag_doc)
+    public PyObject getImag() {
+        return Py.newInteger(0);
+    }
+
+    @ExposedGet(name = "numerator", doc = BuiltinDocs.int_numerator_doc)
+    public PyObject getNumerator() {
+        return int___int__();
+    }
+
+    @ExposedGet(name = "denominator", doc = BuiltinDocs.int_denominator_doc)
+    public PyObject getDenominator() {
+        return Py.newInteger(1);
     }
 
     public int getValue() {
@@ -338,7 +363,7 @@ public class PyInteger extends PyObject {
         if (!canCoerce(right)) {
             return null;
         }
-        if (Options.divisionWarning > 0) {
+        if (Options.division_warning > 0) {
             Py.warning(Py.DeprecationWarning, "classic int division");
         }
         return Py.newInteger(divide(getValue(), coerce(right)));
@@ -354,7 +379,7 @@ public class PyInteger extends PyObject {
         if (!canCoerce(left)) {
             return null;
         }
-        if (Options.divisionWarning > 0) {
+        if (Options.division_warning > 0) {
             Py.warning(Py.DeprecationWarning, "classic int division");
         }
         return Py.newInteger(divide(coerce(left), getValue()));
@@ -770,8 +795,13 @@ public class PyInteger extends PyObject {
 
     @ExposedMethod(doc = BuiltinDocs.int___neg___doc)
     final PyObject int___neg__() {
-        long x = -getValue();
-        return Py.newInteger(x);
+        long x = getValue();
+        long result = -x;
+        // check for overflow
+        if (x < 0 && result == x) {
+            return new PyLong(x).__neg__();
+        }
+        return Py.newInteger(result);
     }
 
     @Override
@@ -814,10 +844,7 @@ public class PyInteger extends PyObject {
 
     @ExposedMethod(doc = BuiltinDocs.int___int___doc)
     final PyInteger int___int__() {
-        if (getType() == TYPE) {
-            return this;
-        }
-        return Py.newInteger(getValue());
+        return getType() == TYPE ? this : Py.newInteger(getValue());
     }
 
     @Override
@@ -891,6 +918,120 @@ public class PyInteger extends PyObject {
     @ExposedMethod(doc = BuiltinDocs.int___index___doc)
     final PyObject int___index__() {
         return this;
+    }
+
+    @Override
+    public PyObject __format__(PyObject formatSpec) {
+        return int___format__(formatSpec);
+    }
+
+    @ExposedMethod(doc = BuiltinDocs.int___format___doc)
+    final PyObject int___format__(PyObject formatSpec) {
+        return formatImpl(getValue(), formatSpec);
+    }
+
+    static PyObject formatImpl(Object value, PyObject formatSpec) {
+        if (!(formatSpec instanceof PyString)) {
+            throw Py.TypeError("__format__ requires str or unicode");
+        }
+
+        PyString formatSpecStr = (PyString) formatSpec;
+        String result;
+        try {
+            String specString = formatSpecStr.getString();
+            InternalFormatSpec spec = new InternalFormatSpecParser(specString).parse();
+            result = formatIntOrLong(value, spec);
+        } catch (IllegalArgumentException e) {
+            throw Py.ValueError(e.getMessage());
+        }
+        return formatSpecStr.createInstance(result);
+    }
+
+    /**
+     * Formats an integer or long number according to a PEP-3101 format specification.
+     *
+     * @param value Integer or BigInteger object specifying the value to format.
+     * @param spec parsed PEP-3101 format specification.
+     * @return result of the formatting.
+     */
+    public static String formatIntOrLong(Object value, InternalFormatSpec spec) {
+        if (spec.precision != -1) {
+            throw new IllegalArgumentException("Precision not allowed in integer format specifier");
+        }
+        int sign;
+        if (value instanceof Integer) {
+            int intValue = (Integer) value;
+            sign = intValue < 0 ? -1 : intValue == 0 ? 0 : 1;
+        } else {
+            sign = ((BigInteger) value).signum();
+        }
+        String strValue;
+        if (spec.type == 'c') {
+            if (spec.sign != '\0') {
+                throw new IllegalArgumentException("Sign not allowed with integer format "
+                                                   + "specifier 'c'");
+            }
+            if (value instanceof Integer) {
+                int intValue = (Integer) value;
+                if (intValue > 0xffff) {
+                    throw new IllegalArgumentException("%c arg not in range(0x10000)");
+                }
+                strValue = Character.toString((char) intValue);
+            } else {
+                BigInteger bigInt = (BigInteger) value;
+                if (bigInt.intValue() > 0xffff || bigInt.bitCount() > 16) {
+                    throw new IllegalArgumentException("%c arg not in range(0x10000)");
+                }
+                strValue = Character.toString((char) bigInt.intValue());
+            }
+        } else {
+            int radix = 10;
+            if (spec.type == 'o') {
+                radix = 8;
+            } else if (spec.type == 'x' || spec.type == 'X') {
+                radix = 16;
+            } else if (spec.type == 'b') {
+                radix = 2;
+            }
+
+            if (spec.type == 'n') {
+                strValue = NumberFormat.getNumberInstance().format(value);
+            } else if (spec.thousands_separators) {
+                NumberFormat format = NumberFormat.getNumberInstance(Locale.US);
+                format.setGroupingUsed(true);
+                strValue = format.format(value);
+            } else if (value instanceof BigInteger) {
+                strValue = ((BigInteger) value).toString(radix);
+            } else {
+                strValue = Integer.toString((Integer) value, radix);
+            }
+
+            if (spec.alternate) {
+                if (radix == 2) {
+                    strValue = "0b" + strValue;
+                } else if (radix == 8) {
+                    strValue = "0o" + strValue;
+                } else if (radix == 16) {
+                    strValue = "0x" + strValue;
+                }
+            }
+            if (spec.type == 'X') {
+                strValue = strValue.toUpperCase();
+            }
+
+            if (sign >= 0) {
+                if (spec.sign == '+') {
+                    strValue = "+" + strValue;
+                } else if (spec.sign == ' ') {
+                    strValue = " " + strValue;
+                }
+            }
+        }
+        if (spec.align == '=' && (sign < 0 || spec.sign == '+' || spec.sign == ' ')) {
+            char signChar = strValue.charAt(0);
+            return signChar + spec.pad(strValue.substring(1), '>', 1);
+        }
+        return spec.pad(strValue, '>', 0);
     }
 
     @Override
