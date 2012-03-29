@@ -15,6 +15,9 @@ public class BuiltinDocs {
     public final static String object_doc = 
         "The most base type";
 
+    public final static String object___format___doc = 
+        "default object formatter";
+
     public final static String object___getattribute___doc = 
         "x.__getattribute__('name') <==> x.name";
 
@@ -22,7 +25,7 @@ public class BuiltinDocs {
         "x.__hash__() <==> hash(x)";
 
     public final static String object___init___doc = 
-        "x.__init__(...) initializes x; see x.__class__.__doc__ for signature";
+        "x.__init__(...) initializes x; see help(type(x)) for signature";
 
     public final static String object___new___doc = 
         "T.__new__(S, ...) -> a new object with type S, a subtype of T";
@@ -39,16 +42,32 @@ public class BuiltinDocs {
     public final static String object___setattr___doc = 
         "x.__setattr__('name', value) <==> x.name = value";
 
+    public final static String object___sizeof___doc = 
+        "__sizeof__() -> int\n" + 
+        "size of object in memory, in bytes";
+
     public final static String object___str___doc = 
         "x.__str__() <==> str(x)";
 
+    public final static String object___subclasshook___doc = 
+        "Abstract classes can override this to customize issubclass().\n" + 
+        "\n" + 
+        "This is invoked early on by abc.ABCMeta.__subclasscheck__().\n" + 
+        "It should return True, False or NotImplemented.  If it returns\n" + 
+        "NotImplemented, the normal algorithm is used.  Otherwise, it\n" + 
+        "overrides the normal algorithm (and the outcome is cached).\n" + 
+        "";
+
     // Docs for <type 'type'>
+    public final static String type___abstractmethods___doc = 
+        "";
+
     public final static String type___base___doc = 
         "The most base type";
 
     public final static String type___bases___doc = 
-        "tuple() -> an empty tuple\n" + 
-        "tuple(sequence) -> tuple initialized from sequence's items\n" + 
+        "tuple() -> empty tuple\n" + 
+        "tuple(iterable) -> tuple initialized from iterable's items\n" + 
         "\n" + 
         "If the argument is a tuple, the return value is the same object.";
 
@@ -59,8 +78,9 @@ public class BuiltinDocs {
         "argument will be truncated towards zero (this does not include a string\n" + 
         "representation of a floating point number!)  When converting a string, use\n" + 
         "the optional base.  It is an error to supply a base when converting a\n" + 
-        "non-string. If the argument is outside the integer range a long object\n" + 
-        "will be returned instead.";
+        "non-string.  If base is zero, the proper base is guessed based on the\n" + 
+        "string content.  If the argument is outside the integer range a\n" + 
+        "long object will be returned instead.";
 
     public final static String type___call___doc = 
         "x.__call__(...) <==> x(...)";
@@ -68,9 +88,6 @@ public class BuiltinDocs {
     public final static String type___class___doc = 
         "type(object) -> the object's type\n" + 
         "type(name, bases, dict) -> a new type";
-
-    public final static String type___cmp___doc = 
-        "x.__cmp__(y) <==> cmp(x,y)";
 
     public final static String type___delattr___doc = 
         "x.__delattr__('name') <==> del x.name";
@@ -85,12 +102,16 @@ public class BuiltinDocs {
         "argument will be truncated towards zero (this does not include a string\n" + 
         "representation of a floating point number!)  When converting a string, use\n" + 
         "the optional base.  It is an error to supply a base when converting a\n" + 
-        "non-string. If the argument is outside the integer range a long object\n" + 
-        "will be returned instead.";
+        "non-string.  If base is zero, the proper base is guessed based on the\n" + 
+        "string content.  If the argument is outside the integer range a\n" + 
+        "long object will be returned instead.";
 
     public final static String type_doc = 
         "type(object) -> the object's type\n" + 
         "type(name, bases, dict) -> a new type";
+
+    public final static String type___eq___doc = 
+        "x.__eq__(y) <==> x==y";
 
     public final static String type___flags___doc = 
         "int(x[, base]) -> integer\n" + 
@@ -99,17 +120,31 @@ public class BuiltinDocs {
         "argument will be truncated towards zero (this does not include a string\n" + 
         "representation of a floating point number!)  When converting a string, use\n" + 
         "the optional base.  It is an error to supply a base when converting a\n" + 
-        "non-string. If the argument is outside the integer range a long object\n" + 
-        "will be returned instead.";
+        "non-string.  If base is zero, the proper base is guessed based on the\n" + 
+        "string content.  If the argument is outside the integer range a\n" + 
+        "long object will be returned instead.";
+
+    public final static String type___format___doc = 
+        "default object formatter";
+
+    public final static String type___ge___doc = 
+        "x.__ge__(y) <==> x>=y";
 
     public final static String type___getattribute___doc = 
         "x.__getattribute__('name') <==> x.name";
+
+    public final static String type___gt___doc = 
+        "x.__gt__(y) <==> x>y";
 
     public final static String type___hash___doc = 
         "x.__hash__() <==> hash(x)";
 
     public final static String type___init___doc = 
-        "x.__init__(...) initializes x; see x.__class__.__doc__ for signature";
+        "x.__init__(...) initializes x; see help(type(x)) for signature";
+
+    public final static String type___instancecheck___doc = 
+        "__instancecheck__() -> bool\n" + 
+        "check if an object is an instance";
 
     public final static String type___itemsize___doc = 
         "int(x[, base]) -> integer\n" + 
@@ -118,8 +153,15 @@ public class BuiltinDocs {
         "argument will be truncated towards zero (this does not include a string\n" + 
         "representation of a floating point number!)  When converting a string, use\n" + 
         "the optional base.  It is an error to supply a base when converting a\n" + 
-        "non-string. If the argument is outside the integer range a long object\n" + 
-        "will be returned instead.";
+        "non-string.  If base is zero, the proper base is guessed based on the\n" + 
+        "string content.  If the argument is outside the integer range a\n" + 
+        "long object will be returned instead.";
+
+    public final static String type___le___doc = 
+        "x.__le__(y) <==> x<=y";
+
+    public final static String type___lt___doc = 
+        "x.__lt__(y) <==> x<y";
 
     public final static String type___module___doc = 
         "str(object) -> string\n" + 
@@ -128,8 +170,8 @@ public class BuiltinDocs {
         "If the argument is a string, the return value is the same object.";
 
     public final static String type___mro___doc = 
-        "tuple() -> an empty tuple\n" + 
-        "tuple(sequence) -> tuple initialized from sequence's items\n" + 
+        "tuple() -> empty tuple\n" + 
+        "tuple(iterable) -> tuple initialized from iterable's items\n" + 
         "\n" + 
         "If the argument is a tuple, the return value is the same object.";
 
@@ -138,6 +180,9 @@ public class BuiltinDocs {
         "\n" + 
         "Return a nice string representation of the object.\n" + 
         "If the argument is a string, the return value is the same object.";
+
+    public final static String type___ne___doc = 
+        "x.__ne__(y) <==> x!=y";
 
     public final static String type___new___doc = 
         "T.__new__(S, ...) -> a new object with type S, a subtype of T";
@@ -154,11 +199,28 @@ public class BuiltinDocs {
     public final static String type___setattr___doc = 
         "x.__setattr__('name', value) <==> x.name = value";
 
+    public final static String type___sizeof___doc = 
+        "__sizeof__() -> int\n" + 
+        "size of object in memory, in bytes";
+
     public final static String type___str___doc = 
         "x.__str__() <==> str(x)";
 
+    public final static String type___subclasscheck___doc = 
+        "__subclasscheck__() -> bool\n" + 
+        "check if a class is a subclass";
+
     public final static String type___subclasses___doc = 
         "__subclasses__() -> list of immediate subclasses";
+
+    public final static String type___subclasshook___doc = 
+        "Abstract classes can override this to customize issubclass().\n" + 
+        "\n" + 
+        "This is invoked early on by abc.ABCMeta.__subclasscheck__().\n" + 
+        "It should return True, False or NotImplemented.  If it returns\n" + 
+        "NotImplemented, the normal algorithm is used.  Otherwise, it\n" + 
+        "overrides the normal algorithm (and the outcome is cached).\n" + 
+        "";
 
     public final static String type___weakrefoffset___doc = 
         "int(x[, base]) -> integer\n" + 
@@ -167,8 +229,9 @@ public class BuiltinDocs {
         "argument will be truncated towards zero (this does not include a string\n" + 
         "representation of a floating point number!)  When converting a string, use\n" + 
         "the optional base.  It is an error to supply a base when converting a\n" + 
-        "non-string. If the argument is outside the integer range a long object\n" + 
-        "will be returned instead.";
+        "non-string.  If base is zero, the proper base is guessed based on the\n" + 
+        "string content.  If the argument is outside the integer range a\n" + 
+        "long object will be returned instead.";
 
     public final static String type_mro_doc = 
         "mro() -> list\n" + 
@@ -198,6 +261,11 @@ public class BuiltinDocs {
     public final static String unicode___eq___doc = 
         "x.__eq__(y) <==> x==y";
 
+    public final static String unicode___format___doc = 
+        "S.__format__(format_spec) -> unicode\n" + 
+        "\n" + 
+        "Return a formatted version of S as described by format_spec.";
+
     public final static String unicode___ge___doc = 
         "x.__ge__(y) <==> x>=y";
 
@@ -212,8 +280,8 @@ public class BuiltinDocs {
 
     public final static String unicode___getslice___doc = 
         "x.__getslice__(i, j) <==> x[i:j]\n" + 
-        "               \n" + 
-        "               Use of negative indices is not supported.";
+        "           \n" + 
+        "           Use of negative indices is not supported.";
 
     public final static String unicode___gt___doc = 
         "x.__gt__(y) <==> x>y";
@@ -222,7 +290,7 @@ public class BuiltinDocs {
         "x.__hash__() <==> hash(x)";
 
     public final static String unicode___init___doc = 
-        "x.__init__(...) initializes x; see x.__class__.__doc__ for signature";
+        "x.__init__(...) initializes x; see help(type(x)) for signature";
 
     public final static String unicode___le___doc = 
         "x.__le__(y) <==> x<=y";
@@ -263,14 +331,34 @@ public class BuiltinDocs {
     public final static String unicode___setattr___doc = 
         "x.__setattr__('name', value) <==> x.name = value";
 
+    public final static String unicode___sizeof___doc = 
+        "S.__sizeof__() -> size of S in memory, in bytes\n" + 
+        "\n" + 
+        "";
+
     public final static String unicode___str___doc = 
         "x.__str__() <==> str(x)";
+
+    public final static String unicode___subclasshook___doc = 
+        "Abstract classes can override this to customize issubclass().\n" + 
+        "\n" + 
+        "This is invoked early on by abc.ABCMeta.__subclasscheck__().\n" + 
+        "It should return True, False or NotImplemented.  If it returns\n" + 
+        "NotImplemented, the normal algorithm is used.  Otherwise, it\n" + 
+        "overrides the normal algorithm (and the outcome is cached).\n" + 
+        "";
+
+    public final static String unicode__formatter_field_name_split_doc = 
+        "";
+
+    public final static String unicode__formatter_parser_doc = 
+        "";
 
     public final static String unicode_capitalize_doc = 
         "S.capitalize() -> unicode\n" + 
         "\n" + 
         "Return a capitalized version of S, i.e. make the first character\n" + 
-        "have upper case.";
+        "have upper case and the rest lower case.";
 
     public final static String unicode_center_doc = 
         "S.center(width[, fillchar]) -> unicode\n" + 
@@ -323,10 +411,16 @@ public class BuiltinDocs {
         "S.find(sub [,start [,end]]) -> int\n" + 
         "\n" + 
         "Return the lowest index in S where substring sub is found,\n" + 
-        "such that sub is contained within s[start,end].  Optional\n" + 
+        "such that sub is contained within s[start:end].  Optional\n" + 
         "arguments start and end are interpreted as in slice notation.\n" + 
         "\n" + 
         "Return -1 on failure.";
+
+    public final static String unicode_format_doc = 
+        "S.format(*args, **kwargs) -> unicode\n" + 
+        "\n" + 
+        "Return a formatted version of S, using substitutions from args and kwargs.\n" + 
+        "The substitutions are identified by braces ('{' and '}').";
 
     public final static String unicode_index_doc = 
         "S.index(sub [,start [,end]]) -> int\n" + 
@@ -390,15 +484,15 @@ public class BuiltinDocs {
         "at least one cased character in S, False otherwise.";
 
     public final static String unicode_join_doc = 
-        "S.join(sequence) -> unicode\n" + 
+        "S.join(iterable) -> unicode\n" + 
         "\n" + 
         "Return a string which is the concatenation of the strings in the\n" + 
-        "sequence.  The separator between elements is S.";
+        "iterable.  The separator between elements is S.";
 
     public final static String unicode_ljust_doc = 
         "S.ljust(width[, fillchar]) -> int\n" + 
         "\n" + 
-        "Return S left justified in a Unicode string of length width. Padding is\n" + 
+        "Return S left-justified in a Unicode string of length width. Padding is\n" + 
         "done using the specified fill character (default is a space).";
 
     public final static String unicode_lower_doc = 
@@ -416,22 +510,22 @@ public class BuiltinDocs {
     public final static String unicode_partition_doc = 
         "S.partition(sep) -> (head, sep, tail)\n" + 
         "\n" + 
-        "Searches for the separator sep in S, and returns the part before it,\n" + 
+        "Search for the separator sep in S, and return the part before it,\n" + 
         "the separator itself, and the part after it.  If the separator is not\n" + 
-        "found, returns S and two empty strings.";
+        "found, return S and two empty strings.";
 
     public final static String unicode_replace_doc = 
-        "S.replace (old, new[, maxsplit]) -> unicode\n" + 
+        "S.replace(old, new[, count]) -> unicode\n" + 
         "\n" + 
         "Return a copy of S with all occurrences of substring\n" + 
-        "old replaced by new.  If the optional argument maxsplit is\n" + 
-        "given, only the first maxsplit occurrences are replaced.";
+        "old replaced by new.  If the optional argument count is\n" + 
+        "given, only the first count occurrences are replaced.";
 
     public final static String unicode_rfind_doc = 
         "S.rfind(sub [,start [,end]]) -> int\n" + 
         "\n" + 
         "Return the highest index in S where substring sub is found,\n" + 
-        "such that sub is contained within s[start,end].  Optional\n" + 
+        "such that sub is contained within s[start:end].  Optional\n" + 
         "arguments start and end are interpreted as in slice notation.\n" + 
         "\n" + 
         "Return -1 on failure.";
@@ -444,15 +538,15 @@ public class BuiltinDocs {
     public final static String unicode_rjust_doc = 
         "S.rjust(width[, fillchar]) -> unicode\n" + 
         "\n" + 
-        "Return S right justified in a Unicode string of length width. Padding is\n" + 
+        "Return S right-justified in a Unicode string of length width. Padding is\n" + 
         "done using the specified fill character (default is a space).";
 
     public final static String unicode_rpartition_doc = 
-        "S.rpartition(sep) -> (tail, sep, head)\n" + 
+        "S.rpartition(sep) -> (head, sep, tail)\n" + 
         "\n" + 
-        "Searches for the separator sep in S, starting at the end of S, and returns\n" + 
+        "Search for the separator sep in S, starting at the end of S, and return\n" + 
         "the part before it, the separator itself, and the part after it.  If the\n" + 
-        "separator is not found, returns two empty strings and S.";
+        "separator is not found, return two empty strings and S.";
 
     public final static String unicode_rsplit_doc = 
         "S.rsplit([sep [,maxsplit]]) -> list of strings\n" + 
@@ -475,11 +569,12 @@ public class BuiltinDocs {
         "\n" + 
         "Return a list of the words in S, using sep as the\n" + 
         "delimiter string.  If maxsplit is given, at most maxsplit\n" + 
-        "splits are done. If sep is not specified or is None,\n" + 
-        "any whitespace string is a separator.";
+        "splits are done. If sep is not specified or is None, any\n" + 
+        "whitespace string is a separator and empty strings are\n" + 
+        "removed from the result.";
 
     public final static String unicode_splitlines_doc = 
-        "S.splitlines([keepends]]) -> list of strings\n" + 
+        "S.splitlines([keepends]) -> list of strings\n" + 
         "\n" + 
         "Return a list of the lines in S, breaking at line boundaries.\n" + 
         "Line breaks are not included in the resulting list unless keepends\n" + 
@@ -530,8 +625,8 @@ public class BuiltinDocs {
     public final static String unicode_zfill_doc = 
         "S.zfill(width) -> unicode\n" + 
         "\n" + 
-        "Pad a numeric string x with zeros on the left, to fill a field\n" + 
-        "of the specified width. The string x is never truncated.";
+        "Pad a numeric string S with zeros on the left, to fill a field\n" + 
+        "of the specified width. The string S is never truncated.";
 
     // Docs for <type 'dict'>
     public final static String dict___class___doc = 
@@ -551,18 +646,21 @@ public class BuiltinDocs {
         "x.__delitem__(y) <==> del x[y]";
 
     public final static String dict_doc = 
-        "dict() -> new empty dictionary.\n" + 
+        "dict() -> new empty dictionary\n" + 
         "dict(mapping) -> new dictionary initialized from a mapping object's\n" + 
-        "    (key, value) pairs.\n" + 
-        "dict(seq) -> new dictionary initialized as if via:\n" + 
+        "    (key, value) pairs\n" + 
+        "dict(iterable) -> new dictionary initialized as if via:\n" + 
         "    d = {}\n" + 
-        "    for k, v in seq:\n" + 
+        "    for k, v in iterable:\n" + 
         "        d[k] = v\n" + 
         "dict(**kwargs) -> new dictionary initialized with the name=value pairs\n" + 
         "    in the keyword argument list.  For example:  dict(one=1, two=2)";
 
     public final static String dict___eq___doc = 
         "x.__eq__(y) <==> x==y";
+
+    public final static String dict___format___doc = 
+        "default object formatter";
 
     public final static String dict___ge___doc = 
         "x.__ge__(y) <==> x>=y";
@@ -577,10 +675,10 @@ public class BuiltinDocs {
         "x.__gt__(y) <==> x>y";
 
     public final static String dict___hash___doc = 
-        "x.__hash__() <==> hash(x)";
+        "";
 
     public final static String dict___init___doc = 
-        "x.__init__(...) initializes x; see x.__class__.__doc__ for signature";
+        "x.__init__(...) initializes x; see help(type(x)) for signature";
 
     public final static String dict___iter___doc = 
         "x.__iter__() <==> iter(x)";
@@ -615,8 +713,20 @@ public class BuiltinDocs {
     public final static String dict___setitem___doc = 
         "x.__setitem__(i, y) <==> x[i]=y";
 
+    public final static String dict___sizeof___doc = 
+        "D.__sizeof__() -> size of D in memory, in bytes";
+
     public final static String dict___str___doc = 
         "x.__str__() <==> str(x)";
+
+    public final static String dict___subclasshook___doc = 
+        "Abstract classes can override this to customize issubclass().\n" + 
+        "\n" + 
+        "This is invoked early on by abc.ABCMeta.__subclasscheck__().\n" + 
+        "It should return True, False or NotImplemented.  If it returns\n" + 
+        "NotImplemented, the normal algorithm is used.  Otherwise, it\n" + 
+        "overrides the normal algorithm (and the outcome is cached).\n" + 
+        "";
 
     public final static String dict_clear_doc = 
         "D.clear() -> None.  Remove all items from D.";
@@ -650,22 +760,33 @@ public class BuiltinDocs {
         "D.keys() -> list of D's keys";
 
     public final static String dict_pop_doc = 
-        "D.pop(k[,d]) -> v, remove specified key and return the corresponding value\n" + 
+        "D.pop(k[,d]) -> v, remove specified key and return the corresponding value.\n" + 
         "If key is not found, d is returned if given, otherwise KeyError is raised";
 
     public final static String dict_popitem_doc = 
         "D.popitem() -> (k, v), remove and return some (key, value) pair as a\n" + 
-        "2-tuple; but raise KeyError if D is empty";
+        "2-tuple; but raise KeyError if D is empty.";
 
     public final static String dict_setdefault_doc = 
         "D.setdefault(k[,d]) -> D.get(k,d), also set D[k]=d if k not in D";
 
     public final static String dict_update_doc = 
-        "D.update(E, **F) -> None.  Update D from E and F: for k in E: D[k] = E[k]\n" + 
-        "(if E has keys else: for (k, v) in E: D[k] = v) then: for k in F: D[k] = F[k]";
+        "D.update(E, **F) -> None.  Update D from dict/iterable E and F.\n" + 
+        "If E has a .keys() method, does:     for k in E: D[k] = E[k]\n" + 
+        "If E lacks .keys() method, does:     for (k, v) in E: D[k] = v\n" + 
+        "In either case, this is followed by: for k in F: D[k] = F[k]";
 
     public final static String dict_values_doc = 
         "D.values() -> list of D's values";
+
+    public final static String dict_viewitems_doc = 
+        "D.viewitems() -> a set-like object providing a view on D's items";
+
+    public final static String dict_viewkeys_doc = 
+        "D.viewkeys() -> a set-like object providing a view on D's keys";
+
+    public final static String dict_viewvalues_doc = 
+        "D.viewvalues() -> an object providing a view on D's values";
 
     // Docs for <type 'list'>
     public final static String list___add___doc = 
@@ -686,15 +807,18 @@ public class BuiltinDocs {
 
     public final static String list___delslice___doc = 
         "x.__delslice__(i, j) <==> del x[i:j]\n" + 
-        "               \n" + 
-        "               Use of negative indices is not supported.";
+        "           \n" + 
+        "           Use of negative indices is not supported.";
 
     public final static String list_doc = 
-        "list() -> new list\n" + 
-        "list(sequence) -> new list initialized from sequence's items";
+        "list() -> new empty list\n" + 
+        "list(iterable) -> new list initialized from iterable's items";
 
     public final static String list___eq___doc = 
         "x.__eq__(y) <==> x==y";
+
+    public final static String list___format___doc = 
+        "default object formatter";
 
     public final static String list___ge___doc = 
         "x.__ge__(y) <==> x>=y";
@@ -707,14 +831,14 @@ public class BuiltinDocs {
 
     public final static String list___getslice___doc = 
         "x.__getslice__(i, j) <==> x[i:j]\n" + 
-        "               \n" + 
-        "               Use of negative indices is not supported.";
+        "           \n" + 
+        "           Use of negative indices is not supported.";
 
     public final static String list___gt___doc = 
         "x.__gt__(y) <==> x>y";
 
     public final static String list___hash___doc = 
-        "x.__hash__() <==> hash(x)";
+        "";
 
     public final static String list___iadd___doc = 
         "x.__iadd__(y) <==> x+=y";
@@ -723,7 +847,7 @@ public class BuiltinDocs {
         "x.__imul__(y) <==> x*=y";
 
     public final static String list___init___doc = 
-        "x.__init__(...) initializes x; see x.__class__.__doc__ for signature";
+        "x.__init__(...) initializes x; see help(type(x)) for signature";
 
     public final static String list___iter___doc = 
         "x.__iter__() <==> iter(x)";
@@ -769,11 +893,23 @@ public class BuiltinDocs {
 
     public final static String list___setslice___doc = 
         "x.__setslice__(i, j, y) <==> x[i:j]=y\n" + 
-        "               \n" + 
-        "               Use  of negative indices is not supported.";
+        "           \n" + 
+        "           Use  of negative indices is not supported.";
+
+    public final static String list___sizeof___doc = 
+        "L.__sizeof__() -- size of L in memory, in bytes";
 
     public final static String list___str___doc = 
         "x.__str__() <==> str(x)";
+
+    public final static String list___subclasshook___doc = 
+        "Abstract classes can override this to customize issubclass().\n" + 
+        "\n" + 
+        "This is invoked early on by abc.ABCMeta.__subclasscheck__().\n" + 
+        "It should return True, False or NotImplemented.  If it returns\n" + 
+        "NotImplemented, the normal algorithm is used.  Otherwise, it\n" + 
+        "overrides the normal algorithm (and the outcome is cached).\n" + 
+        "";
 
     public final static String list_append_doc = 
         "L.append(object) -- append object to end";
@@ -785,16 +921,19 @@ public class BuiltinDocs {
         "L.extend(iterable) -- extend list by appending elements from the iterable";
 
     public final static String list_index_doc = 
-        "L.index(value, [start, [stop]]) -> integer -- return first index of value";
+        "L.index(value, [start, [stop]]) -> integer -- return first index of value.\n" + 
+        "Raises ValueError if the value is not present.";
 
     public final static String list_insert_doc = 
         "L.insert(index, object) -- insert object before index";
 
     public final static String list_pop_doc = 
-        "L.pop([index]) -> item -- remove and return item at index (default last)";
+        "L.pop([index]) -> item -- remove and return item at index (default last).\n" + 
+        "Raises IndexError if list is empty or index is out of range.";
 
     public final static String list_remove_doc = 
-        "L.remove(value) -- remove first occurrence of value";
+        "L.remove(value) -- remove first occurrence of value.\n" + 
+        "Raises ValueError if the value is not present.";
 
     public final static String list_reverse_doc = 
         "L.reverse() -- reverse *IN PLACE*";
@@ -819,6 +958,9 @@ public class BuiltinDocs {
         "\n" + 
         "Create a slice object.  This is used for extended slicing (e.g. a[0:10:2]).";
 
+    public final static String slice___format___doc = 
+        "default object formatter";
+
     public final static String slice___getattribute___doc = 
         "x.__getattribute__('name') <==> x.name";
 
@@ -826,13 +968,13 @@ public class BuiltinDocs {
         "x.__hash__() <==> hash(x)";
 
     public final static String slice___init___doc = 
-        "x.__init__(...) initializes x; see x.__class__.__doc__ for signature";
+        "x.__init__(...) initializes x; see help(type(x)) for signature";
 
     public final static String slice___new___doc = 
         "T.__new__(S, ...) -> a new object with type S, a subtype of T";
 
     public final static String slice___reduce___doc = 
-        "helper for pickle";
+        "Return state information for pickling.";
 
     public final static String slice___reduce_ex___doc = 
         "helper for pickle";
@@ -843,8 +985,21 @@ public class BuiltinDocs {
     public final static String slice___setattr___doc = 
         "x.__setattr__('name', value) <==> x.name = value";
 
+    public final static String slice___sizeof___doc = 
+        "__sizeof__() -> int\n" + 
+        "size of object in memory, in bytes";
+
     public final static String slice___str___doc = 
         "x.__str__() <==> str(x)";
+
+    public final static String slice___subclasshook___doc = 
+        "Abstract classes can override this to customize issubclass().\n" + 
+        "\n" + 
+        "This is invoked early on by abc.ABCMeta.__subclasscheck__().\n" + 
+        "It should return True, False or NotImplemented.  If it returns\n" + 
+        "NotImplemented, the normal algorithm is used.  Otherwise, it\n" + 
+        "overrides the normal algorithm (and the outcome is cached).\n" + 
+        "";
 
     public final static String slice_indices_doc = 
         "S.indices(len) -> (start, stop, stride)\n" + 
@@ -880,6 +1035,9 @@ public class BuiltinDocs {
         "    def meth(self, arg):\n" + 
         "        super(C, self).meth(arg)";
 
+    public final static String super___format___doc = 
+        "default object formatter";
+
     public final static String super___get___doc = 
         "descr.__get__(obj[, type]) -> value";
 
@@ -890,7 +1048,7 @@ public class BuiltinDocs {
         "x.__hash__() <==> hash(x)";
 
     public final static String super___init___doc = 
-        "x.__init__(...) initializes x; see x.__class__.__doc__ for signature";
+        "x.__init__(...) initializes x; see help(type(x)) for signature";
 
     public final static String super___new___doc = 
         "T.__new__(S, ...) -> a new object with type S, a subtype of T";
@@ -913,8 +1071,21 @@ public class BuiltinDocs {
     public final static String super___setattr___doc = 
         "x.__setattr__('name', value) <==> x.name = value";
 
+    public final static String super___sizeof___doc = 
+        "__sizeof__() -> int\n" + 
+        "size of object in memory, in bytes";
+
     public final static String super___str___doc = 
         "x.__str__() <==> str(x)";
+
+    public final static String super___subclasshook___doc = 
+        "Abstract classes can override this to customize issubclass().\n" + 
+        "\n" + 
+        "This is invoked early on by abc.ABCMeta.__subclasscheck__().\n" + 
+        "It should return True, False or NotImplemented.  If it returns\n" + 
+        "NotImplemented, the normal algorithm is used.  Otherwise, it\n" + 
+        "overrides the normal algorithm (and the outcome is cached).\n" + 
+        "";
 
     public final static String super___thisclass___doc = 
         "the class invoking super()";
@@ -936,14 +1107,20 @@ public class BuiltinDocs {
         "To declare a static method, use this idiom:\n" + 
         "\n" + 
         "     class C:\n" + 
-        "         def f(arg1, arg2, ...): ...\n" + 
-        "	 f = staticmethod(f)\n" + 
+        "     def f(arg1, arg2, ...): ...\n" + 
+        "     f = staticmethod(f)\n" + 
         "\n" + 
         "It can be called either on the class (e.g. C.f()) or on an instance\n" + 
         "(e.g. C().f()).  The instance is ignored except for its class.\n" + 
         "\n" + 
         "Static methods in Python are similar to those found in Java or C++.\n" + 
         "For a more advanced concept, see the classmethod builtin.";
+
+    public final static String staticmethod___format___doc = 
+        "default object formatter";
+
+    public final static String staticmethod___func___doc = 
+        "";
 
     public final static String staticmethod___get___doc = 
         "descr.__get__(obj[, type]) -> value";
@@ -955,7 +1132,7 @@ public class BuiltinDocs {
         "x.__hash__() <==> hash(x)";
 
     public final static String staticmethod___init___doc = 
-        "x.__init__(...) initializes x; see x.__class__.__doc__ for signature";
+        "x.__init__(...) initializes x; see help(type(x)) for signature";
 
     public final static String staticmethod___new___doc = 
         "T.__new__(S, ...) -> a new object with type S, a subtype of T";
@@ -972,8 +1149,21 @@ public class BuiltinDocs {
     public final static String staticmethod___setattr___doc = 
         "x.__setattr__('name', value) <==> x.name = value";
 
+    public final static String staticmethod___sizeof___doc = 
+        "__sizeof__() -> int\n" + 
+        "size of object in memory, in bytes";
+
     public final static String staticmethod___str___doc = 
         "x.__str__() <==> str(x)";
+
+    public final static String staticmethod___subclasshook___doc = 
+        "Abstract classes can override this to customize issubclass().\n" + 
+        "\n" + 
+        "This is invoked early on by abc.ABCMeta.__subclasscheck__().\n" + 
+        "It should return True, False or NotImplemented.  If it returns\n" + 
+        "NotImplemented, the normal algorithm is used.  Otherwise, it\n" + 
+        "overrides the normal algorithm (and the outcome is cached).\n" + 
+        "";
 
     // Docs for <type 'float'>
     public final static String float___abs___doc = 
@@ -1012,6 +1202,11 @@ public class BuiltinDocs {
     public final static String float___floordiv___doc = 
         "x.__floordiv__(y) <==> x//y";
 
+    public final static String float___format___doc = 
+        "float.__format__(format_spec) -> string\n" + 
+        "\n" + 
+        "Formats the float according to format_spec.";
+
     public final static String float___ge___doc = 
         "x.__ge__(y) <==> x>=y";
 
@@ -1038,7 +1233,7 @@ public class BuiltinDocs {
         "x.__hash__() <==> hash(x)";
 
     public final static String float___init___doc = 
-        "x.__init__(...) initializes x; see x.__class__.__doc__ for signature";
+        "x.__init__(...) initializes x; see help(type(x)) for signature";
 
     public final static String float___int___doc = 
         "x.__int__() <==> int(x)";
@@ -1128,14 +1323,74 @@ public class BuiltinDocs {
         "Overrides the automatic determination of C-level floating point type.\n" + 
         "This affects how floats are converted to and from binary strings.";
 
+    public final static String float___sizeof___doc = 
+        "__sizeof__() -> int\n" + 
+        "size of object in memory, in bytes";
+
     public final static String float___str___doc = 
         "x.__str__() <==> str(x)";
 
     public final static String float___sub___doc = 
         "x.__sub__(y) <==> x-y";
 
+    public final static String float___subclasshook___doc = 
+        "Abstract classes can override this to customize issubclass().\n" + 
+        "\n" + 
+        "This is invoked early on by abc.ABCMeta.__subclasscheck__().\n" + 
+        "It should return True, False or NotImplemented.  If it returns\n" + 
+        "NotImplemented, the normal algorithm is used.  Otherwise, it\n" + 
+        "overrides the normal algorithm (and the outcome is cached).\n" + 
+        "";
+
     public final static String float___truediv___doc = 
         "x.__truediv__(y) <==> x/y";
+
+    public final static String float___trunc___doc = 
+        "Returns the Integral closest to x between 0 and x.";
+
+    public final static String float_as_integer_ratio_doc = 
+        "float.as_integer_ratio() -> (int, int)\n" + 
+        "\n" + 
+        "Returns a pair of integers, whose ratio is exactly equal to the original\n" + 
+        "float and with a positive denominator.\n" + 
+        "Raises OverflowError on infinities and a ValueError on NaNs.\n" + 
+        "\n" + 
+        ">>> (10.0).as_integer_ratio()\n" + 
+        "(10, 1)\n" + 
+        ">>> (0.0).as_integer_ratio()\n" + 
+        "(0, 1)\n" + 
+        ">>> (-.25).as_integer_ratio()\n" + 
+        "(-1, 4)";
+
+    public final static String float_conjugate_doc = 
+        "Returns self, the complex conjugate of any float.";
+
+    public final static String float_fromhex_doc = 
+        "float.fromhex(string) -> float\n" + 
+        "\n" + 
+        "Create a floating-point number from a hexadecimal string.\n" + 
+        ">>> float.fromhex('0x1.ffffp10')\n" + 
+        "2047.984375\n" + 
+        ">>> float.fromhex('-0x1p-1074')\n" + 
+        "-4.9406564584124654e-324";
+
+    public final static String float_hex_doc = 
+        "float.hex() -> string\n" + 
+        "\n" + 
+        "Return a hexadecimal representation of a floating-point number.\n" + 
+        ">>> (-0.1).hex()\n" + 
+        "'-0x1.999999999999ap-4'\n" + 
+        ">>> 3.14159.hex()\n" + 
+        "'0x1.921f9f01b866ep+1'";
+
+    public final static String float_imag_doc = 
+        "the imaginary part of a complex number";
+
+    public final static String float_is_integer_doc = 
+        "Returns True if the float is an integer.";
+
+    public final static String float_real_doc = 
+        "the real part of a complex number";
 
     // Docs for <type 'enumerate'>
     public final static String enumerate___class___doc = 
@@ -1146,12 +1401,16 @@ public class BuiltinDocs {
         "x.__delattr__('name') <==> del x.name";
 
     public final static String enumerate_doc = 
-        "enumerate(iterable) -> iterator for index, value of iterable\n" + 
+        "enumerate(iterable[, start]) -> iterator for index, value of iterable\n" + 
         "\n" + 
-        "Return an enumerate object.  iterable must be an other object that supports\n" + 
+        "Return an enumerate object.  iterable must be another object that supports\n" + 
         "iteration.  The enumerate object yields pairs containing a count (from\n" + 
-        "zero) and a value yielded by the iterable argument.  enumerate is useful\n" + 
-        "for obtaining an indexed list: (0, seq[0]), (1, seq[1]), (2, seq[2]), ...";
+        "start, which defaults to zero) and a value yielded by the iterable argument.\n" + 
+        "enumerate is useful for obtaining an indexed list:\n" + 
+        "    (0, seq[0]), (1, seq[1]), (2, seq[2]), ...";
+
+    public final static String enumerate___format___doc = 
+        "default object formatter";
 
     public final static String enumerate___getattribute___doc = 
         "x.__getattribute__('name') <==> x.name";
@@ -1160,7 +1419,7 @@ public class BuiltinDocs {
         "x.__hash__() <==> hash(x)";
 
     public final static String enumerate___init___doc = 
-        "x.__init__(...) initializes x; see x.__class__.__doc__ for signature";
+        "x.__init__(...) initializes x; see help(type(x)) for signature";
 
     public final static String enumerate___iter___doc = 
         "x.__iter__() <==> iter(x)";
@@ -1180,8 +1439,21 @@ public class BuiltinDocs {
     public final static String enumerate___setattr___doc = 
         "x.__setattr__('name', value) <==> x.name = value";
 
+    public final static String enumerate___sizeof___doc = 
+        "__sizeof__() -> int\n" + 
+        "size of object in memory, in bytes";
+
     public final static String enumerate___str___doc = 
         "x.__str__() <==> str(x)";
+
+    public final static String enumerate___subclasshook___doc = 
+        "Abstract classes can override this to customize issubclass().\n" + 
+        "\n" + 
+        "This is invoked early on by abc.ABCMeta.__subclasscheck__().\n" + 
+        "It should return True, False or NotImplemented.  If it returns\n" + 
+        "NotImplemented, the normal algorithm is used.  Otherwise, it\n" + 
+        "overrides the normal algorithm (and the outcome is cached).\n" + 
+        "";
 
     public final static String enumerate_next_doc = 
         "x.next() -> the next value, or raise StopIteration";
@@ -1197,6 +1469,9 @@ public class BuiltinDocs {
     public final static String basestring_doc = 
         "Type basestring cannot be instantiated; it is the base for str and unicode.";
 
+    public final static String basestring___format___doc = 
+        "default object formatter";
+
     public final static String basestring___getattribute___doc = 
         "x.__getattribute__('name') <==> x.name";
 
@@ -1204,7 +1479,7 @@ public class BuiltinDocs {
         "x.__hash__() <==> hash(x)";
 
     public final static String basestring___init___doc = 
-        "x.__init__(...) initializes x; see x.__class__.__doc__ for signature";
+        "x.__init__(...) initializes x; see help(type(x)) for signature";
 
     public final static String basestring___new___doc = 
         "T.__new__(S, ...) -> a new object with type S, a subtype of T";
@@ -1221,8 +1496,21 @@ public class BuiltinDocs {
     public final static String basestring___setattr___doc = 
         "x.__setattr__('name', value) <==> x.name = value";
 
+    public final static String basestring___sizeof___doc = 
+        "__sizeof__() -> int\n" + 
+        "size of object in memory, in bytes";
+
     public final static String basestring___str___doc = 
         "x.__str__() <==> str(x)";
+
+    public final static String basestring___subclasshook___doc = 
+        "Abstract classes can override this to customize issubclass().\n" + 
+        "\n" + 
+        "This is invoked early on by abc.ABCMeta.__subclasscheck__().\n" + 
+        "It should return True, False or NotImplemented.  If it returns\n" + 
+        "NotImplemented, the normal algorithm is used.  Otherwise, it\n" + 
+        "overrides the normal algorithm (and the outcome is cached).\n" + 
+        "";
 
     // Docs for <type 'long'>
     public final static String long___abs___doc = 
@@ -1268,6 +1556,9 @@ public class BuiltinDocs {
     public final static String long___floordiv___doc = 
         "x.__floordiv__(y) <==> x//y";
 
+    public final static String long___format___doc = 
+        "";
+
     public final static String long___getattribute___doc = 
         "x.__getattribute__('name') <==> x.name";
 
@@ -1284,7 +1575,7 @@ public class BuiltinDocs {
         "x[y:z] <==> x[y.__index__():z.__index__()]";
 
     public final static String long___init___doc = 
-        "x.__init__(...) initializes x; see x.__class__.__doc__ for signature";
+        "x.__init__(...) initializes x; see help(type(x)) for signature";
 
     public final static String long___int___doc = 
         "x.__int__() <==> int(x)";
@@ -1382,17 +1673,56 @@ public class BuiltinDocs {
     public final static String long___setattr___doc = 
         "x.__setattr__('name', value) <==> x.name = value";
 
+    public final static String long___sizeof___doc = 
+        "Returns size in memory, in bytes";
+
     public final static String long___str___doc = 
         "x.__str__() <==> str(x)";
 
     public final static String long___sub___doc = 
         "x.__sub__(y) <==> x-y";
 
+    public final static String long___subclasshook___doc = 
+        "Abstract classes can override this to customize issubclass().\n" + 
+        "\n" + 
+        "This is invoked early on by abc.ABCMeta.__subclasscheck__().\n" + 
+        "It should return True, False or NotImplemented.  If it returns\n" + 
+        "NotImplemented, the normal algorithm is used.  Otherwise, it\n" + 
+        "overrides the normal algorithm (and the outcome is cached).\n" + 
+        "";
+
     public final static String long___truediv___doc = 
         "x.__truediv__(y) <==> x/y";
 
+    public final static String long___trunc___doc = 
+        "Truncating an Integral returns itself.";
+
     public final static String long___xor___doc = 
         "x.__xor__(y) <==> x^y";
+
+    public final static String long_bit_length_doc = 
+        "long.bit_length() -> int or long\n" + 
+        "\n" + 
+        "Number of bits necessary to represent self in binary.\n" + 
+        ">>> bin(37L)\n" + 
+        "'0b100101'\n" + 
+        ">>> (37L).bit_length()\n" + 
+        "6";
+
+    public final static String long_conjugate_doc = 
+        "Returns self, the complex conjugate of any long.";
+
+    public final static String long_denominator_doc = 
+        "the denominator of a rational number in lowest terms";
+
+    public final static String long_imag_doc = 
+        "the imaginary part of a complex number";
+
+    public final static String long_numerator_doc = 
+        "the numerator of a rational number in lowest terms";
+
+    public final static String long_real_doc = 
+        "the real part of a complex number";
 
     // Docs for <type 'tuple'>
     public final static String tuple___add___doc = 
@@ -1409,13 +1739,16 @@ public class BuiltinDocs {
         "x.__delattr__('name') <==> del x.name";
 
     public final static String tuple_doc = 
-        "tuple() -> an empty tuple\n" + 
-        "tuple(sequence) -> tuple initialized from sequence's items\n" + 
+        "tuple() -> empty tuple\n" + 
+        "tuple(iterable) -> tuple initialized from iterable's items\n" + 
         "\n" + 
         "If the argument is a tuple, the return value is the same object.";
 
     public final static String tuple___eq___doc = 
         "x.__eq__(y) <==> x==y";
+
+    public final static String tuple___format___doc = 
+        "default object formatter";
 
     public final static String tuple___ge___doc = 
         "x.__ge__(y) <==> x>=y";
@@ -1431,8 +1764,8 @@ public class BuiltinDocs {
 
     public final static String tuple___getslice___doc = 
         "x.__getslice__(i, j) <==> x[i:j]\n" + 
-        "               \n" + 
-        "               Use of negative indices is not supported.";
+        "           \n" + 
+        "           Use of negative indices is not supported.";
 
     public final static String tuple___gt___doc = 
         "x.__gt__(y) <==> x>y";
@@ -1441,7 +1774,7 @@ public class BuiltinDocs {
         "x.__hash__() <==> hash(x)";
 
     public final static String tuple___init___doc = 
-        "x.__init__(...) initializes x; see x.__class__.__doc__ for signature";
+        "x.__init__(...) initializes x; see help(type(x)) for signature";
 
     public final static String tuple___iter___doc = 
         "x.__iter__() <==> iter(x)";
@@ -1479,8 +1812,27 @@ public class BuiltinDocs {
     public final static String tuple___setattr___doc = 
         "x.__setattr__('name', value) <==> x.name = value";
 
+    public final static String tuple___sizeof___doc = 
+        "T.__sizeof__() -- size of T in memory, in bytes";
+
     public final static String tuple___str___doc = 
         "x.__str__() <==> str(x)";
+
+    public final static String tuple___subclasshook___doc = 
+        "Abstract classes can override this to customize issubclass().\n" + 
+        "\n" + 
+        "This is invoked early on by abc.ABCMeta.__subclasscheck__().\n" + 
+        "It should return True, False or NotImplemented.  If it returns\n" + 
+        "NotImplemented, the normal algorithm is used.  Otherwise, it\n" + 
+        "overrides the normal algorithm (and the outcome is cached).\n" + 
+        "";
+
+    public final static String tuple_count_doc = 
+        "T.count(value) -> integer -- return number of occurrences of value";
+
+    public final static String tuple_index_doc = 
+        "T.index(value, [start, [stop]]) -> integer -- return first index of value.\n" + 
+        "Raises ValueError if the value is not present.";
 
     // Docs for <type 'str'>
     public final static String str___add___doc = 
@@ -1505,6 +1857,11 @@ public class BuiltinDocs {
     public final static String str___eq___doc = 
         "x.__eq__(y) <==> x==y";
 
+    public final static String str___format___doc = 
+        "S.__format__(format_spec) -> string\n" + 
+        "\n" + 
+        "Return a formatted version of S as described by format_spec.";
+
     public final static String str___ge___doc = 
         "x.__ge__(y) <==> x>=y";
 
@@ -1519,8 +1876,8 @@ public class BuiltinDocs {
 
     public final static String str___getslice___doc = 
         "x.__getslice__(i, j) <==> x[i:j]\n" + 
-        "               \n" + 
-        "               Use of negative indices is not supported.";
+        "           \n" + 
+        "           Use of negative indices is not supported.";
 
     public final static String str___gt___doc = 
         "x.__gt__(y) <==> x>y";
@@ -1529,7 +1886,7 @@ public class BuiltinDocs {
         "x.__hash__() <==> hash(x)";
 
     public final static String str___init___doc = 
-        "x.__init__(...) initializes x; see x.__class__.__doc__ for signature";
+        "x.__init__(...) initializes x; see help(type(x)) for signature";
 
     public final static String str___le___doc = 
         "x.__le__(y) <==> x<=y";
@@ -1570,8 +1927,26 @@ public class BuiltinDocs {
     public final static String str___setattr___doc = 
         "x.__setattr__('name', value) <==> x.name = value";
 
+    public final static String str___sizeof___doc = 
+        "S.__sizeof__() -> size of S in memory, in bytes";
+
     public final static String str___str___doc = 
         "x.__str__() <==> str(x)";
+
+    public final static String str___subclasshook___doc = 
+        "Abstract classes can override this to customize issubclass().\n" + 
+        "\n" + 
+        "This is invoked early on by abc.ABCMeta.__subclasscheck__().\n" + 
+        "It should return True, False or NotImplemented.  If it returns\n" + 
+        "NotImplemented, the normal algorithm is used.  Otherwise, it\n" + 
+        "overrides the normal algorithm (and the outcome is cached).\n" + 
+        "";
+
+    public final static String str__formatter_field_name_split_doc = 
+        "";
+
+    public final static String str__formatter_parser_doc = 
+        "";
 
     public final static String str_capitalize_doc = 
         "S.capitalize() -> string\n" + 
@@ -1599,7 +1974,7 @@ public class BuiltinDocs {
         "to the default encoding. errors may be given to set a different error\n" + 
         "handling scheme. Default is 'strict' meaning that encoding errors raise\n" + 
         "a UnicodeDecodeError. Other possible values are 'ignore' and 'replace'\n" + 
-        "as well as any other name registerd with codecs.register_error that is\n" + 
+        "as well as any other name registered with codecs.register_error that is\n" + 
         "able to handle UnicodeDecodeErrors.";
 
     public final static String str_encode_doc = 
@@ -1630,10 +2005,16 @@ public class BuiltinDocs {
         "S.find(sub [,start [,end]]) -> int\n" + 
         "\n" + 
         "Return the lowest index in S where substring sub is found,\n" + 
-        "such that sub is contained within s[start,end].  Optional\n" + 
+        "such that sub is contained within s[start:end].  Optional\n" + 
         "arguments start and end are interpreted as in slice notation.\n" + 
         "\n" + 
         "Return -1 on failure.";
+
+    public final static String str_format_doc = 
+        "S.format(*args, **kwargs) -> string\n" + 
+        "\n" + 
+        "Return a formatted version of S, using substitutions from args and kwargs.\n" + 
+        "The substitutions are identified by braces ('{' and '}').";
 
     public final static String str_index_doc = 
         "S.index(sub [,start [,end]]) -> int\n" + 
@@ -1685,15 +2066,15 @@ public class BuiltinDocs {
         "at least one cased character in S, False otherwise.";
 
     public final static String str_join_doc = 
-        "S.join(sequence) -> string\n" + 
+        "S.join(iterable) -> string\n" + 
         "\n" + 
         "Return a string which is the concatenation of the strings in the\n" + 
-        "sequence.  The separator between elements is S.";
+        "iterable.  The separator between elements is S.";
 
     public final static String str_ljust_doc = 
         "S.ljust(width[, fillchar]) -> string\n" + 
         "\n" + 
-        "Return S left justified in a string of length width. Padding is\n" + 
+        "Return S left-justified in a string of length width. Padding is\n" + 
         "done using the specified fill character (default is a space).";
 
     public final static String str_lower_doc = 
@@ -1711,12 +2092,12 @@ public class BuiltinDocs {
     public final static String str_partition_doc = 
         "S.partition(sep) -> (head, sep, tail)\n" + 
         "\n" + 
-        "Searches for the separator sep in S, and returns the part before it,\n" + 
+        "Search for the separator sep in S, and return the part before it,\n" + 
         "the separator itself, and the part after it.  If the separator is not\n" + 
-        "found, returns S and two empty strings.";
+        "found, return S and two empty strings.";
 
     public final static String str_replace_doc = 
-        "S.replace (old, new[, count]) -> string\n" + 
+        "S.replace(old, new[, count]) -> string\n" + 
         "\n" + 
         "Return a copy of string S with all occurrences of substring\n" + 
         "old replaced by new.  If the optional argument count is\n" + 
@@ -1726,7 +2107,7 @@ public class BuiltinDocs {
         "S.rfind(sub [,start [,end]]) -> int\n" + 
         "\n" + 
         "Return the highest index in S where substring sub is found,\n" + 
-        "such that sub is contained within s[start,end].  Optional\n" + 
+        "such that sub is contained within s[start:end].  Optional\n" + 
         "arguments start and end are interpreted as in slice notation.\n" + 
         "\n" + 
         "Return -1 on failure.";
@@ -1739,15 +2120,15 @@ public class BuiltinDocs {
     public final static String str_rjust_doc = 
         "S.rjust(width[, fillchar]) -> string\n" + 
         "\n" + 
-        "Return S right justified in a string of length width. Padding is\n" + 
+        "Return S right-justified in a string of length width. Padding is\n" + 
         "done using the specified fill character (default is a space)";
 
     public final static String str_rpartition_doc = 
-        "S.rpartition(sep) -> (tail, sep, head)\n" + 
+        "S.rpartition(sep) -> (head, sep, tail)\n" + 
         "\n" + 
-        "Searches for the separator sep in S, starting at the end of S, and returns\n" + 
+        "Search for the separator sep in S, starting at the end of S, and return\n" + 
         "the part before it, the separator itself, and the part after it.  If the\n" + 
-        "separator is not found, returns two empty strings and S.";
+        "separator is not found, return two empty strings and S.";
 
     public final static String str_rsplit_doc = 
         "S.rsplit([sep [,maxsplit]]) -> list of strings\n" + 
@@ -1771,7 +2152,8 @@ public class BuiltinDocs {
         "Return a list of the words in the string S, using sep as the\n" + 
         "delimiter string.  If maxsplit is given, at most maxsplit\n" + 
         "splits are done. If sep is not specified or is None, any\n" + 
-        "whitespace string is a separator.";
+        "whitespace string is a separator and empty strings are removed\n" + 
+        "from the result.";
 
     public final static String str_splitlines_doc = 
         "S.splitlines([keepends]) -> list of strings\n" + 
@@ -1845,10 +2227,23 @@ public class BuiltinDocs {
         "fset is a function for setting, and fdel a function for del'ing, an\n" + 
         "attribute.  Typical use is to define a managed attribute x:\n" + 
         "class C(object):\n" + 
-        "    def getx(self): return self.__x\n" + 
-        "    def setx(self, value): self.__x = value\n" + 
-        "    def delx(self): del self.__x\n" + 
-        "    x = property(getx, setx, delx, \"I'm the 'x' property.\")";
+        "    def getx(self): return self._x\n" + 
+        "    def setx(self, value): self._x = value\n" + 
+        "    def delx(self): del self._x\n" + 
+        "    x = property(getx, setx, delx, \"I'm the 'x' property.\")\n" + 
+        "\n" + 
+        "Decorators make defining new properties or modifying existing ones easy:\n" + 
+        "class C(object):\n" + 
+        "    @property\n" + 
+        "    def x(self): return self._x\n" + 
+        "    @x.setter\n" + 
+        "    def x(self, value): self._x = value\n" + 
+        "    @x.deleter\n" + 
+        "    def x(self): del self._x\n" + 
+        "";
+
+    public final static String property___format___doc = 
+        "default object formatter";
 
     public final static String property___get___doc = 
         "descr.__get__(obj[, type]) -> value";
@@ -1860,7 +2255,7 @@ public class BuiltinDocs {
         "x.__hash__() <==> hash(x)";
 
     public final static String property___init___doc = 
-        "x.__init__(...) initializes x; see x.__class__.__doc__ for signature";
+        "x.__init__(...) initializes x; see help(type(x)) for signature";
 
     public final static String property___new___doc = 
         "T.__new__(S, ...) -> a new object with type S, a subtype of T";
@@ -1880,8 +2275,24 @@ public class BuiltinDocs {
     public final static String property___setattr___doc = 
         "x.__setattr__('name', value) <==> x.name = value";
 
+    public final static String property___sizeof___doc = 
+        "__sizeof__() -> int\n" + 
+        "size of object in memory, in bytes";
+
     public final static String property___str___doc = 
         "x.__str__() <==> str(x)";
+
+    public final static String property___subclasshook___doc = 
+        "Abstract classes can override this to customize issubclass().\n" + 
+        "\n" + 
+        "This is invoked early on by abc.ABCMeta.__subclasscheck__().\n" + 
+        "It should return True, False or NotImplemented.  If it returns\n" + 
+        "NotImplemented, the normal algorithm is used.  Otherwise, it\n" + 
+        "overrides the normal algorithm (and the outcome is cached).\n" + 
+        "";
+
+    public final static String property_deleter_doc = 
+        "Descriptor to change the deleter on a property.";
 
     public final static String property_fdel_doc = 
         "";
@@ -1891,6 +2302,12 @@ public class BuiltinDocs {
 
     public final static String property_fset_doc = 
         "";
+
+    public final static String property_getter_doc = 
+        "Descriptor to change the getter on a property.";
+
+    public final static String property_setter_doc = 
+        "Descriptor to change the setter on a property.";
 
     // Docs for <type 'int'>
     public final static String int___abs___doc = 
@@ -1928,14 +2345,18 @@ public class BuiltinDocs {
         "argument will be truncated towards zero (this does not include a string\n" + 
         "representation of a floating point number!)  When converting a string, use\n" + 
         "the optional base.  It is an error to supply a base when converting a\n" + 
-        "non-string. If the argument is outside the integer range a long object\n" + 
-        "will be returned instead.";
+        "non-string.  If base is zero, the proper base is guessed based on the\n" + 
+        "string content.  If the argument is outside the integer range a\n" + 
+        "long object will be returned instead.";
 
     public final static String int___float___doc = 
         "x.__float__() <==> float(x)";
 
     public final static String int___floordiv___doc = 
         "x.__floordiv__(y) <==> x//y";
+
+    public final static String int___format___doc = 
+        "";
 
     public final static String int___getattribute___doc = 
         "x.__getattribute__('name') <==> x.name";
@@ -1953,7 +2374,7 @@ public class BuiltinDocs {
         "x[y:z] <==> x[y.__index__():z.__index__()]";
 
     public final static String int___init___doc = 
-        "x.__init__(...) initializes x; see x.__class__.__doc__ for signature";
+        "x.__init__(...) initializes x; see help(type(x)) for signature";
 
     public final static String int___int___doc = 
         "x.__int__() <==> int(x)";
@@ -2051,17 +2472,57 @@ public class BuiltinDocs {
     public final static String int___setattr___doc = 
         "x.__setattr__('name', value) <==> x.name = value";
 
+    public final static String int___sizeof___doc = 
+        "__sizeof__() -> int\n" + 
+        "size of object in memory, in bytes";
+
     public final static String int___str___doc = 
         "x.__str__() <==> str(x)";
 
     public final static String int___sub___doc = 
         "x.__sub__(y) <==> x-y";
 
+    public final static String int___subclasshook___doc = 
+        "Abstract classes can override this to customize issubclass().\n" + 
+        "\n" + 
+        "This is invoked early on by abc.ABCMeta.__subclasscheck__().\n" + 
+        "It should return True, False or NotImplemented.  If it returns\n" + 
+        "NotImplemented, the normal algorithm is used.  Otherwise, it\n" + 
+        "overrides the normal algorithm (and the outcome is cached).\n" + 
+        "";
+
     public final static String int___truediv___doc = 
         "x.__truediv__(y) <==> x/y";
 
+    public final static String int___trunc___doc = 
+        "Truncating an Integral returns itself.";
+
     public final static String int___xor___doc = 
         "x.__xor__(y) <==> x^y";
+
+    public final static String int_bit_length_doc = 
+        "int.bit_length() -> int\n" + 
+        "\n" + 
+        "Number of bits necessary to represent self in binary.\n" + 
+        ">>> bin(37)\n" + 
+        "'0b100101'\n" + 
+        ">>> (37).bit_length()\n" + 
+        "6";
+
+    public final static String int_conjugate_doc = 
+        "Returns self, the complex conjugate of any int.";
+
+    public final static String int_denominator_doc = 
+        "the denominator of a rational number in lowest terms";
+
+    public final static String int_imag_doc = 
+        "the imaginary part of a complex number";
+
+    public final static String int_numerator_doc = 
+        "the numerator of a rational number in lowest terms";
+
+    public final static String int_real_doc = 
+        "the real part of a complex number";
 
     // Docs for <type 'xrange'>
     public final static String xrange___class___doc = 
@@ -2078,6 +2539,9 @@ public class BuiltinDocs {
         "generates the numbers in the range on demand.  For looping, this is \n" + 
         "slightly faster than range() and more memory efficient.";
 
+    public final static String xrange___format___doc = 
+        "default object formatter";
+
     public final static String xrange___getattribute___doc = 
         "x.__getattribute__('name') <==> x.name";
 
@@ -2088,7 +2552,7 @@ public class BuiltinDocs {
         "x.__hash__() <==> hash(x)";
 
     public final static String xrange___init___doc = 
-        "x.__init__(...) initializes x; see x.__class__.__doc__ for signature";
+        "x.__init__(...) initializes x; see help(type(x)) for signature";
 
     public final static String xrange___iter___doc = 
         "x.__iter__() <==> iter(x)";
@@ -2100,7 +2564,7 @@ public class BuiltinDocs {
         "T.__new__(S, ...) -> a new object with type S, a subtype of T";
 
     public final static String xrange___reduce___doc = 
-        "helper for pickle";
+        "";
 
     public final static String xrange___reduce_ex___doc = 
         "helper for pickle";
@@ -2114,8 +2578,21 @@ public class BuiltinDocs {
     public final static String xrange___setattr___doc = 
         "x.__setattr__('name', value) <==> x.name = value";
 
+    public final static String xrange___sizeof___doc = 
+        "__sizeof__() -> int\n" + 
+        "size of object in memory, in bytes";
+
     public final static String xrange___str___doc = 
         "x.__str__() <==> str(x)";
+
+    public final static String xrange___subclasshook___doc = 
+        "Abstract classes can override this to customize issubclass().\n" + 
+        "\n" + 
+        "This is invoked early on by abc.ABCMeta.__subclasscheck__().\n" + 
+        "It should return True, False or NotImplemented.  If it returns\n" + 
+        "NotImplemented, the normal algorithm is used.  Otherwise, it\n" + 
+        "overrides the normal algorithm (and the outcome is cached).\n" + 
+        "";
 
     // Docs for <type 'file'>
     public final static String file___class___doc = 
@@ -2134,7 +2611,8 @@ public class BuiltinDocs {
         "opened for writing.  Add a 'b' to the mode for binary files.\n" + 
         "Add a '+' to the mode to allow simultaneous reading and writing.\n" + 
         "If the buffering argument is given, 0 means unbuffered, 1 means line\n" + 
-        "buffered, and larger numbers specify the buffer size.\n" + 
+        "buffered, and larger numbers specify the buffer size.  The preferred way\n" + 
+        "to open a file is with the builtin open() function.\n" + 
         "Add a 'U' to mode to open the file for input with universal newline\n" + 
         "support.  Any line ending in the input file will be seen as a '\\n'\n" + 
         "in Python.  Also, a file so opened gains the attribute 'newlines';\n" + 
@@ -2150,6 +2628,9 @@ public class BuiltinDocs {
     public final static String file___exit___doc = 
         "__exit__(*excinfo) -> None.  Closes the file.";
 
+    public final static String file___format___doc = 
+        "default object formatter";
+
     public final static String file___getattribute___doc = 
         "x.__getattribute__('name') <==> x.name";
 
@@ -2157,7 +2638,7 @@ public class BuiltinDocs {
         "x.__hash__() <==> hash(x)";
 
     public final static String file___init___doc = 
-        "x.__init__(...) initializes x; see x.__class__.__doc__ for signature";
+        "x.__init__(...) initializes x; see help(type(x)) for signature";
 
     public final static String file___iter___doc = 
         "x.__iter__() <==> iter(x)";
@@ -2177,8 +2658,21 @@ public class BuiltinDocs {
     public final static String file___setattr___doc = 
         "x.__setattr__('name', value) <==> x.name = value";
 
+    public final static String file___sizeof___doc = 
+        "__sizeof__() -> int\n" + 
+        "size of object in memory, in bytes";
+
     public final static String file___str___doc = 
         "x.__str__() <==> str(x)";
+
+    public final static String file___subclasshook___doc = 
+        "Abstract classes can override this to customize issubclass().\n" + 
+        "\n" + 
+        "This is invoked early on by abc.ABCMeta.__subclasscheck__().\n" + 
+        "It should return True, False or NotImplemented.  If it returns\n" + 
+        "NotImplemented, the normal algorithm is used.  Otherwise, it\n" + 
+        "overrides the normal algorithm (and the outcome is cached).\n" + 
+        "";
 
     public final static String file_close_doc = 
         "close() -> None or (perhaps) an integer.  Close the file.\n" + 
@@ -2193,6 +2687,9 @@ public class BuiltinDocs {
 
     public final static String file_encoding_doc = 
         "file encoding";
+
+    public final static String file_errors_doc = 
+        "Unicode error handler";
 
     public final static String file_fileno_doc = 
         "fileno() -> integer \"file descriptor\".\n" + 
@@ -2320,6 +2817,11 @@ public class BuiltinDocs {
     public final static String complex___floordiv___doc = 
         "x.__floordiv__(y) <==> x//y";
 
+    public final static String complex___format___doc = 
+        "complex.__format__() -> str\n" + 
+        "\n" + 
+        "Converts to a string according to format_spec.";
+
     public final static String complex___ge___doc = 
         "x.__ge__(y) <==> x>=y";
 
@@ -2336,7 +2838,7 @@ public class BuiltinDocs {
         "x.__hash__() <==> hash(x)";
 
     public final static String complex___init___doc = 
-        "x.__init__(...) initializes x; see x.__class__.__doc__ for signature";
+        "x.__init__(...) initializes x; see help(type(x)) for signature";
 
     public final static String complex___int___doc = 
         "x.__int__() <==> int(x)";
@@ -2413,17 +2915,32 @@ public class BuiltinDocs {
     public final static String complex___setattr___doc = 
         "x.__setattr__('name', value) <==> x.name = value";
 
+    public final static String complex___sizeof___doc = 
+        "__sizeof__() -> int\n" + 
+        "size of object in memory, in bytes";
+
     public final static String complex___str___doc = 
         "x.__str__() <==> str(x)";
 
     public final static String complex___sub___doc = 
         "x.__sub__(y) <==> x-y";
 
+    public final static String complex___subclasshook___doc = 
+        "Abstract classes can override this to customize issubclass().\n" + 
+        "\n" + 
+        "This is invoked early on by abc.ABCMeta.__subclasscheck__().\n" + 
+        "It should return True, False or NotImplemented.  If it returns\n" + 
+        "NotImplemented, the normal algorithm is used.  Otherwise, it\n" + 
+        "overrides the normal algorithm (and the outcome is cached).\n" + 
+        "";
+
     public final static String complex___truediv___doc = 
         "x.__truediv__(y) <==> x/y";
 
     public final static String complex_conjugate_doc = 
-        "";
+        "complex.conjugate() -> complex\n" + 
+        "\n" + 
+        "Returns the complex conjugate of its argument. (3-4j).conjugate() == 3+4j.";
 
     public final static String complex_imag_doc = 
         "the imaginary part of a complex number";
@@ -2473,6 +2990,9 @@ public class BuiltinDocs {
     public final static String bool___floordiv___doc = 
         "x.__floordiv__(y) <==> x//y";
 
+    public final static String bool___format___doc = 
+        "";
+
     public final static String bool___getattribute___doc = 
         "x.__getattribute__('name') <==> x.name";
 
@@ -2489,7 +3009,7 @@ public class BuiltinDocs {
         "x[y:z] <==> x[y.__index__():z.__index__()]";
 
     public final static String bool___init___doc = 
-        "x.__init__(...) initializes x; see x.__class__.__doc__ for signature";
+        "x.__init__(...) initializes x; see help(type(x)) for signature";
 
     public final static String bool___int___doc = 
         "x.__int__() <==> int(x)";
@@ -2587,17 +3107,57 @@ public class BuiltinDocs {
     public final static String bool___setattr___doc = 
         "x.__setattr__('name', value) <==> x.name = value";
 
+    public final static String bool___sizeof___doc = 
+        "__sizeof__() -> int\n" + 
+        "size of object in memory, in bytes";
+
     public final static String bool___str___doc = 
         "x.__str__() <==> str(x)";
 
     public final static String bool___sub___doc = 
         "x.__sub__(y) <==> x-y";
 
+    public final static String bool___subclasshook___doc = 
+        "Abstract classes can override this to customize issubclass().\n" + 
+        "\n" + 
+        "This is invoked early on by abc.ABCMeta.__subclasscheck__().\n" + 
+        "It should return True, False or NotImplemented.  If it returns\n" + 
+        "NotImplemented, the normal algorithm is used.  Otherwise, it\n" + 
+        "overrides the normal algorithm (and the outcome is cached).\n" + 
+        "";
+
     public final static String bool___truediv___doc = 
         "x.__truediv__(y) <==> x/y";
 
+    public final static String bool___trunc___doc = 
+        "Truncating an Integral returns itself.";
+
     public final static String bool___xor___doc = 
         "x.__xor__(y) <==> x^y";
+
+    public final static String bool_bit_length_doc = 
+        "int.bit_length() -> int\n" + 
+        "\n" + 
+        "Number of bits necessary to represent self in binary.\n" + 
+        ">>> bin(37)\n" + 
+        "'0b100101'\n" + 
+        ">>> (37).bit_length()\n" + 
+        "6";
+
+    public final static String bool_conjugate_doc = 
+        "Returns self, the complex conjugate of any int.";
+
+    public final static String bool_denominator_doc = 
+        "the denominator of a rational number in lowest terms";
+
+    public final static String bool_imag_doc = 
+        "the imaginary part of a complex number";
+
+    public final static String bool_numerator_doc = 
+        "the numerator of a rational number in lowest terms";
+
+    public final static String bool_real_doc = 
+        "the real part of a complex number";
 
     // Docs for <type 'classmethod'>
     public final static String classmethod___class___doc = 
@@ -2628,6 +3188,12 @@ public class BuiltinDocs {
         "Class methods are different than C++ or Java static methods.\n" + 
         "If you want those, see the staticmethod builtin.";
 
+    public final static String classmethod___format___doc = 
+        "default object formatter";
+
+    public final static String classmethod___func___doc = 
+        "";
+
     public final static String classmethod___get___doc = 
         "descr.__get__(obj[, type]) -> value";
 
@@ -2638,7 +3204,7 @@ public class BuiltinDocs {
         "x.__hash__() <==> hash(x)";
 
     public final static String classmethod___init___doc = 
-        "x.__init__(...) initializes x; see x.__class__.__doc__ for signature";
+        "x.__init__(...) initializes x; see help(type(x)) for signature";
 
     public final static String classmethod___new___doc = 
         "T.__new__(S, ...) -> a new object with type S, a subtype of T";
@@ -2655,8 +3221,21 @@ public class BuiltinDocs {
     public final static String classmethod___setattr___doc = 
         "x.__setattr__('name', value) <==> x.name = value";
 
+    public final static String classmethod___sizeof___doc = 
+        "__sizeof__() -> int\n" + 
+        "size of object in memory, in bytes";
+
     public final static String classmethod___str___doc = 
         "x.__str__() <==> str(x)";
+
+    public final static String classmethod___subclasshook___doc = 
+        "Abstract classes can override this to customize issubclass().\n" + 
+        "\n" + 
+        "This is invoked early on by abc.ABCMeta.__subclasscheck__().\n" + 
+        "It should return True, False or NotImplemented.  If it returns\n" + 
+        "NotImplemented, the normal algorithm is used.  Otherwise, it\n" + 
+        "overrides the normal algorithm (and the outcome is cached).\n" + 
+        "";
 
     // Docs for <type 'set'>
     public final static String set___and___doc = 
@@ -2676,12 +3255,16 @@ public class BuiltinDocs {
         "x.__delattr__('name') <==> del x.name";
 
     public final static String set_doc = 
-        "set(iterable) --> set object\n" + 
+        "set() -> new empty set object\n" + 
+        "set(iterable) -> new set object\n" + 
         "\n" + 
         "Build an unordered collection of unique elements.";
 
     public final static String set___eq___doc = 
         "x.__eq__(y) <==> x==y";
+
+    public final static String set___format___doc = 
+        "default object formatter";
 
     public final static String set___ge___doc = 
         "x.__ge__(y) <==> x>=y";
@@ -2693,13 +3276,13 @@ public class BuiltinDocs {
         "x.__gt__(y) <==> x>y";
 
     public final static String set___hash___doc = 
-        "x.__hash__() <==> hash(x)";
+        "";
 
     public final static String set___iand___doc = 
         "x.__iand__(y) <==> x&y";
 
     public final static String set___init___doc = 
-        "x.__init__(...) initializes x; see x.__class__.__doc__ for signature";
+        "x.__init__(...) initializes x; see help(type(x)) for signature";
 
     public final static String set___ior___doc = 
         "x.__ior__(y) <==> x|y";
@@ -2755,11 +3338,23 @@ public class BuiltinDocs {
     public final static String set___setattr___doc = 
         "x.__setattr__('name', value) <==> x.name = value";
 
+    public final static String set___sizeof___doc = 
+        "S.__sizeof__() -> size of S in memory, in bytes";
+
     public final static String set___str___doc = 
         "x.__str__() <==> str(x)";
 
     public final static String set___sub___doc = 
         "x.__sub__(y) <==> x-y";
+
+    public final static String set___subclasshook___doc = 
+        "Abstract classes can override this to customize issubclass().\n" + 
+        "\n" + 
+        "This is invoked early on by abc.ABCMeta.__subclasscheck__().\n" + 
+        "It should return True, False or NotImplemented.  If it returns\n" + 
+        "NotImplemented, the normal algorithm is used.  Otherwise, it\n" + 
+        "overrides the normal algorithm (and the outcome is cached).\n" + 
+        "";
 
     public final static String set___xor___doc = 
         "x.__xor__(y) <==> x^y";
@@ -2776,9 +3371,9 @@ public class BuiltinDocs {
         "Return a shallow copy of a set.";
 
     public final static String set_difference_doc = 
-        "Return the difference of two sets as a new set.\n" + 
+        "Return the difference of two or more sets as a new set.\n" + 
         "\n" + 
-        "(i.e. all elements that are in this set but not the other.)";
+        "(i.e. all elements that are in this set but not the others.)";
 
     public final static String set_difference_update_doc = 
         "Remove all elements of another set from this set.";
@@ -2789,12 +3384,15 @@ public class BuiltinDocs {
         "If the element is not a member, do nothing.";
 
     public final static String set_intersection_doc = 
-        "Return the intersection of two sets as a new set.\n" + 
+        "Return the intersection of two or more sets as a new set.\n" + 
         "\n" + 
-        "(i.e. all elements that are in both sets.)";
+        "(i.e. elements that are common to all of the sets.)";
 
     public final static String set_intersection_update_doc = 
         "Update a set with the intersection of itself and another.";
+
+    public final static String set_isdisjoint_doc = 
+        "Return True if two sets have a null intersection.";
 
     public final static String set_issubset_doc = 
         "Report whether another set contains this set.";
@@ -2803,7 +3401,8 @@ public class BuiltinDocs {
         "Report whether this set contains another set.";
 
     public final static String set_pop_doc = 
-        "Remove and return an arbitrary set element.";
+        "Remove and return an arbitrary set element.\n" + 
+        "Raises KeyError if the set is empty.";
 
     public final static String set_remove_doc = 
         "Remove an element from a set; it must be a member.\n" + 
@@ -2819,12 +3418,12 @@ public class BuiltinDocs {
         "Update a set with the symmetric difference of itself and another.";
 
     public final static String set_union_doc = 
-        "Return the union of two sets as a new set.\n" + 
+        "Return the union of sets as a new set.\n" + 
         "\n" + 
         "(i.e. all elements that are in either set.)";
 
     public final static String set_update_doc = 
-        "Update a set with the union of itself and another.";
+        "Update a set with the union of itself and others.";
 
     // Docs for <type 'frozenset'>
     public final static String frozenset___and___doc = 
@@ -2844,12 +3443,16 @@ public class BuiltinDocs {
         "x.__delattr__('name') <==> del x.name";
 
     public final static String frozenset_doc = 
-        "frozenset(iterable) --> frozenset object\n" + 
+        "frozenset() -> empty frozenset object\n" + 
+        "frozenset(iterable) -> frozenset object\n" + 
         "\n" + 
         "Build an immutable unordered collection of unique elements.";
 
     public final static String frozenset___eq___doc = 
         "x.__eq__(y) <==> x==y";
+
+    public final static String frozenset___format___doc = 
+        "default object formatter";
 
     public final static String frozenset___ge___doc = 
         "x.__ge__(y) <==> x>=y";
@@ -2864,7 +3467,7 @@ public class BuiltinDocs {
         "x.__hash__() <==> hash(x)";
 
     public final static String frozenset___init___doc = 
-        "x.__init__(...) initializes x; see x.__class__.__doc__ for signature";
+        "x.__init__(...) initializes x; see help(type(x)) for signature";
 
     public final static String frozenset___iter___doc = 
         "x.__iter__() <==> iter(x)";
@@ -2911,11 +3514,23 @@ public class BuiltinDocs {
     public final static String frozenset___setattr___doc = 
         "x.__setattr__('name', value) <==> x.name = value";
 
+    public final static String frozenset___sizeof___doc = 
+        "S.__sizeof__() -> size of S in memory, in bytes";
+
     public final static String frozenset___str___doc = 
         "x.__str__() <==> str(x)";
 
     public final static String frozenset___sub___doc = 
         "x.__sub__(y) <==> x-y";
+
+    public final static String frozenset___subclasshook___doc = 
+        "Abstract classes can override this to customize issubclass().\n" + 
+        "\n" + 
+        "This is invoked early on by abc.ABCMeta.__subclasscheck__().\n" + 
+        "It should return True, False or NotImplemented.  If it returns\n" + 
+        "NotImplemented, the normal algorithm is used.  Otherwise, it\n" + 
+        "overrides the normal algorithm (and the outcome is cached).\n" + 
+        "";
 
     public final static String frozenset___xor___doc = 
         "x.__xor__(y) <==> x^y";
@@ -2924,14 +3539,17 @@ public class BuiltinDocs {
         "Return a shallow copy of a set.";
 
     public final static String frozenset_difference_doc = 
-        "Return the difference of two sets as a new set.\n" + 
+        "Return the difference of two or more sets as a new set.\n" + 
         "\n" + 
-        "(i.e. all elements that are in this set but not the other.)";
+        "(i.e. all elements that are in this set but not the others.)";
 
     public final static String frozenset_intersection_doc = 
-        "Return the intersection of two sets as a new set.\n" + 
+        "Return the intersection of two or more sets as a new set.\n" + 
         "\n" + 
-        "(i.e. all elements that are in both sets.)";
+        "(i.e. elements that are common to all of the sets.)";
+
+    public final static String frozenset_isdisjoint_doc = 
+        "Return True if two sets have a null intersection.";
 
     public final static String frozenset_issubset_doc = 
         "Report whether another set contains this set.";
@@ -2945,7 +3563,7 @@ public class BuiltinDocs {
         "(i.e. all elements that are in exactly one of the sets.)";
 
     public final static String frozenset_union_doc = 
-        "Return the union of two sets as a new set.\n" + 
+        "Return the union of sets as a new set.\n" + 
         "\n" + 
         "(i.e. all elements that are in either set.)";
 
@@ -2963,6 +3581,9 @@ public class BuiltinDocs {
     public final static String BaseException_doc = 
         "Common base class for all exceptions";
 
+    public final static String BaseException___format___doc = 
+        "default object formatter";
+
     public final static String BaseException___getattribute___doc = 
         "x.__getattribute__('name') <==> x.name";
 
@@ -2971,14 +3592,14 @@ public class BuiltinDocs {
 
     public final static String BaseException___getslice___doc = 
         "x.__getslice__(i, j) <==> x[i:j]\n" + 
-        "               \n" + 
-        "               Use of negative indices is not supported.";
+        "           \n" + 
+        "           Use of negative indices is not supported.";
 
     public final static String BaseException___hash___doc = 
         "x.__hash__() <==> hash(x)";
 
     public final static String BaseException___init___doc = 
-        "x.__init__(...) initializes x; see x.__class__.__doc__ for signature";
+        "x.__init__(...) initializes x; see help(type(x)) for signature";
 
     public final static String BaseException___new___doc = 
         "T.__new__(S, ...) -> a new object with type S, a subtype of T";
@@ -2998,14 +3619,30 @@ public class BuiltinDocs {
     public final static String BaseException___setstate___doc = 
         "";
 
+    public final static String BaseException___sizeof___doc = 
+        "__sizeof__() -> int\n" + 
+        "size of object in memory, in bytes";
+
     public final static String BaseException___str___doc = 
         "x.__str__() <==> str(x)";
+
+    public final static String BaseException___subclasshook___doc = 
+        "Abstract classes can override this to customize issubclass().\n" + 
+        "\n" + 
+        "This is invoked early on by abc.ABCMeta.__subclasscheck__().\n" + 
+        "It should return True, False or NotImplemented.  If it returns\n" + 
+        "NotImplemented, the normal algorithm is used.  Otherwise, it\n" + 
+        "overrides the normal algorithm (and the outcome is cached).\n" + 
+        "";
+
+    public final static String BaseException___unicode___doc = 
+        "";
 
     public final static String BaseException_args_doc = 
         "";
 
     public final static String BaseException_message_doc = 
-        "exception message";
+        "";
 
     // Docs for <type 'function'>
     public final static String function___call___doc = 
@@ -3014,6 +3651,15 @@ public class BuiltinDocs {
     public final static String function___class___doc = 
         "type(object) -> the object's type\n" + 
         "type(name, bases, dict) -> a new type";
+
+    public final static String function___closure___doc = 
+        "";
+
+    public final static String function___code___doc = 
+        "";
+
+    public final static String function___defaults___doc = 
+        "";
 
     public final static String function___delattr___doc = 
         "x.__delattr__('name') <==> del x.name";
@@ -3029,17 +3675,23 @@ public class BuiltinDocs {
         "The optional argdefs tuple specifies the default argument values.\n" + 
         "The optional closure tuple supplies the bindings for free variables.";
 
+    public final static String function___format___doc = 
+        "default object formatter";
+
     public final static String function___get___doc = 
         "descr.__get__(obj[, type]) -> value";
 
     public final static String function___getattribute___doc = 
         "x.__getattribute__('name') <==> x.name";
 
+    public final static String function___globals___doc = 
+        "";
+
     public final static String function___hash___doc = 
         "x.__hash__() <==> hash(x)";
 
     public final static String function___init___doc = 
-        "x.__init__(...) initializes x; see x.__class__.__doc__ for signature";
+        "x.__init__(...) initializes x; see help(type(x)) for signature";
 
     public final static String function___module___doc = 
         "str(object) -> string\n" + 
@@ -3068,8 +3720,21 @@ public class BuiltinDocs {
     public final static String function___setattr___doc = 
         "x.__setattr__('name', value) <==> x.name = value";
 
+    public final static String function___sizeof___doc = 
+        "__sizeof__() -> int\n" + 
+        "size of object in memory, in bytes";
+
     public final static String function___str___doc = 
         "x.__str__() <==> str(x)";
+
+    public final static String function___subclasshook___doc = 
+        "Abstract classes can override this to customize issubclass().\n" + 
+        "\n" + 
+        "This is invoked early on by abc.ABCMeta.__subclasscheck__().\n" + 
+        "It should return True, False or NotImplemented.  If it returns\n" + 
+        "NotImplemented, the normal algorithm is used.  Otherwise, it\n" + 
+        "overrides the normal algorithm (and the outcome is cached).\n" + 
+        "";
 
     public final static String function_func_closure_doc = 
         "";
@@ -3111,6 +3776,12 @@ public class BuiltinDocs {
         "\n" + 
         "Create an instance method object.";
 
+    public final static String instancemethod___format___doc = 
+        "default object formatter";
+
+    public final static String instancemethod___func___doc = 
+        "the function (or other callable) implementing a method";
+
     public final static String instancemethod___get___doc = 
         "descr.__get__(obj[, type]) -> value";
 
@@ -3121,7 +3792,7 @@ public class BuiltinDocs {
         "x.__hash__() <==> hash(x)";
 
     public final static String instancemethod___init___doc = 
-        "x.__init__(...) initializes x; see x.__class__.__doc__ for signature";
+        "x.__init__(...) initializes x; see help(type(x)) for signature";
 
     public final static String instancemethod___new___doc = 
         "T.__new__(S, ...) -> a new object with type S, a subtype of T";
@@ -3135,11 +3806,27 @@ public class BuiltinDocs {
     public final static String instancemethod___repr___doc = 
         "x.__repr__() <==> repr(x)";
 
+    public final static String instancemethod___self___doc = 
+        "the instance to which a method is bound; None for unbound methods";
+
     public final static String instancemethod___setattr___doc = 
         "x.__setattr__('name', value) <==> x.name = value";
 
+    public final static String instancemethod___sizeof___doc = 
+        "__sizeof__() -> int\n" + 
+        "size of object in memory, in bytes";
+
     public final static String instancemethod___str___doc = 
         "x.__str__() <==> str(x)";
+
+    public final static String instancemethod___subclasshook___doc = 
+        "Abstract classes can override this to customize issubclass().\n" + 
+        "\n" + 
+        "This is invoked early on by abc.ABCMeta.__subclasscheck__().\n" + 
+        "It should return True, False or NotImplemented.  If it returns\n" + 
+        "NotImplemented, the normal algorithm is used.  Otherwise, it\n" + 
+        "overrides the normal algorithm (and the outcome is cached).\n" + 
+        "";
 
     public final static String instancemethod_im_class_doc = 
         "the class associated with a method";
@@ -3167,14 +3854,35 @@ public class BuiltinDocs {
         "\n" + 
         "Create a code object.  Not for the faint of heart.";
 
+    public final static String code___eq___doc = 
+        "x.__eq__(y) <==> x==y";
+
+    public final static String code___format___doc = 
+        "default object formatter";
+
+    public final static String code___ge___doc = 
+        "x.__ge__(y) <==> x>=y";
+
     public final static String code___getattribute___doc = 
         "x.__getattribute__('name') <==> x.name";
+
+    public final static String code___gt___doc = 
+        "x.__gt__(y) <==> x>y";
 
     public final static String code___hash___doc = 
         "x.__hash__() <==> hash(x)";
 
     public final static String code___init___doc = 
-        "x.__init__(...) initializes x; see x.__class__.__doc__ for signature";
+        "x.__init__(...) initializes x; see help(type(x)) for signature";
+
+    public final static String code___le___doc = 
+        "x.__le__(y) <==> x<=y";
+
+    public final static String code___lt___doc = 
+        "x.__lt__(y) <==> x<y";
+
+    public final static String code___ne___doc = 
+        "x.__ne__(y) <==> x!=y";
 
     public final static String code___new___doc = 
         "T.__new__(S, ...) -> a new object with type S, a subtype of T";
@@ -3191,8 +3899,21 @@ public class BuiltinDocs {
     public final static String code___setattr___doc = 
         "x.__setattr__('name', value) <==> x.name = value";
 
+    public final static String code___sizeof___doc = 
+        "__sizeof__() -> int\n" + 
+        "size of object in memory, in bytes";
+
     public final static String code___str___doc = 
         "x.__str__() <==> str(x)";
+
+    public final static String code___subclasshook___doc = 
+        "Abstract classes can override this to customize issubclass().\n" + 
+        "\n" + 
+        "This is invoked early on by abc.ABCMeta.__subclasscheck__().\n" + 
+        "It should return True, False or NotImplemented.  If it returns\n" + 
+        "NotImplemented, the normal algorithm is used.  Otherwise, it\n" + 
+        "overrides the normal algorithm (and the outcome is cached).\n" + 
+        "";
 
     public final static String code_co_argcount_doc = 
         "";
@@ -3247,6 +3968,9 @@ public class BuiltinDocs {
     public final static String frame_doc = 
         "";
 
+    public final static String frame___format___doc = 
+        "default object formatter";
+
     public final static String frame___getattribute___doc = 
         "x.__getattribute__('name') <==> x.name";
 
@@ -3254,7 +3978,7 @@ public class BuiltinDocs {
         "x.__hash__() <==> hash(x)";
 
     public final static String frame___init___doc = 
-        "x.__init__(...) initializes x; see x.__class__.__doc__ for signature";
+        "x.__init__(...) initializes x; see help(type(x)) for signature";
 
     public final static String frame___new___doc = 
         "T.__new__(S, ...) -> a new object with type S, a subtype of T";
@@ -3271,8 +3995,20 @@ public class BuiltinDocs {
     public final static String frame___setattr___doc = 
         "x.__setattr__('name', value) <==> x.name = value";
 
+    public final static String frame___sizeof___doc = 
+        "F.__sizeof__() -> size of F in memory, in bytes";
+
     public final static String frame___str___doc = 
         "x.__str__() <==> str(x)";
+
+    public final static String frame___subclasshook___doc = 
+        "Abstract classes can override this to customize issubclass().\n" + 
+        "\n" + 
+        "This is invoked early on by abc.ABCMeta.__subclasscheck__().\n" + 
+        "It should return True, False or NotImplemented.  If it returns\n" + 
+        "NotImplemented, the normal algorithm is used.  Otherwise, it\n" + 
+        "overrides the normal algorithm (and the outcome is cached).\n" + 
+        "";
 
     public final static String frame_f_back_doc = 
         "";
@@ -3321,6 +4057,9 @@ public class BuiltinDocs {
     public final static String traceback_doc = 
         "";
 
+    public final static String traceback___format___doc = 
+        "default object formatter";
+
     public final static String traceback___getattribute___doc = 
         "x.__getattribute__('name') <==> x.name";
 
@@ -3328,7 +4067,7 @@ public class BuiltinDocs {
         "x.__hash__() <==> hash(x)";
 
     public final static String traceback___init___doc = 
-        "x.__init__(...) initializes x; see x.__class__.__doc__ for signature";
+        "x.__init__(...) initializes x; see help(type(x)) for signature";
 
     public final static String traceback___new___doc = 
         "T.__new__(S, ...) -> a new object with type S, a subtype of T";
@@ -3345,7 +4084,32 @@ public class BuiltinDocs {
     public final static String traceback___setattr___doc = 
         "x.__setattr__('name', value) <==> x.name = value";
 
+    public final static String traceback___sizeof___doc = 
+        "__sizeof__() -> int\n" + 
+        "size of object in memory, in bytes";
+
     public final static String traceback___str___doc = 
         "x.__str__() <==> str(x)";
+
+    public final static String traceback___subclasshook___doc = 
+        "Abstract classes can override this to customize issubclass().\n" + 
+        "\n" + 
+        "This is invoked early on by abc.ABCMeta.__subclasscheck__().\n" + 
+        "It should return True, False or NotImplemented.  If it returns\n" + 
+        "NotImplemented, the normal algorithm is used.  Otherwise, it\n" + 
+        "overrides the normal algorithm (and the outcome is cached).\n" + 
+        "";
+
+    public final static String traceback_tb_frame_doc = 
+        "";
+
+    public final static String traceback_tb_lasti_doc = 
+        "";
+
+    public final static String traceback_tb_lineno_doc = 
+        "";
+
+    public final static String traceback_tb_next_doc = 
+        "";
 
 }
