@@ -102,6 +102,7 @@ import org.python.antlr.ast.Context;
 import org.python.antlr.ast.Continue;
 import org.python.antlr.ast.Delete;
 import org.python.antlr.ast.Dict;
+import org.python.antlr.ast.DictComp;
 import org.python.antlr.ast.Ellipsis;
 import org.python.antlr.ast.ErrorMod;
 import org.python.antlr.ast.ExceptHandler;
@@ -131,6 +132,8 @@ import org.python.antlr.ast.Print;
 import org.python.antlr.ast.Raise;
 import org.python.antlr.ast.Repr;
 import org.python.antlr.ast.Return;
+import org.python.antlr.ast.Set;
+import org.python.antlr.ast.SetComp;
 import org.python.antlr.ast.Slice;
 import org.python.antlr.ast.Str;
 import org.python.antlr.ast.Subscript;
@@ -164,6 +167,9 @@ import java.util.ListIterator;
     private GrammarActions actions = new GrammarActions();
 
     private String encoding;
+
+    private boolean printFunction = false;
+    private boolean unicodeLiterals = false;
 
     public void setErrorHandler(ErrorHandler eh) {
         this.errorHandler = eh;
@@ -390,6 +396,19 @@ dotted_attr
       )
     ;
 
+//not in CPython's Grammar file
+// This is used to allow PRINT as a NAME for the __future__ print_function.
+name_or_print
+    returns [Token tok]
+    : NAME {
+        $tok = $name_or_print.start;
+    }
+    | {printFunction}? => PRINT {
+        $tok = $name_or_print.start;
+    }
+    ;
+
+//not in CPython's Grammar file
 //attr is here for Java  compatibility.  A Java foo.getIf() can be called from Jython as foo.if
 //     so we need to support any keyword as an attribute.
 
@@ -472,13 +491,13 @@ funcdef
 @after {
     $funcdef.tree = stype;
 }
-    : decorators? DEF NAME parameters COLON suite[false]
+    : decorators? DEF name_or_print parameters COLON suite[false]
     {
         Token t = $DEF;
         if ($decorators.start != null) {
             t = $decorators.start;
         }
-        stype = actions.makeFuncdef(t, $NAME, $parameters.args, $suite.stypes, $decorators.etypes);
+        stype = actions.makeFuncdef(t, $name_or_print.start, $parameters.args, $suite.stypes, $decorators.etypes);
     }
     ;
 
@@ -600,7 +619,6 @@ simple_stmt
 //small_stmt: (expr_stmt | print_stmt  | del_stmt | pass_stmt | flow_stmt |
 //             import_stmt | global_stmt | exec_stmt | assert_stmt)
 small_stmt : expr_stmt
-           | print_stmt
            | del_stmt
            | pass_stmt
            | flow_stmt
@@ -608,6 +626,7 @@ small_stmt : expr_stmt
            | global_stmt
            | exec_stmt
            | assert_stmt
+           | {!printFunction}? => print_stmt
            ;
 
 //expr_stmt: testlist (augassign (yield_expr|testlist) |
@@ -917,19 +936,59 @@ import_name
 //import_from: ('from' ('.'* dotted_name | '.'+)
 //              'import' ('*' | '(' import_as_names ')' | import_as_names))
 import_from
+@init {
+    stmt stype = null;
+}
+@after {
+   $import_from.tree = stype;
+}
     : FROM (d+=DOT* dotted_name | d+=DOT+) IMPORT
         (STAR
-       -> ^(FROM<ImportFrom>[$FROM, actions.makeFromText($d, $dotted_name.names),
-             actions.makeModuleNameNode($d, $dotted_name.names),
-             actions.makeStarAlias($STAR), actions.makeLevel($d)])
+         {
+             stype = new ImportFrom($FROM, actions.makeFromText($d, $dotted_name.names),
+                 actions.makeModuleNameNode($d, $dotted_name.names),
+                 actions.makeStarAlias($STAR), actions.makeLevel($d));
+         }
         | i1=import_as_names
-       -> ^(FROM<ImportFrom>[$FROM, actions.makeFromText($d, $dotted_name.names),
-             actions.makeModuleNameNode($d, $dotted_name.names),
-             actions.makeAliases($i1.atypes), actions.makeLevel($d)])
+         {
+             String dottedText = $dotted_name.text;
+             if (dottedText != null && dottedText.equals("__future__")) {
+                 List<alias> aliases = $i1.atypes;
+                 for(alias a: aliases) {
+                     if (a != null) {
+                         if (a.getInternalName().equals("print_function")) {
+                             printFunction = true;
+                         } else if (a.getInternalName().equals("unicode_literals")) {
+                             unicodeLiterals = true;
+                         }
+                     }
+                 }
+             }
+             stype = new ImportFrom($FROM, actions.makeFromText($d, $dotted_name.names),
+                 actions.makeModuleNameNode($d, $dotted_name.names),
+                 actions.makeAliases($i1.atypes), actions.makeLevel($d));
+         }
         | LPAREN i2=import_as_names COMMA? RPAREN
-       -> ^(FROM<ImportFrom>[$FROM, actions.makeFromText($d, $dotted_name.names),
-             actions.makeModuleNameNode($d, $dotted_name.names),
-             actions.makeAliases($i2.atypes), actions.makeLevel($d)])
+         {
+             //XXX: this is almost a complete C&P of the code above - is there some way
+             //     to factor it out?
+             String dottedText = $dotted_name.text;
+             if (dottedText != null && dottedText.equals("__future__")) {
+                 List<alias> aliases = $i2.atypes;
+                 for(alias a: aliases) {
+                     if (a != null) {
+                         if (a.getInternalName().equals("print_function")) {
+                             printFunction = true;
+                         } else if (a.getInternalName().equals("unicode_literals")) {
+                             unicodeLiterals = true;
+                         }
+                     }
+                 }
+             }
+             stype = new ImportFrom($FROM, actions.makeFromText($d, $dotted_name.names),
+                 actions.makeModuleNameNode($d, $dotted_name.names),
+                 actions.makeAliases($i2.atypes), actions.makeLevel($d));
+         }
         )
     ;
 
@@ -987,8 +1046,16 @@ dotted_name
 
 //global_stmt: 'global' NAME (',' NAME)*
 global_stmt
+@init {
+    stmt stype = null;
+}
+@after {
+   $global_stmt.tree = stype;
+}
     : GLOBAL n+=NAME (COMMA n+=NAME)*
-   -> ^(GLOBAL<Global>[$GLOBAL, actions.makeNames($n), actions.makeNameNodes($n)])
+      {
+          stype = new Global($GLOBAL, actions.makeNames($n), actions.makeNameNodes($n));
+      }
     ;
 
 //exec_stmt: 'exec' expr ['in' test [',' test]]
@@ -1134,7 +1201,7 @@ try_stmt
       )
       ;
 
-//with_stmt: 'with' test [ with_var ] ':' suite
+//with_stmt: 'with' with_item (',' with_item)*  ':' suite
 with_stmt
 @init {
     stmt stype = null;
@@ -1142,24 +1209,33 @@ with_stmt
 @after {
    $with_stmt.tree = stype;
 }
-    : WITH test[expr_contextType.Load] (with_var)? COLON suite[false]
+    : WITH w+=with_item (options {greedy=true;}:COMMA w+=with_item)* COLON suite[false]
       {
-          stype = new With($WITH, actions.castExpr($test.tree), $with_var.etype,
-              actions.castStmts($suite.stypes));
+          stype = actions.makeWith($WITH, $w, $suite.stypes);
       }
     ;
 
-//with_var: ('as' | NAME) expr
-with_var
-    returns [expr etype]
-    : (AS | NAME) expr[expr_contextType.Store]
+//with_item: test ['as' expr]
+with_item
+@init {
+    stmt stype = null;
+}
+@after {
+   $with_item.tree = stype;
+}
+    : test[expr_contextType.Load] (AS expr[expr_contextType.Store])?
       {
-          $etype = actions.castExpr($expr.tree);
-          actions.checkAssign($etype);
+          expr item = actions.castExpr($test.tree);
+          expr var = null;
+          if ($expr.start != null) {
+              var = actions.castExpr($expr.tree);
+              actions.checkAssign(var);
+          }
+          stype = new With($test.start, item, var, null);
       }
     ;
 
-//except_clause: 'except' [test [',' test]]
+//except_clause: 'except' [test [('as' | ',') test]]
 except_clause
 @init {
     excepthandler extype = null;
@@ -1167,7 +1243,7 @@ except_clause
 @after {
    $except_clause.tree = extype;
 }
-    : EXCEPT (t1=test[expr_contextType.Load] (COMMA t2=test[expr_contextType.Store])?)? COLON suite[!$suite.isEmpty() && $suite::continueIllegal]
+    : EXCEPT (t1=test[expr_contextType.Load] ((COMMA | AS) t2=test[expr_contextType.Store])?)? COLON suite[!$suite.isEmpty() && $suite::continueIllegal]
       {
           extype = new ExceptHandler($EXCEPT, actions.castExpr($t1.tree), actions.castExpr($t2.tree),
               actions.castStmts($suite.stypes));
@@ -1631,7 +1707,7 @@ power
 
 //atom: ('(' [yield_expr|testlist_gexp] ')' |
 //       '[' [listmaker] ']' |
-//       '{' [dictmaker] '}' |
+//       '{' [dictorsetmaker] '}' |
 //       '`' testlist1 '`' |
 //       NAME | NUMBER | STRING+)
 atom
@@ -1670,11 +1746,8 @@ atom
       )
       RBRACK
     | LCURLY
-       (dictmaker
-        {
-            etype = new Dict($LCURLY, actions.castExprs($dictmaker.keys),
-              actions.castExprs($dictmaker.values));
-        }
+       (dictorsetmaker[$LCURLY]
+      -> dictorsetmaker
        |
         {
             etype = new Dict($LCURLY, new ArrayList<expr>(), new ArrayList<expr>());
@@ -1685,9 +1758,9 @@ atom
        {
            etype = new Repr($lb, actions.castExpr($testlist.tree));
        }
-     | NAME
+     | name_or_print
        {
-           etype = new Name($NAME, $NAME.text, $expr::ctype);
+           etype = new Name($name_or_print.start, $name_or_print.text, $expr::ctype);
        }
      | INT
        {
@@ -1707,7 +1780,7 @@ atom
        }
      | (S+=STRING)+
        {
-           etype = new Str(actions.extractStringToken($S), actions.extractStrings($S, encoding));
+           etype = new Str(actions.extractStringToken($S), actions.extractStrings($S, encoding, unicodeLiterals));
        }
      ;
 
@@ -1734,7 +1807,7 @@ listmaker[Token lbrack]
         ) (COMMA)?
     ;
 
-//testlist_gexp: test ( gen_for | (',' test)* [','] )
+//testlist_gexp: test ( comp_for | (',' test)* [','] )
 testlist_gexp
 @init {
     expr etype = null;
@@ -1752,7 +1825,7 @@ testlist_gexp
                etype = new Tuple($testlist_gexp.start, actions.castExprs($t), $expr::ctype);
            }
         | -> test
-        | (gen_for[gens]
+        | (comp_for[gens]
            {
                Collections.reverse(gens);
                List<comprehension> c = gens;
@@ -1917,16 +1990,51 @@ testlist[expr_contextType ctype]
     | test[ctype]
     ;
 
+//dictorsetmaker: ( (test ':' test (comp_for | (',' test ':' test)* [','])) |
+//                  (test (comp_for | (',' test)* [','])) )
+
 //dictmaker: test ':' test (',' test ':' test)* [',']
-dictmaker
-    returns [List keys, List values]
-    : k+=test[expr_contextType.Load] COLON v+=test[expr_contextType.Load]
-        (options {k=2;}:COMMA k+=test[expr_contextType.Load] COLON v+=test[expr_contextType.Load])*
-        (COMMA)?
-      {
-          $keys = $k;
-          $values= $v;
-      }
+dictorsetmaker[Token lcurly]
+@init {
+    List gens = new ArrayList();
+    expr etype = null;
+}
+@after {
+    if (etype != null) {
+        $dictorsetmaker.tree = etype;
+    }
+}
+    : k+=test[expr_contextType.Load]
+         (
+             (COLON v+=test[expr_contextType.Load]
+               ( comp_for[gens]
+                 {
+                     Collections.reverse(gens);
+                     List<comprehension> c = gens;
+                     etype = new DictComp($dictorsetmaker.start, actions.castExpr($k.get(0)), actions.castExpr($v.get(0)), c);
+                 }
+               | (options {k=2;}:COMMA k+=test[expr_contextType.Load] COLON v+=test[expr_contextType.Load])*
+                 {
+                     etype = new Dict($lcurly, actions.castExprs($k), actions.castExprs($v));
+                 }
+               )
+             |(COMMA k+=test[expr_contextType.Load])*
+              {
+                  etype = new Set($lcurly, actions.castExprs($k));
+              }
+             )
+             (COMMA)?
+         | comp_for[gens]
+           {
+               Collections.reverse(gens);
+               List<comprehension> c = gens;
+               expr e = actions.castExpr($k.get(0));
+               if (e instanceof Context) {
+                   ((Context)e).setContext(expr_contextType.Load);
+               }
+               etype = new SetComp($lcurly, actions.castExpr($k.get(0)), c);
+           }
+         )
     ;
 
 //classdef: 'class' NAME ['(' [testlist] ')'] ':' suite
@@ -1950,7 +2058,9 @@ classdef
       }
     ;
 
-//arglist: (argument ',')* (argument [',']| '*' test [',' '**' test] | '**' test)
+//arglist: (argument ',')* (argument [',']
+//                         |'*' test (',' argument)* [',' '**' test]
+//                         |'**' test)
 arglist
     returns [List args, List keywords, expr starargs, expr kwargs]
 @init {
@@ -1958,9 +2068,9 @@ arglist
     List kws = new ArrayList();
     List gens = new ArrayList();
 }
-    : argument[arguments, kws, gens, true] (COMMA argument[arguments, kws, gens, false])*
+    : argument[arguments, kws, gens, true, false] (COMMA argument[arguments, kws, gens, false, false])*
           (COMMA
-              ( STAR s=test[expr_contextType.Load] (COMMA DOUBLESTAR k=test[expr_contextType.Load])?
+              ( STAR s=test[expr_contextType.Load] (COMMA argument[arguments, kws, gens, false, true])* (COMMA DOUBLESTAR k=test[expr_contextType.Load])?
               | DOUBLESTAR k=test[expr_contextType.Load]
               )?
           )?
@@ -1973,9 +2083,10 @@ arglist
           $starargs=actions.castExpr($s.tree);
           $kwargs=actions.castExpr($k.tree);
       }
-    | STAR s=test[expr_contextType.Load] (COMMA DOUBLESTAR k=test[expr_contextType.Load])?
+    | STAR s=test[expr_contextType.Load] (COMMA argument[arguments, kws, gens, false, true])* (COMMA DOUBLESTAR k=test[expr_contextType.Load])?
       {
           $starargs=actions.castExpr($s.tree);
+          $keywords=kws;
           $kwargs=actions.castExpr($k.tree);
       }
     | DOUBLESTAR k=test[expr_contextType.Load]
@@ -1984,21 +2095,32 @@ arglist
       }
     ;
 
-//argument: test [gen_for] | test '=' test  # Really [keyword '='] test
+//argument: test [comp_for] | test '=' test  # Really [keyword '='] test
 argument
-    [List arguments, List kws, List gens, boolean first] returns [boolean genarg]
+    [List arguments, List kws, List gens, boolean first, boolean afterStar] returns [boolean genarg]
     : t1=test[expr_contextType.Load]
         ((ASSIGN t2=test[expr_contextType.Load])
           {
+              expr newkey = actions.castExpr($t1.tree);
+              //Loop through all current keys and fail on duplicate.
+              for(Object o: $kws) {
+                  List list = (List)o;
+                  Object oldkey = list.get(0);
+                  if (oldkey instanceof Name && newkey instanceof Name) {
+                      if (((Name)oldkey).getId().equals(((Name)newkey).getId())) {
+                          errorHandler.error("keyword arguments repeated", $t1.tree);
+                      }
+                  }
+              }
               List<expr> exprs = new ArrayList<expr>();
-              exprs.add(actions.castExpr($t1.tree));
+              exprs.add(newkey);
               exprs.add(actions.castExpr($t2.tree));
               $kws.add(exprs);
           }
-        | gen_for[$gens]
+        | comp_for[$gens]
           {
               if (!first) {
-                  actions.errorGenExpNotSoleArg($gen_for.tree);
+                  actions.errorGenExpNotSoleArg($comp_for.tree);
               }
               $genarg = true;
               Collections.reverse($gens);
@@ -2009,6 +2131,8 @@ argument
           {
               if (kws.size() > 0) {
                   errorHandler.error("non-keyword arg after keyword arg", $t1.tree);
+              } else if (afterStar) {
+                  errorHandler.error("only named arguments may follow *expression", $t1.tree);
               }
               $arguments.add($t1.tree);
           }
@@ -2041,27 +2165,27 @@ list_if[List gens, List ifs]
       }
     ;
 
-//gen_iter: gen_for | gen_if
-gen_iter [List gens, List ifs]
-    : gen_for[gens]
-    | gen_if[gens, ifs]
+//comp_iter: comp_for | comp_if
+comp_iter [List gens, List ifs]
+    : comp_for[gens]
+    | comp_if[gens, ifs]
     ;
 
-//gen_for: 'for' exprlist 'in' or_test [gen_iter]
-gen_for [List gens]
+//comp_for: 'for' exprlist 'in' or_test [comp_iter]
+comp_for [List gens]
 @init {
     List ifs = new ArrayList();
 }
-    : FOR exprlist[expr_contextType.Store] IN or_test[expr_contextType.Load] gen_iter[gens, ifs]?
+    : FOR exprlist[expr_contextType.Store] IN or_test[expr_contextType.Load] comp_iter[gens, ifs]?
       {
           Collections.reverse(ifs);
           gens.add(new comprehension($FOR, $exprlist.etype, actions.castExpr($or_test.tree), ifs));
       }
     ;
 
-//gen_if: 'if' old_test [gen_iter]
-gen_if[List gens, List ifs]
-    : IF test[expr_contextType.Load] gen_iter[gens, ifs]?
+//comp_if: 'if' old_test [comp_iter]
+comp_if[List gens, List ifs]
+    : IF test[expr_contextType.Load] comp_iter[gens, ifs]?
       {
         ifs.add(actions.castExpr($test.tree));
       }
@@ -2080,6 +2204,7 @@ yield_expr
       }
     ;
 
+//START OF LEXER RULES
 AS        : 'as' ;
 ASSERT    : 'assert' ;
 BREAK     : 'break' ;
@@ -2223,9 +2348,13 @@ Exponent
 INT :   // Hex
         '0' ('x' | 'X') ( '0' .. '9' | 'a' .. 'f' | 'A' .. 'F' )+
     |   // Octal
-        '0'  ( '0' .. '7' )*
-    |   '1'..'9' DIGITS*
-    ;
+        '0' ('o' | 'O') ( '0' .. '7' )*
+    |   '0'  ( '0' .. '7' )*
+    |   // Binary
+        '0' ('b' | 'B') ( '0' .. '1' )*
+    |   // Decimal
+        '1'..'9' DIGITS*
+;
 
 COMPLEX
     :   DIGITS+ ('j'|'J')
@@ -2243,7 +2372,7 @@ NAME:    ( 'a' .. 'z' | 'A' .. 'Z' | '_')
  *  should make us exit loop not continue.
  */
 STRING
-    :   ('r'|'u'|'ur'|'R'|'U'|'UR'|'uR'|'Ur')?
+    :   ('r'|'u'|'b'|'ur'|'br'|'R'|'U'|'B'|'UR'|'BR'|'uR'|'Ur'|'Br'|'bR')?
         (   '\'\'\'' (options {greedy=false;}:TRIAPOS)* '\'\'\''
         |   '"""' (options {greedy=false;}:TRIQUOTE)* '"""'
         |   '"' (ESC|~('\\'|'\n'|'"'))* '"'
