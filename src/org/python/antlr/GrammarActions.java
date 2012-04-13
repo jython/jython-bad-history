@@ -23,6 +23,7 @@ import org.python.antlr.ast.Attribute;
 import org.python.antlr.ast.BinOp;
 import org.python.antlr.ast.BoolOp;
 import org.python.antlr.ast.Call;
+import org.python.antlr.ast.DictComp;
 import org.python.antlr.ast.ExtSlice;
 import org.python.antlr.ast.For;
 import org.python.antlr.ast.FunctionDef;
@@ -38,9 +39,11 @@ import org.python.antlr.ast.TryExcept;
 import org.python.antlr.ast.TryFinally;
 import org.python.antlr.ast.Tuple;
 import org.python.antlr.ast.Repr;
+import org.python.antlr.ast.SetComp;
 import org.python.antlr.ast.Str;
 import org.python.antlr.ast.UnaryOp;
 import org.python.antlr.ast.While;
+import org.python.antlr.ast.With;
 import org.python.antlr.ast.Yield;
 import org.python.antlr.base.excepthandler;
 import org.python.antlr.base.expr;
@@ -240,6 +243,20 @@ public class GrammarActions {
         return new While(t, test, b, o);
     }
 
+    stmt makeWith(Token t, List<With> items, List<stmt> body) {
+        int last = items.size() - 1;
+        With result = null;
+        for (int i = last; i>=0; i--) {
+            With current = items.get(i);
+            if (i != last) {
+                body = new ArrayList<stmt>();
+                body.add(result);
+            }
+            result = new With(current.getToken(), current.getInternalContext_expr(), current.getInternalOptional_vars(), body);
+        }
+        return result;
+    }
+
     stmt makeFor(Token t, expr target, expr iter, List body, List orelse) {
         if (target == null || iter == null) {
             return errorHandler.errorStmt(new PythonTree(t));
@@ -315,7 +332,16 @@ public class GrammarActions {
         } else if (tree instanceof ListComp) {
             ListComp lc = (ListComp)tree;
             recurseSetContext(lc.getInternalElt(), context);
-        } else if (!(tree instanceof ListComp)) {
+        } else if (tree instanceof SetComp) {
+            SetComp sc = (SetComp)tree;
+            recurseSetContext(sc.getInternalElt(), context);
+        } else if (tree instanceof DictComp) {
+            DictComp dc = (DictComp)tree;
+            recurseSetContext(dc.getInternalKey(), context);
+            recurseSetContext(dc.getInternalValue(), context);
+        } else if (!(tree instanceof ListComp) &&
+                  (!(tree instanceof DictComp)) &&
+                  (!(tree instanceof SetComp))) {
             for (int i=0; i<tree.getChildCount(); i++) {
                 recurseSetContext(tree.getChild(i), context);
             }
@@ -347,20 +373,22 @@ public class GrammarActions {
     }
 
     List<keyword> makeKeywords(List args) {
-        List<keyword> k = new ArrayList<keyword>();
+        List<keyword> keywords = new ArrayList<keyword>();
         if (args != null) {
-            for(int i=0;i<args.size();i++) {
-                List e = (List)args.get(i);
-                checkAssign(castExpr(e.get(0)));
-                if (e.get(0) instanceof Name) {
-                    Name arg = (Name)e.get(0);
-                    k.add(new keyword(arg, arg.getInternalId(), castExpr(e.get(1))));
+            for (Object o : args) {
+                List e = (List)o;
+                Object k = e.get(0);
+                Object v = e.get(1);
+                checkAssign(castExpr(k));
+                if (k instanceof Name) {
+                    Name arg = (Name)k;
+                    keywords.add(new keyword(arg, arg.getInternalId(), castExpr(v)));
                 } else {
-                    errorHandler.error("keyword must be a name", (PythonTree)e.get(0));
+                    errorHandler.error("keyword must be a name", (PythonTree)k);
                 }
             }
         }
-        return k;
+        return keywords;
     }
 
     Object makeFloat(Token t) {
@@ -373,11 +401,20 @@ public class GrammarActions {
         return Py.newImaginary(Double.valueOf(s));
     }
 
+    //XXX: needs to handle NumberFormatException (on input like 0b2) and needs
+    //     a better long guard than ndigits > 11 (this is much to short for
+    //     binary for example)
     Object makeInt(Token t) {
         String s = t.getText();
         int radix = 10;
         if (s.startsWith("0x") || s.startsWith("0X")) {
             radix = 16;
+            s = s.substring(2, s.length());
+        } else if (s.startsWith("0o") || s.startsWith("0O")) {
+            radix = 8;
+            s = s.substring(2, s.length());
+        } else if (s.startsWith("0b") || s.startsWith("0B")) {
+            radix = 2;
             s = s.substring(2, s.length());
         } else if (s.startsWith("0")) {
             radix = 8;
@@ -418,14 +455,14 @@ public class GrammarActions {
         }
     }
 
-    PyString extractStrings(List s, String encoding) {
+    PyString extractStrings(List s, String encoding, boolean unicodeLiterals) {
         boolean ustring = false;
         Token last = null;
         StringBuffer sb = new StringBuffer();
         Iterator iter = s.iterator();
         while (iter.hasNext()) {
             last = (Token)iter.next();
-            StringPair sp = extractString(last, encoding);
+            StringPair sp = extractString(last, encoding, unicodeLiterals);
             if (sp.isUnicode()) {
                 ustring = true;
             }
@@ -437,15 +474,21 @@ public class GrammarActions {
         return new PyString(sb.toString());
     }
 
-    StringPair extractString(Token t, String encoding) {
+    StringPair extractString(Token t, String encoding, boolean unicodeLiterals) {
         String string = t.getText();
         char quoteChar = string.charAt(0);
         int start = 0;
         int end;
-        boolean ustring = false;
+        boolean ustring = unicodeLiterals;
 
         if (quoteChar == 'u' || quoteChar == 'U') {
             ustring = true;
+            start++;
+        }
+        if (quoteChar == 'b' || quoteChar == 'B') {
+            // In 2.x this is just a str, and the parser prevents a 'u' and a
+            // 'b' in the same identifier, so just advance start.
+            ustring = false;
             start++;
         }
         quoteChar = string.charAt(start);
