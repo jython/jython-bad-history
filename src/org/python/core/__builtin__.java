@@ -9,11 +9,14 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
 import org.python.antlr.base.mod;
 import org.python.core.util.RelativeFile;
+
+import org.python.modules._functools._functools;
 
 class BuiltinFunctions extends PyBuiltinFunctionSet {
 
@@ -101,17 +104,7 @@ class BuiltinFunctions extends PyBuiltinFunctionSet {
             case 34:
                 return Py.newString(__builtin__.raw_input(arg1));
             case 36:
-                Object o = arg1.__tojava__(PyModule.class);
-                if (o == Py.NoConversion) {
-                    if (arg1 instanceof PySystemState) {
-                        return __builtin__.reload((PySystemState)arg1);
-                    } else if(arg1 instanceof PyJavaType) {
-                        // This has always been a no-op.  Should be disabled in py3k.
-                        return arg1;
-                    }
-                    throw Py.TypeError("reload() argument must be a module");
-                }
-                return __builtin__.reload((PyModule) o);
+                return __builtin__.reload(arg1);
             case 37:
                 return __builtin__.repr(arg1);
             case 41:
@@ -167,7 +160,7 @@ class BuiltinFunctions extends PyBuiltinFunctionSet {
             case 33:
                 return __builtin__.pow(arg1, arg2);
             case 35:
-                return __builtin__.reduce(arg1, arg2);
+                return _functools.reduce(arg1, arg2);
             case 29:
                 return fancyCall(new PyObject[] {arg1, arg2});
             case 30:
@@ -209,7 +202,7 @@ class BuiltinFunctions extends PyBuiltinFunctionSet {
             case 33:
                 return __builtin__.pow(arg1, arg2, arg3);
             case 35:
-                return __builtin__.reduce(arg1, arg2, arg3);
+                return _functools.reduce(arg1, arg2, arg3);
             case 39:
                 __builtin__.setattr(arg1, arg2, arg3);
                 return Py.None;
@@ -302,6 +295,9 @@ public class __builtin__ {
         dict.__setitem__("Ellipsis", Py.Ellipsis);
         dict.__setitem__("True", Py.True);
         dict.__setitem__("False", Py.False);
+        dict.__setitem__("bytes", PyString.TYPE);
+        dict.__setitem__("bytearray", PyByteArray.TYPE);
+        dict.__setitem__("memoryview", PyMemoryView.TYPE);
 
         // Work in debug mode by default
         // Hopefully add -O option in the future to change this
@@ -356,6 +352,9 @@ public class __builtin__ {
         dict.__setitem__("sorted", new SortedFunction());
         dict.__setitem__("all", new AllFunction());
         dict.__setitem__("any", new AnyFunction());
+        dict.__setitem__("format", new FormatFunction());
+        dict.__setitem__("print", new PrintFunction());
+        dict.__setitem__("next", new NextFunction());
     }
 
     public static PyObject abs(PyObject o) {
@@ -898,18 +897,9 @@ public class __builtin__ {
      * Handle range() when PyLong arguments (that OverFlow ints) are given.
      */
     private static PyObject handleRangeLongs(PyObject ilow, PyObject ihigh, PyObject istep) {
-        if (!(ilow instanceof PyInteger) && !(ilow instanceof PyLong)) {
-            throw Py.TypeError(String.format("range() integer start argument expected, got %s.",
-                                             ilow.getType().fastGetName()));
-        }
-        if (!(ihigh instanceof PyInteger) && !(ihigh instanceof PyLong)) {
-            throw Py.TypeError(String.format("range() integer end argument expected, got %s.",
-                                             ihigh.getType().fastGetName()));
-        }
-        if (!(istep instanceof PyInteger) && !(istep instanceof PyLong)) {
-            throw Py.TypeError(String.format("range() integer step argument expected, got %s.",
-                                             istep.getType().fastGetName()));
-        }
+        ilow = getRangeLongArgument(ilow, "start");
+        ihigh = getRangeLongArgument(ihigh, "end");
+        istep = getRangeLongArgument(istep, "step");
 
         int n;
         int cmpResult = istep._cmp(Py.Zero);
@@ -956,6 +946,30 @@ public class __builtin__ {
         } catch (PyException pye) {
             return -1;
         }
+    }
+
+    /**
+     * Helper function for handleRangeLongs. If arg is int or long object, returns it.  If
+     * arg is float, raises type error. As a last resort, creates a new int by calling arg
+     * type's __int__ method if it is defined.
+     */
+    private static PyObject getRangeLongArgument(PyObject arg, String name) {
+        if (arg instanceof PyInteger || arg instanceof PyLong) {
+            return arg;
+        }
+
+        // isNumberType is roughly arg.__findattr__("__int__") != null. Equiv. to
+        // CPython's type.nb_init != null
+        if (arg instanceof PyFloat || !arg.isNumberType()) {
+            throw Py.TypeError(String.format("range() integer %s argument expected, got %s.",
+                                             name, arg.getType().fastGetName()));
+        }
+
+        PyObject intObj = arg.__int__();
+        if (intObj instanceof PyInteger || intObj instanceof PyLong) {
+            return intObj;
+        }
+        throw Py.TypeError("__int__ should return int object");
     }
 
     private static PyString readline(PyObject file) {
@@ -1018,6 +1032,20 @@ public class __builtin__ {
 
     public static PyObject reduce(PyObject f, PyObject l) {
         return reduce(f, l, null);
+    }
+
+    public static PyObject reload(PyObject o) {
+        Object module = o.__tojava__(PyModule.class);
+        if (module == Py.NoConversion) {
+            if (o instanceof PySystemState) {
+                return __builtin__.reload((PySystemState)o);
+            } else if(o instanceof PyJavaType) {
+                // This has always been a no-op.  Should be disabled in py3k.
+                return o;
+            }
+            throw Py.TypeError("reload() argument must be a module");
+        }
+        return __builtin__.reload((PyModule) module);
     }
 
     public static PyObject reload(PyModule o) {
@@ -1301,6 +1329,99 @@ class AnyFunction extends PyBuiltinFunctionNarrow {
     }
 }
 
+class FormatFunction extends PyBuiltinFunctionNarrow {
+    FormatFunction() {
+        super("format", 1, 2,
+              "format(value[, format_spec]) -> string\n\n" +
+              "Returns value.__format__(format_spec)\n" +
+               "format_spec defaults to \"\"");
+    }
+
+    @Override
+    public PyObject __call__(PyObject arg1) {
+        return __call__(arg1, Py.EmptyString);
+    }
+
+    @Override
+    public PyObject __call__(PyObject arg1, PyObject arg2) {
+        return arg1.__format__(arg2);
+    }
+}
+
+class PrintFunction extends PyBuiltinFunction {
+    PrintFunction() {
+
+        super("print",
+              "print(value, ..., sep=' ', end='\\n', file=sys.stdout)\n\n" +
+              "Prints the values to a stream, or to sys.stdout by default.\n" +
+              "Optional keyword arguments:\n" +
+              "file: a file-like object (stream); defaults to the current sys.stdout.\n" +
+              "sep:  string inserted between values, default a space.\n" +
+              "end:  string appended after the last value, default a newline.\n");
+    }
+
+    @Override
+    public PyObject __call__(PyObject args[], String kwds[]) {
+        int kwlen = kwds.length;
+        int argslen = args.length;
+        boolean useUnicode = false;
+        PyObject values[] = new PyObject[argslen - kwlen];
+        System.arraycopy(args, 0, values, 0, argslen - kwlen);
+        PyObject keyValues[] = new PyObject[kwlen];
+        System.arraycopy(args, argslen - kwlen, keyValues, 0, kwlen);
+        ArgParser ap = new ArgParser("print", keyValues, kwds, new String[] {"sep", "end", "file"});
+        for (PyObject keyValue: keyValues) {
+            if (keyValue instanceof PyUnicode) {
+                //If "file" is passed in as PyUnicode, that's OK as it will error later.
+                useUnicode = true;
+            }
+        }
+        String sep = ap.getString(0, null);
+        String end = ap.getString(1, null);
+        PyObject file = ap.getPyObject(2, null);
+        return print(values, sep, end, file, useUnicode);
+    }
+
+    private static PyObject print(PyObject values[], String sep, String end,
+                                  PyObject file, boolean useUnicode) {
+        StdoutWrapper out;
+        if (file != null && file != Py.None) {
+            out = new FixedFileWrapper(file);
+        } else {
+            out = Py.stdout;
+        }
+        if (values.length == 0) {
+            out.println(useUnicode);
+        } else {
+            if (!useUnicode) {
+                for (PyObject value: values) {
+                    if (value instanceof PyUnicode) {
+                        useUnicode = true;
+                        break;
+                    }
+                }
+            }
+
+            PyObject sepObject;
+            if (sep == null) {
+                sepObject = useUnicode ? Py.UnicodeSpace : Py.Space;
+            } else {
+                sepObject = useUnicode ? Py.newUnicode(sep) : Py.newString(sep);
+            }
+
+            PyObject endObject;
+            if (end == null) {
+                endObject = useUnicode ? Py.UnicodeNewline : Py.Newline;
+            } else {
+                endObject = useUnicode ? Py.newUnicode(end) : Py.newString(end);
+            }
+
+            out.print(values, sepObject, endObject); 
+        }
+        return Py.None;
+    }
+}
+
 class MaxFunction extends PyBuiltinFunction {
     MaxFunction() {
         super("max",
@@ -1562,5 +1683,36 @@ class OpenFunction extends PyBuiltinFunction {
             }
         }
         return PyFile.TYPE.__call__(args, kwds);
+    }
+}
+
+class NextFunction extends PyBuiltinFunction {
+    NextFunction() {
+        super("next", "next(iterator[, default])\n\n"
+              + "Return the next item from the iterator. If default is given and the iterator\n"
+              + "is exhausted, it is returned instead of raising StopIteration.");
+    }
+
+    @Override
+    public PyObject __call__(PyObject args[], String kwds[]) {
+        ArgParser ap = new ArgParser("next", args, kwds, new String[] {"iterator", "default"}, 1);
+        ap.noKeywords();
+        PyObject it = ap.getPyObject(0);
+        PyObject def = ap.getPyObject(1, null);
+
+        PyObject next;
+        if ((next = it.__findattr__("next")) == null) {
+            throw Py.TypeError(String.format("'%.200s' object is not an iterator",
+                                             it.getType().fastGetName()));
+        }
+
+        try {
+            return next.__call__();
+        } catch (PyException pye) {
+            if (!pye.match(Py.StopIteration) || def == null) {
+                throw pye;
+            }
+        }
+        return def;
     }
 }

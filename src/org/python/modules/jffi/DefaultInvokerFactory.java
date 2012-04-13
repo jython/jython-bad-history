@@ -38,67 +38,83 @@ class DefaultInvokerFactory {
 
         return createInvoker(function, returnType, marshallers);
     }
+
+    final Invoker createInvoker(com.kenai.jffi.Function function, NativeType[] parameterTypes, NativeType returnType) {
+        ParameterMarshaller[] marshallers = new ParameterMarshaller[parameterTypes.length];
+
+        for (int i = 0; i < marshallers.length; ++i) {
+            marshallers[i] = getMarshaller(parameterTypes[i]);
+        }
+
+        return createInvoker(function, returnType, marshallers);
+    }
+
     final Invoker createInvoker(com.kenai.jffi.Function function, PyObject returnType, ParameterMarshaller[] marshallers) {
         CType cReturnType = CType.typeOf(returnType);
         if (cReturnType instanceof CType.Builtin) {
-            switch (cReturnType.getNativeType()) {
-                case VOID:
-                    return new VoidInvoker(function, marshallers);
-
-                case BYTE:
-                    return new Signed8Invoker(function, marshallers);
-
-                case UBYTE:
-                    return new Unsigned8Invoker(function, marshallers);
-
-                case SHORT:
-                    return new Signed16Invoker(function, marshallers);
-
-                case USHORT:
-                    return new Unsigned16Invoker(function, marshallers);
-
-                case INT:
-                    return new Signed32Invoker(function, marshallers);
-
-                case UINT:
-                    return new Unsigned32Invoker(function, marshallers);
-
-                case LONGLONG:
-                    return new Signed64Invoker(function, marshallers);
-
-                case ULONGLONG:
-                    return new Unsigned64Invoker(function, marshallers);
-
-                case LONG:
-                    return Platform.getPlatform().longSize() == 32
-                            ? new Signed32Invoker(function, marshallers)
-                            : new Signed64Invoker(function, marshallers);
-
-                case ULONG:
-                    return Platform.getPlatform().longSize() == 32
-                            ? new Unsigned32Invoker(function, marshallers)
-                            : new Unsigned64Invoker(function, marshallers);
-                case FLOAT:
-                    return new FloatInvoker(function, marshallers);
-
-                case DOUBLE:
-                    return new DoubleInvoker(function, marshallers);
-
-                case POINTER:
-                    return new PointerInvoker(function, marshallers);
-
-                case STRING:
-                    return new StringInvoker(function, marshallers);
-
-                default:
-                    break;
-            }
+            return createInvoker(function, cReturnType.getNativeType(), marshallers);
         }
+
         throw Py.RuntimeError("Unsupported return type: " + returnType);
-        
     }
 
-    private static final ParameterMarshaller getMarshaller(NativeType type) {
+    final Invoker createInvoker(com.kenai.jffi.Function function, NativeType returnType, ParameterMarshaller[] marshallers) {
+        switch (returnType) {
+            case VOID:
+                return new VoidInvoker(function, marshallers);
+
+            case BYTE:
+                return new Signed8Invoker(function, marshallers);
+
+            case UBYTE:
+                return new Unsigned8Invoker(function, marshallers);
+
+            case SHORT:
+                return new Signed16Invoker(function, marshallers);
+
+            case USHORT:
+                return new Unsigned16Invoker(function, marshallers);
+
+            case INT:
+                return new Signed32Invoker(function, marshallers);
+
+            case UINT:
+                return new Unsigned32Invoker(function, marshallers);
+
+            case LONGLONG:
+                return new Signed64Invoker(function, marshallers);
+
+            case ULONGLONG:
+                return new Unsigned64Invoker(function, marshallers);
+
+            case LONG:
+                return Platform.getPlatform().longSize() == 32
+                        ? new Signed32Invoker(function, marshallers)
+                        : new Signed64Invoker(function, marshallers);
+
+            case ULONG:
+                return Platform.getPlatform().longSize() == 32
+                        ? new Unsigned32Invoker(function, marshallers)
+                        : new Unsigned64Invoker(function, marshallers);
+            case FLOAT:
+                return new FloatInvoker(function, marshallers);
+
+            case DOUBLE:
+                return new DoubleInvoker(function, marshallers);
+
+            case POINTER:
+                return new PointerInvoker(function, marshallers);
+
+            case STRING:
+                return new StringInvoker(function, marshallers);
+
+            default:
+                break;
+        }
+        throw Py.RuntimeError("Unsupported return type: " + returnType);
+    }
+
+    static final ParameterMarshaller getMarshaller(NativeType type) {
         switch (type) {
 
             case BYTE:
@@ -144,7 +160,7 @@ class DefaultInvokerFactory {
         }
     }
 
-    private static final ParameterMarshaller getMarshaller(CType type) {
+    static final ParameterMarshaller getMarshaller(CType type) {
         if (type instanceof CType.Builtin) {
             return getMarshaller(type.getNativeType());
         } else if (type instanceof CType.Pointer) {
@@ -154,15 +170,15 @@ class DefaultInvokerFactory {
         }
     }
 
-    private static final ParameterMarshaller getMarshaller(PyObject type) {
+    static final ParameterMarshaller getMarshaller(PyObject type) {
         return getMarshaller(CType.typeOf(type));
     }
 
-    private static interface ParameterMarshaller {
+    static interface ParameterMarshaller {
         void marshal(HeapInvocationBuffer buffer, PyObject arg);
     }
 
-    private static abstract class BaseInvoker implements Invoker {
+    private static abstract class BaseInvoker extends Invoker {
         final Function jffiFunction;
         final com.kenai.jffi.Invoker jffiInvoker = com.kenai.jffi.Invoker.getInstance();
         final ParameterMarshaller[] marshallers;
@@ -199,6 +215,18 @@ class DefaultInvokerFactory {
 
         public final PyObject invoke(PyObject arg0, PyObject arg1, PyObject arg2) {
             return invoke(new PyObject[] { arg0, arg1, arg2 });
+        }
+
+        public final PyObject invoke(PyObject arg0, PyObject arg1, PyObject arg2, PyObject arg3) {
+            return invoke(new PyObject[] { arg0, arg1, arg2, arg3 });
+        }
+
+        public final PyObject invoke(PyObject arg0, PyObject arg1, PyObject arg2, PyObject arg3, PyObject arg4) {
+            return invoke(new PyObject[] { arg0, arg1, arg2, arg3, arg4 });
+        }
+
+        public final PyObject invoke(PyObject arg0, PyObject arg1, PyObject arg2, PyObject arg3, PyObject arg4, PyObject arg5) {
+            return invoke(new PyObject[] { arg0, arg1, arg2, arg3, arg4, arg5 });
         }
 
         final void checkArity(PyObject[] args) {
@@ -254,7 +282,7 @@ class DefaultInvokerFactory {
         }
 
         public final PyObject invoke(PyObject[] args) {
-            return Util.newSigned16(jffiInvoker.invokeInt(jffiFunction, convertArguments(args)));
+            return JITRuntime.newSigned16(jffiInvoker.invokeInt(jffiFunction, convertArguments(args)));
         }
     }
 
@@ -265,7 +293,7 @@ class DefaultInvokerFactory {
         }
 
         public final PyObject invoke(PyObject[] args) {
-            return Util.newUnsigned16(jffiInvoker.invokeInt(jffiFunction, convertArguments(args)));
+            return JITRuntime.newUnsigned16(jffiInvoker.invokeInt(jffiFunction, convertArguments(args)));
         }
     }
 
@@ -276,7 +304,7 @@ class DefaultInvokerFactory {
         }
 
         public final PyObject invoke(PyObject[] args) {
-            return Util.newSigned32(jffiInvoker.invokeInt(jffiFunction, convertArguments(args)));
+            return JITRuntime.newSigned32(jffiInvoker.invokeInt(jffiFunction, convertArguments(args)));
         }
     }
 
@@ -287,7 +315,7 @@ class DefaultInvokerFactory {
         }
 
         public final PyObject invoke(PyObject[] args) {
-            return Util.newUnsigned32(jffiInvoker.invokeInt(jffiFunction, convertArguments(args)));
+            return JITRuntime.newUnsigned32(jffiInvoker.invokeInt(jffiFunction, convertArguments(args)));
         }
     }
 
@@ -298,7 +326,7 @@ class DefaultInvokerFactory {
         }
 
         public final PyObject invoke(PyObject[] args) {
-            return Util.newSigned64(jffiInvoker.invokeLong(jffiFunction, convertArguments(args)));
+            return JITRuntime.newSigned64(jffiInvoker.invokeLong(jffiFunction, convertArguments(args)));
         }
     }
 
@@ -309,7 +337,7 @@ class DefaultInvokerFactory {
         }
 
         public final PyObject invoke(PyObject[] args) {
-            return Util.newUnsigned64(jffiInvoker.invokeLong(jffiFunction, convertArguments(args)));
+            return JITRuntime.newUnsigned64(jffiInvoker.invokeLong(jffiFunction, convertArguments(args)));
         }
     }
 
@@ -353,7 +381,7 @@ class DefaultInvokerFactory {
         }
 
         public final PyObject invoke(PyObject[] args) {
-            return Util.newString(jffiInvoker.invokeAddress(jffiFunction, convertArguments(args)));
+            return JITRuntime.newString(jffiInvoker.invokeAddress(jffiFunction, convertArguments(args)));
         }
     }
     
