@@ -1,8 +1,10 @@
 /// Copyright (c) Corporation for National Research Initiatives
 package org.python.core;
 
-import java.math.BigInteger;
-
+import org.python.core.stringlib.FieldNameIterator;
+import org.python.core.stringlib.InternalFormatSpec;
+import org.python.core.stringlib.InternalFormatSpecParser;
+import org.python.core.stringlib.MarkupIterator;
 import org.python.core.util.ExtraMath;
 import org.python.core.util.StringUtil;
 import org.python.expose.ExposedMethod;
@@ -10,11 +12,15 @@ import org.python.expose.ExposedNew;
 import org.python.expose.ExposedType;
 import org.python.expose.MethodType;
 
+import java.math.BigInteger;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+
 /**
  * A builtin python string.
  */
 @ExposedType(name = "str", doc = BuiltinDocs.str_doc)
-public class PyString extends PyBaseString
+public class PyString extends PyBaseString implements MemoryViewProtocol
 {
     public static final PyType TYPE = PyType.fromClass(PyString.class);
     protected String string; // cannot make final because of Python intern support
@@ -86,7 +92,31 @@ public class PyString extends PyBaseString
         }
         return codePoints;
     }
-    
+
+    public MemoryView getMemoryView() {
+        return new MemoryView() {
+            // beginning of support
+            public String get_format() {
+                 return "B";
+            }
+            public int get_itemsize() {
+                return 2;
+            }
+            public PyTuple get_shape() {
+                return new PyTuple(Py.newInteger(getString().length()));
+            }
+            public int get_ndim() {
+                return 1;
+            }
+            public PyTuple get_strides() {
+                return new PyTuple(Py.newInteger(1));
+            }
+            public boolean get_readonly() {
+                return true;
+            }
+        };
+    }
+
     public String substring(int start, int end) {
         return getString().substring(start, end);
     }
@@ -95,6 +125,8 @@ public class PyString extends PyBaseString
     public PyString __str__() {
         return str___str__();
     }
+
+    public
 
     @ExposedMethod(doc = BuiltinDocs.str___str___doc) 
     final PyString str___str__() {
@@ -1394,19 +1426,19 @@ public class PyString extends PyBaseString
     }
 
     public int index(String sub) {
-        return str_index(sub, 0, null);
+        return str_index(sub, null, null);
     }
 
-    public int index(String sub, int start) {
+    public int index(String sub, PyObject start) {
         return str_index(sub, start, null);
     }
 
-    public int index(String sub, int start, int end) {
-        return str_index(sub, start, Py.newInteger(end));
+    public int index(String sub, PyObject start, PyObject end) {
+        return str_index(sub, start, end);
     }
 
-    @ExposedMethod(defaults = {"0", "null"}, doc = BuiltinDocs.str_index_doc)
-    final int str_index(String sub, int start, PyObject end) {
+    @ExposedMethod(defaults = {"null", "null"}, doc = BuiltinDocs.str_index_doc)
+    final int str_index(String sub, PyObject start, PyObject end) {
         int index = str_find(sub, start, end);
         if (index == -1)
             throw Py.ValueError("substring not found in string.index");
@@ -1414,19 +1446,19 @@ public class PyString extends PyBaseString
     }
 
     public int rindex(String sub) {
-        return str_rindex(sub, 0, null);
+        return str_rindex(sub, null, null);
     }
 
-    public int rindex(String sub, int start) {
+    public int rindex(String sub, PyObject start) {
         return str_rindex(sub, start, null);
     }
 
-    public int rindex(String sub, int start, int end) {
-        return str_rindex(sub, start, Py.newInteger(end));
+    public int rindex(String sub, PyObject start, PyObject end) {
+        return str_rindex(sub, start, end);
     }
 
-    @ExposedMethod(defaults = {"0", "null"}, doc = BuiltinDocs.str_rindex_doc)
-    final int str_rindex(String sub, int start, PyObject end) {
+    @ExposedMethod(defaults = {"null", "null"}, doc = BuiltinDocs.str_rindex_doc)
+    final int str_rindex(String sub, PyObject start, PyObject end) {
         int index = str_rfind(sub, start, end);
         if(index == -1)
             throw Py.ValueError("substring not found in string.rindex");
@@ -1434,23 +1466,26 @@ public class PyString extends PyBaseString
     }
 
     public int count(String sub) {
-        return str_count(sub, 0, null);
+        return str_count(sub, null, null);
     }
 
-    public int count(String sub, int start) {
+    public int count(String sub, PyObject start) {
         return str_count(sub, start, null);
     }
 
-    public int count(String sub, int start, int end) {
-        return str_count(sub, start, Py.newInteger(end));
+    public int count(String sub, PyObject start, PyObject end) {
+        return str_count(sub, start, end);
     }
     
-    @ExposedMethod(defaults = {"0", "null"}, doc = BuiltinDocs.str_count_doc)
-    final int str_count(String sub, int start, PyObject end) {
+    @ExposedMethod(defaults = {"null", "null"}, doc = BuiltinDocs.str_count_doc)
+    final int str_count(String sub, PyObject start, PyObject end) {
+        if (sub == null) {
+            throw Py.TypeError("count() takes at least 1 argument (0 given)");
+        }
         int[] indices = translateIndices(start, end);
         int n = sub.length();
         if(n == 0) {
-            if (start > getString().length()) {
+            if (indices[2] > getString().length()) {
                 return 0;
             }
             return indices[1] - indices[0] + 1;
@@ -1468,44 +1503,44 @@ public class PyString extends PyBaseString
     }
 
     public int find(String sub) {
-        return str_find(sub, 0, null);
+        return str_find(sub, null, null);
     }
 
-    public int find(String sub, int start) {
+    public int find(String sub, PyObject start) {
         return str_find(sub, start, null);
     }
 
-    public int find(String sub, int start, int end) {
-        return str_find(sub, start, Py.newInteger(end));
+    public int find(String sub, PyObject start, PyObject end) {
+        return str_find(sub, start, end);
     }
 
-    @ExposedMethod(defaults = {"0", "null"}, doc = BuiltinDocs.str_find_doc)
-    final int str_find(String sub, int start, PyObject end) {
+    @ExposedMethod(defaults = {"null", "null"}, doc = BuiltinDocs.str_find_doc)
+    final int str_find(String sub, PyObject start, PyObject end) {
         int[] indices = translateIndices(start, end);
         int index = getString().indexOf(sub, indices[0]);
-        if (index < start || index > indices[1]) {
+        if (index < indices[2] || index > indices[1]) {
             return -1;
         }
         return index;
     }
 
     public int rfind(String sub) {
-        return str_rfind(sub, 0, null);
+        return str_rfind(sub, null, null);
     }
 
-    public int rfind(String sub, int start) {
+    public int rfind(String sub, PyObject start) {
         return str_rfind(sub, start, null);
     }
 
-    public int rfind(String sub, int start, int end) {
-        return str_rfind(sub, start, Py.newInteger(end));
+    public int rfind(String sub, PyObject start, PyObject end) {
+        return str_rfind(sub, start, end);
     }
 
-    @ExposedMethod(defaults = {"0", "null"}, doc = BuiltinDocs.str_rfind_doc)
-    final int str_rfind(String sub, int start, PyObject end) {
+    @ExposedMethod(defaults = {"null", "null"}, doc = BuiltinDocs.str_rfind_doc)
+    final int str_rfind(String sub, PyObject start, PyObject end) {
         int[] indices = translateIndices(start, end);
         int index = getString().lastIndexOf(sub, indices[1] - sub.length());
-        if (index < start) {
+        if (index < indices[2]) {
             return -1;
         }
         return index;
@@ -1572,16 +1607,36 @@ public class PyString extends PyBaseString
                 while (b < e && Character.isWhitespace(getString().charAt(b))) b++;
             }
 
-            if (base == 0 || base == 16) {
+            if (base == 16) {
                 if (getString().charAt(b) == '0') {
                     if (b < e-1 &&
                            Character.toUpperCase(getString().charAt(b+1)) == 'X') {
+                        b += 2;
+                    }
+                }
+            } else if (base == 0) {
+                if (getString().charAt(b) == '0') {
+                    if (b < e-1 && Character.toUpperCase(getString().charAt(b+1)) == 'X') {
                         base = 16;
                         b += 2;
+                    } else if (b < e-1 && Character.toUpperCase(getString().charAt(b+1)) == 'O') {
+                        base = 8;
+                        b += 2;
+                    } else if (b < e-1 && Character.toUpperCase(getString().charAt(b+1)) == 'B') {
+                        base = 2;
+                        b += 2;
                     } else {
-                        if (base == 0)
-                            base = 8;
+                        base = 8;
                     }
+                }
+            } else if (base == 8) {
+                if (b < e-1 && Character.toUpperCase(getString().charAt(b+1)) == 'O') {
+                    b += 2;
+                }
+            } else if (base == 2) {
+                if (b < e-1 &&
+                       Character.toUpperCase(getString().charAt(b+1)) == 'B') {
+                    b += 2;
                 }
             }
         }
@@ -1604,9 +1659,9 @@ public class PyString extends PyBaseString
             }
             return bi.intValue();
         } catch (NumberFormatException exc) {
-            throw Py.ValueError("invalid literal for int() with base " + base + ": " + getString());
+            throw Py.ValueError("invalid literal for int() with base " + base + ": '" + getString()+"'");
         } catch (StringIndexOutOfBoundsException exc) {
-            throw Py.ValueError("invalid literal for int() with base " + base + ": " + getString());
+            throw Py.ValueError("invalid literal for int() with base " + base + ": '" + getString()+"'");
         }
     }
 
@@ -1678,10 +1733,10 @@ public class PyString extends PyBaseString
                         0,0, "invalid decimal Unicode string");
             }
             else {
-            throw Py.ValueError("invalid literal for long() with base " + base + ": " + getString());
+            throw Py.ValueError("invalid literal for long() with base " + base + ": '" + getString()+"'");
             }
         } catch (StringIndexOutOfBoundsException exc) {
-            throw Py.ValueError("invalid literal for long() with base " + base + ": " + getString());
+            throw Py.ValueError("invalid literal for long() with base " + base + ": '" + getString()+"'");
         }
     }
 
@@ -1994,19 +2049,19 @@ public class PyString extends PyBaseString
     }
 
     public boolean startswith(PyObject prefix) {
-        return str_startswith(prefix, 0, null);
+        return str_startswith(prefix, null, null);
     }
 
-    public boolean startswith(PyObject prefix, int offset) {
+    public boolean startswith(PyObject prefix, PyObject offset) {
         return str_startswith(prefix, offset, null);
     }
 
-    public boolean startswith(PyObject prefix, int start, int end) {
-        return str_startswith(prefix, start, Py.newInteger(end));
+    public boolean startswith(PyObject prefix, PyObject start, PyObject end) {
+        return str_startswith(prefix, start, end);
     }
 
-    @ExposedMethod(defaults = {"0", "null"}, doc = BuiltinDocs.str_startswith_doc)
-    final boolean str_startswith(PyObject prefix, int start, PyObject end) {
+    @ExposedMethod(defaults = {"null", "null"}, doc = BuiltinDocs.str_startswith_doc)
+    final boolean str_startswith(PyObject prefix, PyObject start, PyObject end) {
         int[] indices = translateIndices(start, end);
         
         if (prefix instanceof PyString) {
@@ -2036,19 +2091,19 @@ public class PyString extends PyBaseString
     }
 
     public boolean endswith(PyObject suffix) {
-        return str_endswith(suffix, 0, null);
+        return str_endswith(suffix, null, null);
     }
 
-    public boolean endswith(PyObject suffix, int start) {
+    public boolean endswith(PyObject suffix, PyObject start) {
         return str_endswith(suffix, start, null);
     }
 
-    public boolean endswith(PyObject suffix, int start, int end) {
-        return str_endswith(suffix, start, Py.newInteger(end));
+    public boolean endswith(PyObject suffix, PyObject start, PyObject end) {
+        return str_endswith(suffix, start, end);
     }
 
-    @ExposedMethod(defaults = {"0", "null"}, doc = BuiltinDocs.str_endswith_doc)
-    final boolean str_endswith(PyObject suffix, int start, PyObject end) {
+    @ExposedMethod(defaults = {"null", "null"}, doc = BuiltinDocs.str_endswith_doc)
+    final boolean str_endswith(PyObject suffix, PyObject start, PyObject end) {
         int[] indices = translateIndices(start, end);
 
         String substr = getString().substring(indices[0], indices[1]);
@@ -2074,14 +2129,17 @@ public class PyString extends PyBaseString
      * Turns the possibly negative Python slice start and end into valid indices
      * into this string.
      * 
-     * @return a 2 element array of indices into this string describing a
+     * @return a 3 element array of indices into this string describing a
      *         substring from [0] to [1]. [0] <= [1], [0] >= 0 and [1] <=
-     *         string.length()
-     * 
+     *         string.length(). The third element contains the unadjusted 
+     *         start value.
      */
-    protected int[] translateIndices(int start, PyObject end) {
+    protected int[] translateIndices(PyObject start, PyObject end) {
+        int iStart;
+        int iStartAdjusted;
         int iEnd;
-        if(end == null) {
+
+        if(end == null || end == Py.None) {
             iEnd = getString().length();
         } else {
             iEnd = end.asInt();
@@ -2095,16 +2153,23 @@ public class PyString extends PyBaseString
         } else if(iEnd > n) {
             iEnd = n;
         }
-        if(start < 0) {
-            start = n + start;
-            if(start < 0) {
-                start = 0;
+        if(start == null || start == Py.None) {
+            iStart = 0;
+        } else {
+            iStart = start.asInt();
+        }
+
+        iStartAdjusted = iStart;
+        if(iStartAdjusted < 0) {
+            iStartAdjusted = n + iStartAdjusted;
+            if(iStartAdjusted < 0) {
+                iStartAdjusted = 0;
             }
         }
-        if(start > iEnd) {
-            start = iEnd;
+        if(iStartAdjusted > iEnd) {
+            iStartAdjusted = iEnd;
         }
-        return new int[] {start, iEnd};
+        return new int[] {iStartAdjusted, iEnd, iStart};
     }
 
     public String translate(String table) {
@@ -2442,37 +2507,193 @@ public class PyString extends PyBaseString
     }
 
     public String encode() {
-        return str_encode(null, null);
+        return encode(null, null);
     }
 
     public String encode(String encoding) {
-        return str_encode(encoding, null);
+        return encode(encoding, null);
     }
 
     public String encode(String encoding, String errors) {
-        return str_encode(encoding, errors);
-    }
-
-    @ExposedMethod(defaults = {"null", "null"}, doc = BuiltinDocs.str_encode_doc)
-    final String str_encode(String encoding, String errors) {
         return codecs.encode(this, encoding, errors);
     }
 
+    @ExposedMethod(doc = BuiltinDocs.str_encode_doc)
+    final String str_encode(PyObject[] args, String[] keywords) {
+        ArgParser ap = new ArgParser("encode", args, keywords, "encoding", "errors");
+        String encoding = ap.getString(0, null);
+        String errors = ap.getString(1, null);
+        return encode(encoding, errors);
+    }
+    
     public PyObject decode() {
-        return str_decode(null, null);
+        return decode(null, null);
     }
 
     public PyObject decode(String encoding) {
-        return str_decode(encoding, null);
+        return decode(encoding, null);
     }
 
     public PyObject decode(String encoding, String errors) {
-        return str_decode(encoding, errors);
+        return codecs.decode(this, encoding, errors);
     }
 
-    @ExposedMethod(defaults = {"null", "null"}, doc = BuiltinDocs.str_decode_doc)
-    final PyObject str_decode(String encoding, String errors) {
-        return codecs.decode(this, encoding, errors);
+    @ExposedMethod(doc = BuiltinDocs.str_decode_doc)
+    final PyObject str_decode(PyObject[] args, String[] keywords) {
+        ArgParser ap = new ArgParser("decode", args, keywords, "encoding", "errors");
+        String encoding = ap.getString(0, null);
+        String errors = ap.getString(1, null);
+        return decode(encoding, errors);
+    }
+
+    @ExposedMethod(doc = BuiltinDocs.str__formatter_parser_doc)
+    final PyObject str__formatter_parser() {
+        return new MarkupIterator(getString());
+    }
+
+    @ExposedMethod(doc = BuiltinDocs.str__formatter_field_name_split_doc)
+    final PyObject str__formatter_field_name_split() {
+        FieldNameIterator iterator = new FieldNameIterator(getString());
+        Object headObj = iterator.head();
+        PyObject head = headObj instanceof Integer
+                ? new PyInteger((Integer) headObj)
+                : new PyString((String) headObj);
+        return new PyTuple(head, iterator);
+    }
+
+    @ExposedMethod(doc = BuiltinDocs.str_format_doc)
+    final PyObject str_format(PyObject[] args, String[] keywords) {
+        try {
+            return new PyString(buildFormattedString(getString(), args, keywords, null));
+        } catch (IllegalArgumentException e) {
+            throw Py.ValueError(e.getMessage());
+        }
+    }
+
+    protected String buildFormattedString(String value, PyObject[] args, String[] keywords, MarkupIterator enclosingIterator) {
+        StringBuilder result = new StringBuilder();
+        MarkupIterator it = new MarkupIterator(value, enclosingIterator);
+        while (true) {
+            MarkupIterator.Chunk chunk = it.nextChunk();
+            if (chunk == null) {
+                break;
+            }
+            result.append(chunk.literalText);
+            if (chunk.fieldName.length() > 0) {
+                PyObject fieldObj = getFieldObject(chunk.fieldName, args, keywords);
+                if (fieldObj == null) {
+                    continue;
+                }
+                if ("r".equals(chunk.conversion)) {
+                    fieldObj = fieldObj.__repr__();
+                } else if ("s".equals(chunk.conversion)) {
+                    fieldObj = fieldObj.__str__();
+                } else if (chunk.conversion != null) {
+                    throw Py.ValueError("Unknown conversion specifier " + chunk.conversion);
+                }
+                String formatSpec = chunk.formatSpec;
+                if (chunk.formatSpecNeedsExpanding) {
+                    if (enclosingIterator != null) // PEP 3101 says only 2 levels
+                        throw Py.ValueError("Max string recursion exceeded");
+                    formatSpec = buildFormattedString(formatSpec, args, keywords, it);
+                }
+                renderField(fieldObj, formatSpec, result);
+            }
+        }
+        return result.toString();
+    }
+
+    private PyObject getFieldObject(String fieldName, PyObject[] args, String[] keywords) {
+        FieldNameIterator iterator = new FieldNameIterator(fieldName);
+        Object head = iterator.head();
+        PyObject obj = null;
+        int positionalCount = args.length - keywords.length;
+
+        if (head instanceof Integer) {
+            int index = (Integer) head;
+            if (index >= positionalCount) {
+                throw Py.IndexError("tuple index out of range");
+            }
+            obj = args[index];
+        } else {
+            for (int i = 0; i < keywords.length; i++) {
+                if (keywords[i].equals(head)) {
+                    obj = args[positionalCount + i];
+                    break;
+                }
+            }
+            if (obj == null) {
+                throw Py.KeyError((String) head);
+            }
+        }
+        if (obj != null) {
+            while (true) {
+                FieldNameIterator.Chunk chunk = iterator.nextChunk();
+                if (chunk == null) {
+                    break;
+                }
+                if (chunk.is_attr) {
+                    obj = obj.__getattr__((String) chunk.value);
+                } else {
+                    PyObject key = chunk.value instanceof String
+                            ? new PyString((String) chunk.value)
+                            : new PyInteger((Integer) chunk.value);
+                    obj = obj.__getitem__(key);
+                }
+                if (obj == null) {
+                    break;
+                }
+            }
+        }
+        return obj;
+    }
+
+    private void renderField(PyObject fieldObj, String formatSpec, StringBuilder result) {
+        PyString formatSpecStr = formatSpec == null ? Py.EmptyString : new PyString(formatSpec);
+        result.append(fieldObj.__format__(formatSpecStr).asString());
+    }
+
+    @Override
+    public PyObject __format__(PyObject formatSpec) {
+        return str___format__(formatSpec);
+    }
+
+    @ExposedMethod(doc = BuiltinDocs.str___format___doc)
+    final PyObject str___format__(PyObject formatSpec) {
+        if (!(formatSpec instanceof PyString)) {
+            throw Py.TypeError("__format__ requires str or unicode");
+        }
+
+        PyString formatSpecStr = (PyString) formatSpec;
+        String result;
+        try {
+            String specString = formatSpecStr.getString();
+            InternalFormatSpec spec = new InternalFormatSpecParser(specString).parse();
+            result = formatString(getString(), spec);
+        } catch (IllegalArgumentException e) {
+            throw Py.ValueError(e.getMessage());
+        }
+        return formatSpecStr.createInstance(result);
+    }
+
+    /**
+     * Internal implementation of str.__format__()
+     *
+     * @param text the text to format
+     * @param spec the PEP 3101 formatting specification
+     * @return the result of the formatting
+     */
+    public static String formatString(String text, InternalFormatSpec spec) {
+        if (spec.sign != '\0')
+            throw new IllegalArgumentException("Sign not allowed in string format specifier");
+        if (spec.alternate)
+            throw new IllegalArgumentException("Alternate form (#) not allowed in string format specifier");
+        if (spec.align == '=')
+            throw new IllegalArgumentException("'=' alignment not allowed in string format specifier");
+        if (spec.precision >= 0 && text.length() > spec.precision) {
+            text = text.substring(0, spec.precision);
+        }
+        return spec.pad(text, '<', 0);
     }
 
     /* arguments' conversion helper */
@@ -2754,10 +2975,23 @@ final class StringFormatter
         }
     }
 
+    static class DecimalFormatTemplate {
+        static DecimalFormat template;
+        static {
+            template = new DecimalFormat("#,##0.#####");
+            DecimalFormatSymbols symbols = template.getDecimalFormatSymbols();
+            symbols.setNaN("nan");
+            symbols.setInfinity("inf");
+            template.setDecimalFormatSymbols(symbols);
+            template.setGroupingUsed(false);
+        }
+    }
+    private static final DecimalFormat getDecimalFormat() {
+        return (DecimalFormat)DecimalFormatTemplate.template.clone();
+    }
+
     private String formatFloatDecimal(double v, boolean truncate) {
         checkPrecision("decimal");
-        java.text.NumberFormat numberFormat = java.text.NumberFormat.getInstance(
-                                           java.util.Locale.US);
         int prec = precision;
         if (prec == -1)
             prec = 6;
@@ -2765,11 +2999,12 @@ final class StringFormatter
             v = -v;
             negative = true;
         }
-        numberFormat.setMaximumFractionDigits(prec);
-        numberFormat.setMinimumFractionDigits(truncate ? 0 : prec);
-        numberFormat.setGroupingUsed(false);
 
-        String ret = numberFormat.format(v);
+        DecimalFormat decimalFormat = getDecimalFormat();
+        decimalFormat.setMaximumFractionDigits(prec);
+        decimalFormat.setMinimumFractionDigits(truncate ? 0 : prec);
+
+        String ret = decimalFormat.format(v);
         return ret;
     }
 
@@ -2974,10 +3209,16 @@ final class StringFormatter
             case 'e':
             case 'E':
                 string = formatFloatExponential(arg, c, false);
+                if (c == 'E') {
+                    string = string.toUpperCase();
+                }
                 break;
             case 'f':
             case 'F':
                 string = formatFloatDecimal(asDouble(arg), false);
+                if (c == 'F') {
+                    string = string.toUpperCase();
+                }
                 break;
             case 'g':
             case 'G':
@@ -3010,10 +3251,13 @@ final class StringFormatter
                 } else {
                     // Exponential precision is the number of digits after the decimal
                     // point, whereas 'g' precision is the number of significant digits --
-                    // and expontential always provides one significant digit before the
+                    // and exponential always provides one significant digit before the
                     // decimal point
                     precision--;
                     string = formatFloatExponential(arg, (char)(c-2), !altFlag);
+                }
+                if (c == 'G') {
+                    string = string.toUpperCase();
                 }
                 break;
             case 'c':
