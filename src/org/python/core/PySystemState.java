@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
-import org.jruby.ext.posix.util.Platform;
+import jnr.posix.util.Platform;
 import org.python.Version;
 import org.python.core.adapter.ClassicPyObjectAdapter;
 import org.python.core.adapter.ExtensiblePyObjectAdapter;
@@ -56,6 +56,11 @@ public class PySystemState extends PyObject implements ClassDictInit {
     private static final String VFSZIP_PREFIX = "vfszip:";
 
     public static final PyString version = new PyString(Version.getVersion());
+
+    public static final PyTuple subversion = new PyTuple(new PyString("Jython"),
+                                                         Py.newString(""),
+                                                         Py.newString(""));
+
     public static final int hexversion = ((Version.PY_MAJOR_VERSION << 24) |
                                     (Version.PY_MINOR_VERSION << 16) |
                                     (Version.PY_MICRO_VERSION <<  8) |
@@ -65,8 +70,15 @@ public class PySystemState extends PyObject implements ClassDictInit {
     public static PyTuple version_info;
 
     public final static int maxunicode = 1114111;
-    public static PyTuple subversion;
 
+    //XXX: we should someday make this Long.MAX_VALUE, but see test_index.py
+    //     for tests that would need to pass but today would not.
+    public final static int maxsize = Integer.MAX_VALUE;
+
+    public static boolean py3kwarning = false;
+
+    public final static Class flags = Options.class;
+    
     public static PyTuple _mercurial;
     /**
      * The copyright notice for this release.
@@ -155,6 +167,9 @@ public class PySystemState extends PyObject implements ClassDictInit {
     /** true when a SystemRestart is triggered. */
     public boolean _systemRestart = false;
 
+    /** Whether bytecode should be written to disk on import. */
+    public boolean dont_write_bytecode = false;
+
     // Automatically close resources associated with a PySystemState when they get GCed
     private final PySystemStateCloser closer;
     private static final ReferenceQueue<PySystemState> systemStateQueue =
@@ -182,6 +197,8 @@ public class PySystemState extends PyObject implements ClassDictInit {
 
         currentWorkingDir = new File("").getAbsolutePath();
 
+        dont_write_bytecode = Options.dont_write_bytecode;
+        py3kwarning = Options.py3k_warning;
         // Set up the initial standard ins and outs
         String mode = Options.unbuffered ? "b" : "";
         int buffering = Options.unbuffered ? 0 : 1;
@@ -921,7 +938,9 @@ public class PySystemState extends PyObject implements ClassDictInit {
 
         Py.EmptyString = new PyString("");
         Py.Newline = new PyString("\n");
+        Py.UnicodeNewline = new PyUnicode("\n");
         Py.Space = new PyString(" ");
+        Py.UnicodeSpace = new PyUnicode(" ");
 
         // Setup standard wrappers for stdout and stderr...
         Py.stderr = new StderrWrapper();
@@ -946,7 +965,6 @@ public class PySystemState extends PyObject implements ClassDictInit {
                                    Py.newInteger(Version.PY_MICRO_VERSION),
                                    Py.newString(s),
                                    Py.newInteger(Version.PY_RELEASE_SERIAL));
-        subversion = new PyTuple(Py.newString("Jython"), Py.EmptyString, Py.EmptyString);
         _mercurial = new PyTuple(Py.newString("Jython"), Py.newString(Version.getHGIdentifier()),
                                  Py.newString(Version.getHGVersion()));
     }

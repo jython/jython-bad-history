@@ -80,12 +80,18 @@ public final class Py {
     public static PyString EmptyString;
     /** A Python string containing '\n' **/
     public static PyString Newline;
+    /** A Python unicode string containing '\n' **/
+    public static PyUnicode UnicodeNewline;
     /** A Python string containing ' ' **/
     public static PyString Space;
+    /** A Python unicode string containing ' ' **/
+    public static PyUnicode UnicodeSpace;
     /** Set if the type object is dynamically allocated */
     public static long TPFLAGS_HEAPTYPE = 1L << 9;
     /** Set if the type allows subclassing */
     public static long TPFLAGS_BASETYPE = 1L << 10;
+    /** Type is abstract and cannot be instantiated */
+    public static long TPFLAGS_IS_ABSTRACT = 1L << 20;
 
     /** Builtin types that are used to setup PyObject. */
     static final Set<Class<?>> BOOTSTRAP_TYPES = Generic.set();
@@ -113,7 +119,7 @@ public final class Py {
         PyObject args = new PyTuple(Py.newInteger(value), PosixModule.strerror(value));
         return new PyException(Py.OSError, args);
     }
-
+    
     public static PyException OSError(Constant errno, PyObject filename) {
         int value = errno.value();
         // Pass to strerror because constantine currently lacks Errno descriptions on
@@ -122,12 +128,12 @@ public final class Py {
         return new PyException(Py.OSError, args);
     }
 
-    /**
-     * @deprecated As of Jython 2.5.3, use {@link #OSerror(Constant, PyObject)} instead.
-     */
-    @Deprecated
-    public static PyException OSError(Constant errno, String filename) {
-        return OSError(errno, Py.newString(filename));
+    public static PyException OSError(jnr.constants.Constant errno, PyObject filename) {
+        int value = errno.intValue();
+        // Pass to strerror because constantine currently lacks Errno descriptions on
+        // Windows, and strerror falls back to Linux's
+        PyObject args = new PyTuple(Py.newInteger(value), PosixModule.strerror(value), filename);
+        return new PyException(Py.OSError, args);
     }
 
     public static PyObject NotImplementedError;
@@ -192,14 +198,6 @@ public final class Py {
         int value = errno.value();
         PyObject args = new PyTuple(Py.newInteger(value), PosixModule.strerror(value), filename);
         return new PyException(Py.IOError, args);
-    }
-
-    /**
-     * @deprecated As of Jython 2.5.3, use {@link #IOError(Constant, PyObject)} instead.
-     */
-    @Deprecated
-    public static PyException IOError(Constant errno, String filename) {
-        return IOError(errno, Py.newString(filename));
     }
 
     private static PyException fromIOException(IOException ioe, PyObject err) {
@@ -365,6 +363,7 @@ public final class Py {
     public static PyException MemoryError(String message) {
         return new PyException(Py.MemoryError, message);
     }
+    public static PyObject BufferError;
     public static PyObject ArithmeticError;
     public static PyObject LookupError;
     public static PyObject StandardError;
@@ -416,6 +415,21 @@ public final class Py {
     public static void UnicodeWarning(String message) {
         warning(UnicodeWarning, message);
     }
+    
+    public static PyObject BytesWarning;
+    public static void BytesWarning(String message) {
+        warning(BytesWarning, message);
+    }
+
+    public static void warnPy3k(String message) {
+        warnPy3k(message, 1);
+    }
+
+    public static void warnPy3k(String message, int stacklevel) {
+        if (Options.py3k_warning) {
+            warning(DeprecationWarning, message, stacklevel);
+        }
+    }
 
     private static PyObject warnings_mod;
 
@@ -445,6 +459,10 @@ public final class Py {
     }
 
     public static void warning(PyObject category, String message) {
+        warning(category, message, 1);
+    }
+
+    public static void warning(PyObject category, String message, int stacklevel) {
         PyObject func = null;
         PyObject mod = importWarnings();
         if (mod != null) {
@@ -454,7 +472,7 @@ public final class Py {
             System.err.println(warn_hcategory(category) + ": " + message);
             return;
         } else {
-            func.__call__(Py.newString(message), category);
+            func.__call__(Py.newString(message), category, Py.newInteger(stacklevel));
         }
     }
 
@@ -760,6 +778,7 @@ public final class Py {
         NameError = initExc("NameError", exc, dict);
         UnboundLocalError = initExc("UnboundLocalError", exc, dict);
         AttributeError = initExc("AttributeError", exc, dict);
+
         SyntaxError = initExc("SyntaxError", exc, dict);
         IndentationError = initExc("IndentationError", exc, dict);
         TabError = initExc("TabError", exc, dict);
@@ -780,6 +799,7 @@ public final class Py {
         ReferenceError = initExc("ReferenceError", exc, dict);
         SystemError = initExc("SystemError", exc, dict);
         MemoryError = initExc("MemoryError", exc, dict);
+        BufferError = initExc("BufferError", exc, dict);
         Warning = initExc("Warning", exc, dict);
         UserWarning = initExc("UserWarning", exc, dict);
         DeprecationWarning = initExc("DeprecationWarning", exc, dict);
@@ -789,6 +809,7 @@ public final class Py {
         FutureWarning = initExc("FutureWarning", exc, dict);
         ImportWarning = initExc("ImportWarning", exc, dict);
         UnicodeWarning = initExc("UnicodeWarning", exc, dict);
+        BytesWarning = initExc("BytesWarning", exc, dict);
 
         // Pre-initialize the PyJavaClass for OutOfMemoryError so when we need
         // it it creating the pieces for it won't cause an additional out of
@@ -1160,6 +1181,10 @@ public final class Py {
     }
 
     public static String formatException(PyObject type, PyObject value) {
+        return formatException(type, value, false);
+    }
+
+    public static String formatException(PyObject type, PyObject value, boolean useRepr) {
         StringBuilder buf = new StringBuilder();
 
         if (PyException.isExceptionClass(type)) {
@@ -1170,10 +1195,7 @@ public final class Py {
             }
             PyObject moduleName = type.__findattr__("__module__");
             if (moduleName == null) {
-                // XXX: Workaround the fact that PyClass lacks __module__
-                if (!(type instanceof PyClass)) {
-                    buf.append("<unknown>");
-                }
+                buf.append("<unknown>");
             } else {
                 String moduleStr = moduleName.toString();
                 if (!moduleStr.equals("exceptions")) {
@@ -1183,17 +1205,23 @@ public final class Py {
             }
             buf.append(className);
         } else {
-            buf.append(type.__str__());
+            buf.append(useRepr ? type.__repr__() : type.__str__());
         }
         if (value != null && value != Py.None) {
             // only print colon if the str() of the object is not the empty string
-            PyObject s = value.__str__();
+            PyObject s = useRepr ? value.__repr__() : value.__str__();
             if (!(s instanceof PyString) || s.__len__() != 0) {
                 buf.append(": ");
             }
             buf.append(s);
         }
         return buf.toString();
+    }
+
+    public static void writeUnraisable(Throwable unraisable, PyObject obj) {
+        PyException pye = JavaError(unraisable);
+        stderr.println(String.format("Exception %s in %s ignored",
+                                     formatException(pye.type, pye.value, true), obj));
     }
 
 
@@ -1874,31 +1902,41 @@ public final class Py {
                 new File(dir, name.substring(0, index)));
     }
 
-    private static boolean abstract_issubclass(PyObject derived, PyObject cls) {
-        if (derived == cls) {
+    public static boolean isInstance(PyObject inst, PyObject cls) {
+        // Quick test for an exact match
+        if (inst.getType() == cls) {
             return true;
         }
-        PyObject bases = derived.__findattr__("__bases__");
-        if (bases == null) {
+
+        if (cls instanceof PyTuple) {
+            ThreadState threadState = Py.getThreadState();
+            threadState.enterRecursiveCall(" in __subclasscheck__");
+            try {
+                for (PyObject item : cls.asIterable()) {
+                    if (isInstance(inst, item)) {
+                        return true;
+                    }
+                }
+            } finally {
+                threadState.leaveRecursiveCall();
+            }
             return false;
         }
-        for (int i = 0; i < bases.__len__(); i++) {
-            if (abstract_issubclass(bases.__getitem__(i), cls)) {
-                return true;
-            }
+
+        PyObject checkerResult;
+        if ((checkerResult = dispatchToChecker(inst, cls, "__instancecheck__")) != null) {
+            return checkerResult.__nonzero__();
         }
-        return false;
+
+        return recursiveIsInstance(inst, cls);
     }
 
-    public static boolean isInstance(PyObject inst, PyObject cls) {
-        return recursiveIsInstance(inst, cls, 0);
-    }
-
-    private static boolean recursiveIsInstance(PyObject inst, PyObject cls, int recursionDepth) {
+    static boolean recursiveIsInstance(PyObject inst, PyObject cls) {
         if (cls instanceof PyClass && inst instanceof PyInstance) {
-            PyClass inClass = (PyClass)inst.fastGetClass();
-            return inClass.isSubClass((PyClass)cls);
-        } else if (cls instanceof PyType) {
+            PyClass inClass = ((PyInstance) inst).fastGetClass();
+            return inClass.isSubClass((PyClass) cls);
+        }
+        if (cls instanceof PyType) {
             PyType type = (PyType)cls;
 
             //Special case PyStringMap to compare as an instance type dict.
@@ -1914,46 +1952,50 @@ public final class Py {
                 return true;
             }
 
-            PyObject c = inst.__findattr__("__class__");
-            if (c != null && c != instType && c instanceof PyType) {
-                return ((PyType)c).isSubType(type);
+            PyObject instCls = inst.__findattr__("__class__");
+            if (instCls != null && instCls != instType && instCls instanceof PyType) {
+                return ((PyType) instCls).isSubType(type);
             }
             return false;
-        } else if (cls instanceof PyTuple) {
-            if (recursionDepth > Py.getSystemState().getrecursionlimit()) {
-                throw Py.RuntimeError("nest level of tuple too deep");
-            }
-
-            for (PyObject tupleItem : ((PyTuple)cls).getArray()) {
-                if (recursiveIsInstance(inst, tupleItem, recursionDepth + 1)) {
-                    return true;
-                }
-            }
-            return false;
-        } else {
-            if (cls.__findattr__("__bases__") == null) {
-                throw Py.TypeError("isinstance() arg 2 must be a class, type, or tuple of "
-                                   + "classes and types");
-            }
-
-            PyObject icls = inst.__findattr__("__class__");
-            if (icls == null) {
-                return false;
-            }
-            return abstract_issubclass(icls, cls);
         }
+        
+        checkClass(cls, "isinstance() arg 2 must be a class, type, or tuple of classes and types");
+        PyObject instCls = inst.__findattr__("__class__");
+        if (instCls == null) {
+            return false;
+        }
+        return abstractIsSubClass(instCls, cls);
     }
 
-    public static boolean isSubClass(PyObject derived,PyObject cls) {
-        return isSubClass(derived, cls, 0);
+    public static boolean isSubClass(PyObject derived, PyObject cls) {
+        if (cls instanceof PyTuple) {
+            ThreadState threadState = Py.getThreadState();
+            threadState.enterRecursiveCall(" in __subclasscheck__");
+            try {
+                for (PyObject item : cls.asIterable()) {
+                    if (isSubClass(derived, item)) {
+                        return true;
+                    }
+                }
+            } finally {
+                threadState.leaveRecursiveCall();
+            }
+            return false;
+        }
+
+        PyObject checkerResult;
+        if ((checkerResult = dispatchToChecker(derived, cls, "__subclasscheck__")) != null) {
+            return checkerResult.__nonzero__();
+        }
+
+        return recursiveIsSubClass(derived, cls);
     }
 
-    private static boolean isSubClass(PyObject derived, PyObject cls, int recursionDepth) {
+    static boolean recursiveIsSubClass(PyObject derived, PyObject cls) {
         if (derived instanceof PyType && cls instanceof PyType) {
             if (derived == cls) {
                 return true;
             }
-
             PyType type = (PyType)cls;
             PyType subtype = (PyType)derived;
 
@@ -1967,28 +2009,94 @@ public final class Py {
             }
 
             return subtype.isSubType(type);
-        } else if (cls instanceof PyClass && derived instanceof PyClass) {
+        }
+        if (derived instanceof PyClass && cls instanceof PyClass) {
             return ((PyClass) derived).isSubClass((PyClass) cls);
-        } else if (cls.getClass() == PyTuple.class) {
-            if (recursionDepth > Py.getSystemState().getrecursionlimit()) {
-                throw Py.RuntimeError("nest level of tuple too deep");
+        }
+
+        checkClass(derived, "issubclass() arg 1 must be a class");
+        checkClass(cls, "issubclass() arg 2 must be a class or tuple of classes");
+        return abstractIsSubClass(derived, cls);
+    }
+
+    private static boolean abstractIsSubClass(PyObject derived, PyObject cls) {
+        while (true) {
+            if (derived == cls) {
+                return true;
             }
-            for (int i = 0; i < cls.__len__(); i++) {
-                if (isSubClass(derived, cls.__getitem__(i), recursionDepth + 1)) {
+
+            PyTuple bases = abstractGetBases(derived);
+            if (bases == null) {
+                return false;
+            }
+
+            int basesSize = bases.size();
+            if (basesSize == 0) {
+                return false;
+            }
+            if (basesSize == 1) {
+                // Avoid recursivity in the single inheritance case
+                derived = bases.pyget(0);
+                continue;
+            }
+
+            for (PyObject base : bases.asIterable()) {
+                if (abstractIsSubClass(base, cls)) {
                     return true;
                 }
             }
             return false;
-        } else {
-            if (derived.__findattr__("__bases__") == null) {
-                throw Py.TypeError(
-                        "issubclass() arg 1 must be a class");
-            }
-            if (cls.__findattr__("__bases__") == null) {
-                throw Py.TypeError(
-                        "issubclass() arg 2 must be a class, type," + " or tuple of classes and types");
-            }
-            return abstract_issubclass(derived, cls);
+        }
+    }
+
+    /**
+     * Attempt to dispatch an isinstance/issubclass call to cls's associated
+     * __instancecheck__/__subclasscheck__.
+     *
+     * @param checkerArg the argument to call the checker with
+     * @param cls a Python class
+     * @param checkerName the checker name
+     * @return null if cls provides no checker, otherwise the result of calling the
+     * checker
+     */
+    private static PyObject dispatchToChecker(PyObject checkerArg, PyObject cls,
+                                              String checkerName) {
+        //Ignore old style classes.
+        if (cls instanceof PyClass) {
+            return null;
+        }
+
+        PyObject checker = cls.__findattr__(checkerName);
+        if (checker == null) {
+            return null;
+        }
+
+        PyObject result;
+        ThreadState threadState = Py.getThreadState();
+        threadState.enterRecursiveCall(" in " + checkerName);
+        try {
+            result = checker.__call__(checkerArg);
+        } finally {
+            threadState.leaveRecursiveCall();
+        }
+        return result;
+    }
+
+    /**
+     * Return the __bases__ of cls. Returns null if no valid __bases__ are found.
+     */
+    private static PyTuple abstractGetBases(PyObject cls) {
+        PyObject bases = cls.__findattr__("__bases__");
+        return bases instanceof PyTuple ? (PyTuple) bases : null;
+    }
+
+    /**
+     * Throw a TypeError with the specified message if cls does not appear to be a Python
+     * class.
+     */
+    private static void checkClass(PyObject cls, String message) {
+        if (abstractGetBases(cls) == null) {
+            throw Py.TypeError(message);
         }
     }
 
@@ -2018,7 +2126,7 @@ public final class Py {
     }
 }
 
- class FixedFileWrapper extends StdoutWrapper {
+class FixedFileWrapper extends StdoutWrapper {
 
     private PyObject file;
 

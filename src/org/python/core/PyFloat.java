@@ -4,10 +4,16 @@
  */
 package org.python.core;
 
+import org.python.core.stringlib.Formatter;
+import org.python.core.stringlib.InternalFormatSpec;
+import org.python.core.stringlib.InternalFormatSpecParser;
+import org.python.modules.math;
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 import org.python.expose.ExposedClassMethod;
+import org.python.expose.ExposedGet;
 import org.python.expose.ExposedMethod;
 import org.python.expose.ExposedNew;
 import org.python.expose.ExposedType;
@@ -78,6 +84,84 @@ public class PyFloat extends PyObject {
         }
     }
 
+    @ExposedGet(name = "real", doc = BuiltinDocs.float_real_doc)
+    public PyObject getReal() {
+        return float___float__();
+    }
+
+    @ExposedGet(name = "imag", doc = BuiltinDocs.float_imag_doc)
+    public PyObject getImag() {
+        return Py.newFloat(0.0);
+    }
+
+    @ExposedClassMethod(doc = BuiltinDocs.float_fromhex_doc)
+    public static PyObject float_fromhex(PyType type, PyObject o) {
+        //XXX: I'm sure this could be shortened/simplified, but Double.parseDouble() takes
+        //     non-hex strings and requires the form 0xNUMBERpNUMBER for hex input which
+        //     causes extra complexity here.
+
+        String message = "invalid hexadecimal floating-point string";
+        boolean negative = false;
+
+        PyString s = o.__str__();
+        String value = s.getString().trim().toLowerCase();
+
+        if (value.length() == 0) {
+            throw Py.ValueError(message);
+        }
+        if (value.equals("nan") || value.equals("-nan") || value.equals("+nan")) {
+            return new PyFloat(Double.NaN);
+        }
+        if (value.equals("inf") ||value.equals("infinity") ||
+                value.equals("+inf") ||value.equals("+infinity")) {
+            return new PyFloat(Double.POSITIVE_INFINITY);
+        }
+        if (value.equals("-inf") || value.equals("-infinity")) {
+            return new PyFloat(Double.NEGATIVE_INFINITY);
+        }
+
+        //Strip and record + or -
+        if (value.charAt(0) == '-') {
+            value = value.substring(1);
+            negative = true;
+        } else if (value.charAt(0) == '+') {
+            value = value.substring(1);
+        }
+        if (value.length() == 0) {
+            throw Py.ValueError(message);
+        }
+
+        //Append 0x if not present.
+        if (!value.startsWith("0x") && !value.startsWith("0X")) {
+            value = "0x" + value;
+        }
+
+        //reattach - if needed.
+        if (negative) {
+            value = "-" + value;
+        }
+
+        //Append p if not present.
+        if (value.indexOf('p') == -1) {
+            value = value + "p0";
+        }
+
+        try {
+            double d = Double.parseDouble(value);
+            if (Double.isInfinite(d)) {
+                throw Py.OverflowError("hexadecimal value too large to represent as a float");
+            }
+            return new PyFloat(d);
+        } catch (NumberFormatException n) {
+            throw Py.ValueError(message);
+        }
+    }
+
+    @ExposedClassMethod(doc = BuiltinDocs.float_hex_doc)
+    public static PyObject float_hex(PyType type, double value) {
+        return new PyString(Double.toHexString(value));
+    }
+
     /**
      * Determine if this float is not infinity, nor NaN.
      */
@@ -111,8 +195,12 @@ public class PyFloat extends PyObject {
     }
 
     private String formatDouble(int precision) {
-        if (Double.isNaN(getValue())) {
+        if (Double.isNaN(value)) {
             return "nan";
+        } else if (value == Double.NEGATIVE_INFINITY) {
+            return "-inf";
+        } else if (value == Double.POSITIVE_INFINITY) {
+            return "inf";
         }
 
         String result = String.format("%%.%dg", precision);
@@ -406,7 +494,7 @@ public class PyFloat extends PyObject {
         if (!canCoerce(right)) {
             return null;
         }
-        if (Options.divisionWarning >= 2) {
+        if (Options.division_warning >= 2) {
             Py.warning(Py.DeprecationWarning, "classic float division");
         }
 
@@ -427,7 +515,7 @@ public class PyFloat extends PyObject {
         if (!canCoerce(left)) {
             return null;
         }
-        if (Options.divisionWarning >= 2) {
+        if (Options.division_warning >= 2) {
             Py.warning(Py.DeprecationWarning, "classic float division");
         }
 
@@ -709,10 +797,39 @@ public class PyFloat extends PyObject {
 
     @ExposedMethod(doc = BuiltinDocs.float___float___doc)
     final PyFloat float___float__() {
-        if (getType() == TYPE) {
-            return this;
+        return getType() == TYPE ? this : Py.newFloat(getValue());
+    }
+
+    @Override
+    public PyObject __trunc__() {
+        return float___trunc__();
+    }
+
+    @ExposedMethod(doc = BuiltinDocs.float___trunc___doc)
+    final PyObject float___trunc__() {
+        if (Double.isNaN(value)) {
+            throw Py.ValueError("cannot convert float NaN to integer");
         }
-        return Py.newFloat(getValue());
+        if (Double.isInfinite(value)) {
+            throw Py.OverflowError("cannot convert float infinity to integer");
+        }
+        if (value < Integer.MAX_VALUE) {
+            return new PyInteger((int)value);
+        } else if (value < Long.MAX_VALUE) {
+            return new PyLong((long)value);
+        }
+        BigDecimal d = new BigDecimal(value);
+        return new PyLong(d.toBigInteger());
+    }
+
+    @Override
+    public PyObject conjugate() {
+        return float_conjugate();
+    }
+
+    @ExposedMethod(doc = BuiltinDocs.float_conjugate_doc)
+    final PyObject float_conjugate() {
+        return this;
     }
 
     @Override
@@ -728,6 +845,83 @@ public class PyFloat extends PyObject {
     @Override
     public PyTuple __getnewargs__() {
         return float___getnewargs__();
+    }
+
+    @Override
+    public PyObject __format__(PyObject formatSpec) {
+        return float___format__(formatSpec);
+    }
+
+    @ExposedMethod(doc = BuiltinDocs.float___format___doc)
+    final PyObject float___format__(PyObject formatSpec) {
+        return formatImpl(getValue(), formatSpec);
+    }
+
+    static PyObject formatImpl(double d, PyObject formatSpec) {
+        if (!(formatSpec instanceof PyString)) {
+            throw Py.TypeError("__format__ requires str or unicode");
+        }
+
+        PyString formatSpecStr = (PyString) formatSpec;
+        String result;
+        try {
+            String specString = formatSpecStr.getString();
+            InternalFormatSpec spec = new InternalFormatSpecParser(specString).parse();
+            if (spec.type == '\0'){
+                return (Py.newFloat(d)).__str__();
+            }
+            switch (spec.type) {
+                case '\0': /* No format code: like 'g', but with at least one decimal. */
+                case 'e':
+                case 'E':
+                case 'f':
+                case 'F':
+                case 'g':
+                case 'G':
+                case 'n':
+                case '%':
+                    result = Formatter.formatFloat(d, spec);
+                    break;
+                default:
+                    /* unknown */
+                    throw Py.ValueError(String.format("Unknown format code '%c' for object of type 'float'",
+                                            spec.type));
+            }
+        } catch (IllegalArgumentException e) {
+            throw Py.ValueError(e.getMessage());
+        }
+        return formatSpecStr.createInstance(result);
+    }
+
+    @ExposedMethod(doc = BuiltinDocs.float_as_integer_ratio_doc)
+    public PyTuple as_integer_ratio() {
+        if (Double.isInfinite(value)) {
+            throw Py.OverflowError("Cannot pass infinity to float.as_integer_ratio.");
+        }
+        if (Double.isNaN(value)) {
+            throw Py.ValueError("Cannot pass NaN to float.as_integer_ratio.");
+        }
+        PyTuple frexp = math.frexp(value);
+        double float_part = ((Double)frexp.get(0)).doubleValue();
+        int exponent = ((Integer)frexp.get(1)).intValue();
+        for (int i=0; i<300 && float_part != Math.floor(float_part); i++) {
+            float_part *= 2.0;
+            exponent--;
+        }
+        /* self == float_part * 2**exponent exactly and float_part is integral.
+           If FLT_RADIX != 2, the 300 steps may leave a tiny fractional part
+           to be truncated by PyLong_FromDouble(). */
+        
+        PyLong numerator = new PyLong(float_part);
+        PyLong denominator = new PyLong(1);
+        PyLong py_exponent = new PyLong(Math.abs(exponent));
+        py_exponent = (PyLong)denominator.__lshift__(py_exponent);
+        if (exponent > 0) {
+            numerator = new PyLong(numerator.getValue().multiply(py_exponent.getValue()));
+        } else {
+            denominator = py_exponent;
+        }
+        return new PyTuple(numerator, denominator);
     }
 
     @Override

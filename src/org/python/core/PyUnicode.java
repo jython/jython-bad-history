@@ -924,18 +924,18 @@ public class PyUnicode extends PyString implements Iterable {
         return new PyUnicode(getString().substring(begin, end));
     }
 
-    @ExposedMethod(defaults = {"0", "null"}, doc = BuiltinDocs.unicode___getslice___doc)
-    final int unicode_index(String sub, int start, PyObject end) {
+    @ExposedMethod(defaults = {"null", "null"}, doc = BuiltinDocs.unicode___getslice___doc)
+    final int unicode_index(String sub, PyObject start, PyObject end) {
         return str_index(sub, start, end);
     }
 
-    @ExposedMethod(defaults = {"0", "null"}, doc = BuiltinDocs.unicode___getslice___doc)
-    final int unicode_rindex(String sub, int start, PyObject end) {
+    @ExposedMethod(defaults = {"null", "null"}, doc = BuiltinDocs.unicode___getslice___doc)
+    final int unicode_rindex(String sub, PyObject start, PyObject end) {
         return str_rindex(sub, start, end);
     }
 
-    @ExposedMethod(defaults = {"0", "null"}, doc = BuiltinDocs.unicode___getslice___doc)
-    final int unicode_count(PyObject subObj, int start, PyObject end) {
+    @ExposedMethod(defaults = {"null", "null"}, doc = BuiltinDocs.unicode___getslice___doc)
+    final int unicode_count(PyObject subObj, PyObject start, PyObject end) {
         final PyUnicode sub = coerceToUnicode(subObj);
         if (isBasicPlane()) {
             return str_count(sub.getString(), start, end);
@@ -960,13 +960,13 @@ public class PyUnicode extends PyString implements Iterable {
         return count;
     }
 
-    @ExposedMethod(defaults = {"0", "null"}, doc = BuiltinDocs.unicode___getslice___doc)
-    final int unicode_find(String sub, int start, PyObject end) {
+    @ExposedMethod(defaults = {"null", "null"}, doc = BuiltinDocs.unicode___getslice___doc)
+    final int unicode_find(String sub, PyObject start, PyObject end) {
         return str_find(sub, start, end);
     }
 
-    @ExposedMethod(defaults = {"0", "null"}, doc = BuiltinDocs.unicode___getslice___doc)
-    final int unicode_rfind(String sub, int start, PyObject end) {
+    @ExposedMethod(defaults = {"null", "null"}, doc = BuiltinDocs.unicode___getslice___doc)
+    final int unicode_rfind(String sub, PyObject start, PyObject end) {
         return str_rfind(sub, start, end);
     }
 
@@ -1135,13 +1135,13 @@ public class PyUnicode extends PyString implements Iterable {
         return unicodeJoin(seq);
     }
 
-    @ExposedMethod(defaults = {"0", "null"}, doc = BuiltinDocs.unicode___getslice___doc)
-    final boolean unicode_startswith(PyObject prefix, int start, PyObject end) {
+    @ExposedMethod(defaults = {"null", "null"}, doc = BuiltinDocs.unicode___getslice___doc)
+    final boolean unicode_startswith(PyObject prefix, PyObject start, PyObject end) {
         return str_startswith(prefix, start, end);
     }
 
-    @ExposedMethod(defaults = {"0", "null"}, doc = BuiltinDocs.unicode___getslice___doc)
-    final boolean unicode_endswith(PyObject suffix, int start, PyObject end) {
+    @ExposedMethod(defaults = {"null", "null"}, doc = BuiltinDocs.unicode___getslice___doc)
+    final boolean unicode_endswith(PyObject suffix, PyObject start, PyObject end) {
         return str_endswith(suffix, start, end);
     }
 
@@ -1325,19 +1325,33 @@ public class PyUnicode extends PyString implements Iterable {
         return true;
     }
 
-    @ExposedMethod(defaults = {"null", "null"}, doc = BuiltinDocs.unicode___getslice___doc)
-    final String unicode_encode(String encoding, String errors) {
-        return str_encode(encoding, errors);
+    @ExposedMethod(doc = BuiltinDocs.unicode_encode_doc)
+    final String unicode_encode(PyObject[] args, String[] keywords) {
+        return str_encode(args, keywords);
     }
 
-    @ExposedMethod(defaults = {"null", "null"}, doc = BuiltinDocs.unicode___getslice___doc)
-    final PyObject unicode_decode(String encoding, String errors) {
-        return str_decode(encoding, errors);
+    @ExposedMethod(doc = BuiltinDocs.unicode_decode_doc)
+    final PyObject unicode_decode(PyObject[] args, String[] keywords) {
+        return str_decode(args, keywords);
     }
 
     @ExposedMethod(doc = BuiltinDocs.unicode___getnewargs___doc)
     final PyTuple unicode___getnewargs__() {
         return new PyTuple(new PyUnicode(this.getString()));
+    }
+
+    @Override
+    public PyObject __format__(PyObject formatSpec) {
+        return str___format__(formatSpec);
+    }
+
+    @ExposedMethod(doc = BuiltinDocs.unicode_format_doc)
+    final PyObject unicode_format(PyObject[] args, String[] keywords) {
+        try {
+            return new PyUnicode(buildFormattedString(getString(), args, keywords, null));
+        } catch (IllegalArgumentException e) {
+            throw Py.ValueError(e.getMessage());
+        }
     }
 
     public Iterator<Integer> iterator() {
