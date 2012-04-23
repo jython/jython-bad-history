@@ -856,12 +856,15 @@ def listen(port=DEFAULT_LOGGING_CONFIG_PORT):
             self.ready = ready
 
         def serve_until_stopped(self):
-            import select
+            if sys.platform.startswith('java'):
+                from select import cpython_compatible_select as select
+            else:
+                from select import select
             abort = 0
             while not abort:
-                rd, wr, ex = select.select([self.socket.fileno()],
-                                           [], [],
-                                           self.timeout)
+                rd, wr, ex = select([self.socket.fileno()],
+                                     [], [],
+                                     self.timeout)
                 if rd:
                     self.handle_request()
                 logging._acquireLock()
