@@ -26,7 +26,7 @@ public class imp {
 
     private static final String UNKNOWN_SOURCEFILE = "<unknown>";
 
-    private static final int APIVersion = 32;
+    private static final int APIVersion = 33;
 
     public static final int NO_MTIME = -1;
 
@@ -346,7 +346,9 @@ public class imp {
     public static PyObject createFromSource(String name, InputStream fp,
             String filename, String outFilename, long mtime) {
         byte[] bytes = compileSource(name, fp, filename, mtime);
-        outFilename = cacheCompiledSource(filename, outFilename, bytes);
+        if (!Py.getSystemState().dont_write_bytecode) {
+            outFilename = cacheCompiledSource(filename, outFilename, bytes);
+        }
 
         Py.writeComment(IMPORT_LOG, "'" + name + "' as " + filename);
 
@@ -656,30 +658,47 @@ public class imp {
 	 * @return the parent name for a module
 	 */
     private static String get_parent(PyObject dict, int level) {
+        String modname;
         if (dict == null || level == 0) {
         	// try an absolute import
             return null;
         }
-        PyObject tmp = dict.__finditem__("__name__");
-        if (tmp == null) {
-            return null;
-        }
-        String modname = tmp.toString();
 
-        // locate the current package
-        tmp = dict.__finditem__("__path__");
-        if (! (tmp instanceof PyList)) {
-        	// __name__ is not a package name, try one level upwards.
-            int dot = modname.lastIndexOf('.');
-            if (dot == -1) {
-            	if (level <= -1) {
-            		// there is no package, perform an absolute search
-            		return null;
-            	}
-            	throw Py.ValueError("Attempted relative import in non-package");
+        PyObject tmp = dict.__finditem__("__package__");
+        if (tmp != null && tmp != Py.None) {
+            if (!Py.isInstance(tmp, PyString.TYPE)) {
+                throw Py.ValueError("__package__ set to non-string");
             }
-            // modname should be the package name.
-            modname = modname.substring(0, dot);
+            modname = ((PyString)tmp).getString();
+        } else {
+            //__package__ not set, so figure it out and set it.
+
+            tmp = dict.__finditem__("__name__");
+            if (tmp == null) {
+                return null;
+            }
+            modname = tmp.toString();
+
+            // locate the current package
+            tmp = dict.__finditem__("__path__");
+            if (tmp instanceof PyList) {
+                //__path__ is set, so modname is already the package name.
+                dict.__setitem__("__package__", new PyString(modname));
+            } else {
+                // __name__ is not a package name, try one level upwards.
+                int dot = modname.lastIndexOf('.');
+                if (dot == -1) {
+                    if (level <= -1) {
+                        // there is no package, perform an absolute search
+                        dict.__setitem__("__package__", Py.None);
+                        return null;
+                    }
+                    throw Py.ValueError("Attempted relative import in non-package");
+                }
+                // modname should be the package name.
+                modname = modname.substring(0, dot);
+                dict.__setitem__("__package__", new PyString(modname));
+            }
         }
 
         // walk upwards if required (level >= 2)
