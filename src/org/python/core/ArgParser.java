@@ -1,14 +1,14 @@
 package org.python.core;
 
+import org.python.antlr.AST;
+
 import java.util.HashSet;
 import java.util.Set;
-
-import org.python.antlr.AST;
 
 /**
  * A utility class for handling mixed positional and keyword arguments.
  * 
- * A typical usage:
+ * Typical usage:
  * 
  * <pre>
  *   public MatchObject search(PyObject[] args, String[] kws) {
@@ -51,12 +51,12 @@ public class ArgParser {
     }
 
     /**
-     * Create an ArgParser with one method argument
+     * Create an ArgParser for a one-argument function.
      * 
-     * @param funcname Name of the method. Used in error messages.
+     * @param funcname Name of the function. Used in error messages.
      * @param args The actual call arguments supplied in the call.
      * @param kws The actual keyword names supplied in the call.
-     * @param p0 The expected argument in the method definition.
+     * @param p0 The expected argument in the function definition.
      */
     public ArgParser(String funcname, PyObject[] args, String[] kws, String p0) {
         this(funcname, args, kws);
@@ -65,13 +65,13 @@ public class ArgParser {
     }
 
     /**
-     * Create an ArgParser with two method argument
+     * Create an ArgParser for a two-argument function.
      * 
-     * @param funcname Name of the method. Used in error messages.
+     * @param funcname Name of the function. Used in error messages.
      * @param args The actual call arguments supplied in the call.
      * @param kws The actual keyword names supplied in the call.
-     * @param p0 The first expected argument in the method definition.
-     * @param p1 The second expected argument in the method definition.
+     * @param p0 The first expected argument in the function definition.
+     * @param p1 The second expected argument in the function definition.
      */
     public ArgParser(String funcname, PyObject[] args, String[] kws, String p0,
             String p1) {
@@ -81,14 +81,14 @@ public class ArgParser {
     }
 
     /**
-     * Create an ArgParser with three method argument
+     * Create an ArgParser for a three-argument function.
      * 
-     * @param funcname Name of the method. Used in error messages.
+     * @param funcname Name of the function. Used in error messages.
      * @param args The actual call arguments supplied in the call.
      * @param kws The actual keyword names supplied in the call.
-     * @param p0 The first expected argument in the method definition.
-     * @param p1 The second expected argument in the method definition.
-     * @param p2 The third expected argument in the method definition.
+     * @param p0 The first expected argument in the function definition.
+     * @param p1 The second expected argument in the function definition.
+     * @param p2 The third expected argument in the function definition.
      */
     public ArgParser(String funcname, PyObject[] args, String[] kws, String p0,
             String p1, String p2) {
@@ -98,12 +98,12 @@ public class ArgParser {
     }
 
     /**
-     * Create an ArgParser with three method argument
+     * Create an ArgParser for a multi-argument function.
      * 
-     * @param funcname Name of the method. Used in error messages.
+     * @param funcname Name of the function. Used in error messages.
      * @param args The actual call arguments supplied in the call.
      * @param kws The actual keyword names supplied in the call.
-     * @param paramnames The list of expected argument in the method definition.
+     * @param paramnames The list of expected argument in the function definition.
      */
     public ArgParser(String funcname, PyObject[] args, String[] kws,
             String[] paramnames) {
@@ -211,20 +211,37 @@ public class ArgParser {
     }
 
     /**
-     * Return a required argument as a PyObject, ensuring the object
-     * is of the specified type.
-     *
+     * Return a required argument as a PyObject, ensuring the object is of the specified type.
+     * 
      * @param pos the position of the argument. First argument is numbered 0
      * @param type the desired PyType of the argument
-     * @return the PyObject of PyType
+     * @return the PyObject of PyType type
      */
     public PyObject getPyObjectByType(int pos, PyType type) {
-        PyObject arg = getRequiredArg(pos);
-        if (!Py.isInstance(arg, type)) {
-            throw Py.TypeError(String.format("argument %d must be %s, not %s", pos + 1,
-                                             type.fastGetName(), arg.getType().fastGetName()));
-        }
-        return arg;
+        PyObject arg = getRequiredArg(pos); // != null
+        return checkedForType(arg, pos, type);
+    }
+
+    /**
+     * Return an optional argument as a PyObject, or return the default value provided, which may
+     * be <code>null</code>. If the returned value is not <code>null</code>, it must be of the
+     * specified type.
+     * 
+     * @param pos the position of the argument. First argument is numbered 0
+     * @param type the desired PyType of the argument
+     * @param def to return if the argument at pos was not given (null allowed)
+     * @return the PyObject of PyType type
+     */
+    public PyObject getPyObjectByType(int pos, PyType type, PyObject def) {
+        PyObject arg = getOptionalArg(pos);
+        return checkedForType((arg != null ? arg : def), pos, type);
+    }
+
+    // Common code for getObjectByType: don't check null!
+    private static PyObject checkedForType(PyObject arg, int pos, PyType type) {
+        if (arg == null || Py.isInstance(arg, type)) return arg;
+        throw Py.TypeError(String.format("argument %d must be %s, not %s", pos + 1,
+                                         type.fastGetName(), arg.getType().fastGetName()));
     }
 
     /**
