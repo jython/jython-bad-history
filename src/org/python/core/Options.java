@@ -76,6 +76,30 @@ public class Options {
      * binary mode */
     public static boolean unbuffered = false;
 
+    /** Whether -3 (py3k warnings) was enabled via the command line. */
+    public static boolean py3k_warning = false;
+    
+    /** Whether -B (don't write bytecode on import) was enabled via the command line. */
+    public static boolean dont_write_bytecode = false;
+
+    /** Whether -E (ignore environment) was enabled via the command line. */
+    //XXX: place holder, not implemented yet.
+    public static boolean ignore_environment = false;
+
+    //XXX: place holder, not implemented yet.
+    public static boolean no_user_site = false;
+
+    //XXX: place holder, not implemented yet.
+    public static boolean no_site = false;
+
+    //XXX: place holder
+    public static int bytes_warning = 0;
+
+    // Corresponds to -O (Python bytecode optimization), -OO (remove docstrings)
+    // flags in CPython; it's not clear how Jython should expose its optimization,
+    // but this is user visible as of 2.7.
+    public static int optimize = 0;
+
     /**
      * Enable division warning. The value maps to the registry values of
      * <ul>
@@ -84,7 +108,7 @@ public class Options {
      * <li>warnall: 2</li>
      * </ul>
      */
-    public static int divisionWarning = 0;
+    public static int division_warning = 0;
 
     //
     // ####### END OF OPTIONS
@@ -155,16 +179,16 @@ public class Options {
 
         Options.Qnew = getBooleanOption("options.Qnew", Options.Qnew);
 
-        prop = PySystemState.registry.getProperty("python.divisionWarning");
+        prop = PySystemState.registry.getProperty("python.division_warning");
         if (prop != null) {
             if (prop.equalsIgnoreCase("old")) {
-                Options.divisionWarning = 0;
+                Options.division_warning = 0;
             } else if (prop.equalsIgnoreCase("warn")) {
-                Options.divisionWarning = 1;
+                Options.division_warning = 1;
             } else if (prop.equalsIgnoreCase("warnall")) {
-                Options.divisionWarning = 2;
+                Options.division_warning = 2;
             } else {
-                throw Py.ValueError("Illegal divisionWarning option "
+                throw Py.ValueError("Illegal division_warning option "
                         + "setting: '" + prop + "'");
             }
         }
