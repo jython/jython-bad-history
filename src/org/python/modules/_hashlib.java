@@ -30,6 +30,7 @@ public class _hashlib implements ClassDictInit {
     /** A mapping of Python algorithm names to MessageDigest names. */
     private static final Map<String, String> algorithmMap = new HashMap<String, String>() {{
             put("sha1", "sha-1");
+            put("sha224", "sha-224");
             put("sha256", "sha-256");
             put("sha384", "sha-384");
             put("sha512", "sha-512");
@@ -75,6 +76,14 @@ public class _hashlib implements ClassDictInit {
         return new$("sha1", obj);
     }
 
+    public static PyObject openssl_sha224() {
+        return openssl_sha224(null);
+    }
+
+    public static PyObject openssl_sha224(PyObject obj) {
+        return new$("sha224", obj);
+    }
+
     public static PyObject openssl_sha256() {
         return openssl_sha256(null);
     }
@@ -118,6 +127,7 @@ public class _hashlib implements ClassDictInit {
         private static final Map<String, Integer> blockSizes = new HashMap<String, Integer>() {{
                 put("md5", 64);
                 put("sha-1", 64);
+                put("sha-224", 64);
                 put("sha-256", 64);
                 put("sha-384", 128);
                 put("sha-512", 128);
@@ -135,6 +145,10 @@ public class _hashlib implements ClassDictInit {
 
         private static final MessageDigest getDigest(String name) {
             try {
+                // since sha 224 is not present in java.security
+                if (name.equals("sha-224")) {
+                    return new SHA224Digest();
+                }
                 return MessageDigest.getInstance(name);
             } catch (NoSuchAlgorithmException nsae) {
                 throw Py.ValueError("unsupported hash type");
@@ -148,7 +162,9 @@ public class _hashlib implements ClassDictInit {
          */
         private MessageDigest cloneDigest() {
             try {
-                return (MessageDigest)digest.clone();
+                synchronized (this) {
+                    return (MessageDigest)digest.clone();
+                }
             } catch (CloneNotSupportedException cnse) {
                 throw Py.RuntimeError(String.format("_hashlib.HASH (%s) internal error", name));
             }
@@ -176,12 +192,14 @@ public class _hashlib implements ClassDictInit {
                 string = obj.toString();
             } else if (obj instanceof PyArray) {
                 string = ((PyArray)obj).tostring();
-            }
-            else {
+            } else {
                 throw Py.TypeError("update() argument 1 must be string or read-only buffer, not "
                                    + obj.getType().fastGetName());
             }
-            digest.update(StringUtil.toBytes(string));
+            byte[] input = StringUtil.toBytes(string);
+            synchronized (this) {
+                digest.update(input);
+            }
         }
 
         public PyObject digest() {
@@ -223,7 +241,7 @@ public class _hashlib implements ClassDictInit {
         }
 
         @ExposedGet(name = "digestsize")
-        public int getDigestSize() {
+        public synchronized int getDigestSize() {
             return digest.getDigestLength();
         }
 
