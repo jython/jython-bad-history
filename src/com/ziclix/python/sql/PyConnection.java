@@ -126,7 +126,6 @@ public class PyConnection extends PyObject implements ClassDictInit, ContextMana
      * @param dict
      */
     static public void classDictInit(PyObject dict) {
-        dict.__setitem__("__version__", Py.newString("7290"));
         dict.__setitem__("autocommit", new PyInteger(0));
         dict.__setitem__("close", new ConnectionFunc("close", 0, 0, 0, zxJDBC.getString("close")));
         dict.__setitem__("commit", new ConnectionFunc("commit", 1, 0, 0,
