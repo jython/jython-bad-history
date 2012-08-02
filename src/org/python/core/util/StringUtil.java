@@ -4,7 +4,10 @@ package org.python.core.util;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 
+import org.python.core.BufferPointer;
 import org.python.core.Py;
+import org.python.core.BaseBytes;
+import org.python.core.PyBuffer;
 
 /**
  * String Utility methods.
@@ -66,7 +69,32 @@ public class StringUtil {
     }
 
     /**
-     * Decapitalize a String if it begins with a capital letter, e.g.:
+     * Return a new String with chars corresponding to buf, which is a byte-oriented buffer obtained
+     * through the buffer API.
+     * 
+     * @param buf a PyBuffer of bytes
+     * @return a new String corresponding to the bytes in buf
+     */
+    public static String fromBytes(PyBuffer buf) {
+        BufferPointer bp = buf.getBuf();
+        return fromBytes(bp.storage, bp.offset, bp.size);
+    }
+
+    /**
+     * Return a new String with chars corresponding to b.
+     *
+     * @param b a BaseBytes containing bytes
+     * @return a new String corresponding to the bytes in b
+     */
+    public static String fromBytes(BaseBytes b) {
+
+         int size = b.__len__();
+         StringBuilder buf = new StringBuilder(size);
+         for (int j = 0; j < size; j++)  buf.append((char) b.intAt(j));
+         return buf.toString();
+     }
+
+    /** Decapitalize a String if it begins with a capital letter, e.g.:
      * FooBar -> fooBar
      *
      * @param string a String
