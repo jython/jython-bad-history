@@ -4,6 +4,10 @@
  */
 package org.python.core;
 
+import org.python.core.stringlib.Formatter;
+import org.python.core.stringlib.InternalFormatSpec;
+import org.python.core.stringlib.InternalFormatSpecParser;
+
 import org.python.expose.ExposedGet;
 import org.python.expose.ExposedMethod;
 import org.python.expose.ExposedNew;
@@ -434,7 +438,7 @@ public class PyComplex extends PyObject {
         if (!canCoerce(right)) {
             return null;
         }
-        if (Options.divisionWarning >= 2) {
+        if (Options.division_warning >= 2) {
             Py.warning(Py.DeprecationWarning, "classic complex division");
         }
         return _div(this, coerce(right));
@@ -450,7 +454,7 @@ public class PyComplex extends PyObject {
         if (!canCoerce(left)) {
             return null;
         }
-        if (Options.divisionWarning >= 2) {
+        if (Options.division_warning >= 2) {
             Py.warning(Py.DeprecationWarning, "classic complex division");
         }
         return _div(coerce(left), this);
@@ -707,10 +711,7 @@ public class PyComplex extends PyObject {
 
     @ExposedMethod(doc = BuiltinDocs.complex___pos___doc)
     final PyObject complex___pos__() {
-        if (getType() == TYPE) {
-            return this;
-        }
-        return new PyComplex(real, imag);
+        return getType() == TYPE ? this : new PyComplex(real, imag);
     }
 
     @Override
@@ -781,6 +782,50 @@ public class PyComplex extends PyObject {
     public PyTuple __getnewargs__() {
         return complex___getnewargs__();
     }
+
+    @Override
+    public PyObject __format__(PyObject formatSpec) {
+        return complex___format__(formatSpec);
+    }
+
+    @ExposedMethod(doc = BuiltinDocs.complex___format___doc)
+    final PyObject complex___format__(PyObject formatSpec) {
+        return formatImpl(real, imag, formatSpec);
+    }
+
+    static PyObject formatImpl(double r, double i, PyObject formatSpec) {
+        if (!(formatSpec instanceof PyString)) {
+            throw Py.TypeError("__format__ requires str or unicode");
+        }
+
+        PyString formatSpecStr = (PyString) formatSpec;
+        String result;
+        try {
+            String specString = formatSpecStr.getString();
+            InternalFormatSpec spec = new InternalFormatSpecParser(specString).parse();
+            switch (spec.type) {
+                case '\0': /* No format code: like 'g', but with at least one decimal. */
+                case 'e':
+                case 'E':
+                case 'f':
+                case 'F':
+                case 'g':
+                case 'G':
+                case 'n':
+                case '%':
+                    result = Formatter.formatComplex(r, i, spec);
+                    break;
+                default:
+                    /* unknown */
+                    throw Py.ValueError(String.format("Unknown format code '%c' for object of type 'complex'",
+                                            spec.type));
+            }
+        } catch (IllegalArgumentException e) {
+            throw Py.ValueError(e.getMessage());
+        }
+        return formatSpecStr.createInstance(result);
+    }
+
 
     @Override
     public boolean isNumberType() {
