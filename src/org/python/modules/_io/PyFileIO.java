@@ -1,321 +1,473 @@
-/* Copyright (c) Jython Developers */
+/* Copyright (c)2012 Jython Developers */
 package org.python.modules._io;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.Callable;
+import java.nio.channels.Channel;
+import java.nio.channels.FileChannel;
 
 import org.python.core.ArgParser;
-import org.python.core.BaseBytes;
 import org.python.core.BuiltinDocs;
 import org.python.core.Py;
-import org.python.core.PyArray;
-import org.python.core.PyInteger;
+import org.python.core.PyBuffer;
+import org.python.core.PyException;
 import org.python.core.PyJavaType;
+import org.python.core.PyLong;
+import org.python.core.PyNewWrapper;
 import org.python.core.PyObject;
 import org.python.core.PyString;
-import org.python.core.PySystemState;
 import org.python.core.PyType;
 import org.python.core.PyUnicode;
 import org.python.core.io.FileIO;
-import org.python.core.util.StringUtil;
+import org.python.core.io.RawIOBase;
 import org.python.expose.ExposedGet;
 import org.python.expose.ExposedMethod;
 import org.python.expose.ExposedNew;
+import org.python.expose.ExposedSet;
 import org.python.expose.ExposedType;
 
-@ExposedType(name = "_io.FileIO")
-public class PyFileIO extends PyObject {
+import com.kenai.constantine.platform.Errno;
+
+@ExposedType(name = "_io.FileIO", base = PyRawIOBase.class)
+public class PyFileIO extends PyRawIOBase {
 
     public static final PyType TYPE = PyType.fromClass(PyFileIO.class);
 
-    private FileIO file;
-	private PyObject name;
-	private Boolean seekable;
+    /** The FileIO to which we delegate operations not complete locally. */
+    private FileIO ioDelegate;
 
-    @ExposedGet
-	public boolean closefd;
+    /*
+     * Implementation note: CPython fileio does not use the base-class, possibly overridden,
+     * readable(), writable() and seekable(). Instead it sets local variables for readable and
+     * writable using the open mode, and returns these as readable() and writable(), while using
+     * them internally. The local variable seekable (and seekable()) is worked out from a one-time
+     * trial seek.
+     */
+    /** Set true when stream must be <code>readable = reading | updating</code> */
+    private boolean readable;
 
-    /** The mode string */
-    @ExposedGet(doc = BuiltinDocs.file_mode_doc)
-    public String mode;
+    /** Set true when stream must be <code>writable = writing | updating | appending</code> */
+    private boolean writable;
 
-    /** The file's closer object; ensures the file is closed at shutdown */
-    private Closer closer;
+    /** Set true when we have made the seekable test */
+    private boolean seekableKnown;
 
-    public PyFileIO() {
-        super(TYPE);
+    /** Set true when stream is seekable */
+    private boolean seekable;
+
+    /** Whether to close the underlying stream on closing this object. */
+    @ExposedGet(doc = "True if the file descriptor will be closed")
+    public final boolean closefd;
+
+    /** The mode as a PyString based on readable and writable */
+    @ExposedGet(doc = "String giving the file mode: 'rb', 'rb+', or 'wb'")
+    public final PyString mode;
+    @ExposedSet(name="mode")
+    public final void mode_readonly(PyString value) {
+        readonlyAttributeError("mode");
     }
 
-    public PyFileIO(PyType subType) {
-        super(subType);
+    private static final PyString defaultMode = new PyString("r");
+
+    /**
+     * Construct an open <code>_io.FileIO</code> starting with an object that may be a file name or
+     * a file descriptor (actually a {@link RawIOBase}). Only the relevant flags within the parsed
+     * mode object are consulted (so that flags meaningful to this sub-class need not be processed
+     * out).
+     *
+     * @param file path or descriptor on which this should be constructed
+     * @param mode type of access specified
+     * @param closefd if <code>false</code>, do not close <code>fd</code> on call to
+     *            <code>close()</code>
+     */
+    public PyFileIO(PyObject file, OpenMode mode, boolean closefd) {
+        this(TYPE, file, mode, closefd);
     }
 
-    public PyFileIO(String name, String mode, boolean closefd) {
-    	this();
-        FileIO___init__(Py.newString(name), mode, closefd);
-    }
-
-    public PyFileIO(String name, String mode) {
-    	this(name, mode, true);
-    }
-
-    @ExposedNew
-    @ExposedMethod(doc = BuiltinDocs.file___init___doc)
-    final void FileIO___init__(PyObject[] args, String[] kwds) {
-        ArgParser ap = new ArgParser("file", args, kwds, new String[] {"name", "mode", "closefd"}, 1);
-        PyObject name = ap.getPyObject(0);
-        if (!(name instanceof PyString)) {
-            throw Py.TypeError("coercing to Unicode: need string, '" + name.getType().fastGetName()
-                               + "' type found");
-        }
-        String mode = ap.getString(1, "r");
-        boolean closefd = Py.py2boolean(ap.getPyObject(2, Py.True));
-        // TODO: make this work with file channels so closefd=False can be used
-        if (!closefd)
-        	throw Py.ValueError("Cannot use closefd=False with file name");
-        
-        FileIO___init__((PyString)name, mode, closefd);
-        closer = new Closer(file, Py.getSystemState());
-    }
-
-    private void FileIO___init__(PyString name, String mode, boolean closefd) {
-    	mode = parseMode(mode);
-        this.name = name;
-        this.mode = mode;
+    /**
+     * Construct an open <code>_io.FileIO</code> for a sub-class constructor starting with an object
+     * that may be a file name or a file descriptor (actually a {@link RawIOBase}). Only the
+     * relevant flags within the parsed mode object are consulted (so that flags meaningful to this
+     * sub-class need not be processed out).
+     *
+     * @param subtype for which construction is occurring
+     * @param file path or descriptor on which this should be constructed
+     * @param mode type of access specified
+     * @param closefd if <code>false</code>, do not close <code>file</code> on call to
+     *            <code>close()</code>
+     */
+    public PyFileIO(PyType subtype, PyObject file, OpenMode mode, boolean closefd) {
+        super(subtype);
+        setDelegate(file, mode, closefd);
         this.closefd = closefd;
-        this.file = new FileIO((PyString) name, mode.replaceAll("b", ""));
-    }
 
-    private String parseMode(String mode) {
-        if (mode.length() == 0) {
-            throw Py.ValueError("empty mode string");
-        }
+        readable = mode.reading | mode.updating;
+        writable = mode.writing | mode.updating | mode.appending;
 
-        String origMode = mode;
-        if ("rwa".indexOf(mode.charAt(0)) == -1) {
-            throw Py.ValueError("mode string must begin with one of 'r', 'w', 'a' or 'U', not '"
-                                + origMode + "'");
-        }
-
-        boolean reading = mode.contains("r");
-        boolean writing = mode.contains("w");
-        boolean appending = mode.contains("a");
-        boolean updating = mode.contains("+");
-
-        return (reading ? "r" : "") + (writing ? "w" : "") + (appending ? "a" : "")
-                + "b" + (updating ? "+" : "");
-    }
-
-    @ExposedMethod(doc = BuiltinDocs.file_close_doc)
-    final synchronized void FileIO_close() {
-        if (closer != null) {
-            closer.close();
-            closer = null;
+        // The mode string of a raw file always asserts it is binary: "rb", "rb+", or "wb".
+        if (readable) {
+            this.mode = new PyString(writable ? "rb+" : "rb");
         } else {
-            file.close();
+            this.mode = new PyString("wb");
         }
     }
 
+    /**
+     * Helper function that turns the arguments of the most general constructor, or
+     * <code>__new__</code>, into a {@link FileIO}, assigned to {@link #ioDelegate}. It enforces
+     * rules on {@link #closefd} and the type of object that may be a file descriptor, and assigns
+     * the <code>name</code> attribute to the string name or the file descriptor (see Python docs
+     * for io.FileIO.name). This places the logic of those several operations in one place.
+     * <p>
+     * In many cases (such as construction from a file name, the FileIO is a newly-opened file. When
+     * the file object passed in is a file descriptor, the FileIO may be created to wrap that
+     * existing stream.
+     *
+     * @param file name or descriptor
+     * @param mode parsed file open mode
+     * @param closefd must be true if file is in fact a name (checked, not used)
+     */
+    private void setDelegate(PyObject file, OpenMode mode, boolean closefd) {
+
+        if (file instanceof PyString) {
+            // Open a file by name
+            if (!closefd) {
+                throw Py.ValueError("Cannot use closefd=False with file name");
+            }
+            ioDelegate = new FileIO((PyString)file, mode.forFileIO());
+
+        } else {
+            /*
+             * Build an _io.FileIO from an existing "file descriptor", which we may or may not want
+             * closed at the end. A CPython file descriptor is an int, but this is not the natural
+             * choice in Jython, and file descriptors should be treated as opaque.
+             */
+            Object fd = file.__tojava__(Object.class);
+
+            if (fd instanceof RawIOBase) {
+                // It is the "Jython file descriptor" from which we can get a channel.
+                /*
+                 * If the argument were a FileIO, could we assign it directly to ioDelegate? I think
+                 * not: there would be a problem with close and closefd=False since it is not the
+                 * PyFileIO that keeps state.
+                 */
+                Channel channel = ((RawIOBase)fd).getChannel();
+                if (channel instanceof FileChannel) {
+                    if (channel.isOpen()) {
+                        FileChannel fc = (FileChannel)channel;
+                        ioDelegate = new FileIO(fc, mode.forFileIO());
+                    } else {
+                        // File not open (we have to check as FileIO doesn't)
+                        throw Py.OSError(Errno.EBADF);
+                    }
+                }
+
+            } else {
+                // The file was a type we don't know how to use
+                throw Py.TypeError(String.format("invalid file: %s", file.__repr__().asString()));
+            }
+        }
+
+        // The name is either the textual name or a file descriptor (see Python docs)
+        fastGetDict().__setitem__("name", file);
+    }
+
+    private static final String[] openArgs = {"file", "mode", "closefd"};
+
+    /**
+     * Create a {@link PyFileIO} and its <code>FileIO</code> delegate from the arguments.
+     */
+    @ExposedNew
+    static PyObject FileIO___new__(PyNewWrapper new_, boolean init, PyType subtype,
+            PyObject[] args, String[] keywords) {
+
+        ArgParser ap = new ArgParser("FileIO", args, keywords, openArgs, 1);
+        PyObject file = ap.getPyObject(0);
+        PyObject m = ap.getPyObject(1, defaultMode);
+        boolean closefd = Py.py2boolean(ap.getPyObject(2, Py.True));
+
+        // Decode the mode string and check it
+        OpenMode mode = new OpenMode(m.asString()) {
+
+            {
+                invalid |= universal | text;    // These other modes are invalid
+            }
+        };
+        mode.checkValid();
+
+        if (subtype == TYPE) {
+            return new PyFileIO(subtype, file, mode, closefd);
+        } else {
+            return new PyFileIODerived(subtype, file, mode, closefd);
+        }
+
+    }
+
+    /*
+     * ===========================================================================================
+     * Exposed methods in the order they appear in CPython's fileio.c method table
+     * ===========================================================================================
+     */
+
+    // _RawIOBase.read is correct for us
+    // _RawIOBase.readall is correct for us
+
+    @Override
+    public PyObject readinto(PyObject buf) {
+        return FileIO_readinto(buf);
+    }
+
+    @ExposedMethod(doc = readinto_doc)
+    final PyLong FileIO_readinto(PyObject buf) {
+
+        if (!readable) {            // ... (or closed)
+            throw tailoredValueError("read");
+        }
+
+        // Perform the operation through a buffer view on the object
+        PyBuffer pybuf = writablePyBuffer(buf);
+        try {
+            PyBuffer.Pointer bp = pybuf.getBuf();
+            ByteBuffer byteBuffer = ByteBuffer.wrap(bp.storage, bp.offset, pybuf.getLen());
+            int count;
+            synchronized (ioDelegate) {
+                count = ioDelegate.readinto(byteBuffer);
+            }
+            return new PyLong(count);
+
+        } finally {
+            // Must unlock the PyBuffer view from client's object
+            pybuf.release();
+        }
+    }
+
+    @Override
+    public PyObject write(PyObject buf) {
+        return FileIO_write(buf);
+    }
+
+    @ExposedMethod(doc = write_doc)
+    final PyLong FileIO_write(PyObject obj) {
+
+        if (!writable) {            // ... (or closed)
+            throw tailoredValueError("writ");
+        }
+
+        // Get or synthesise a buffer API on the object to be written
+        PyBuffer pybuf = readablePyBuffer(obj);
+        try {
+            // Access the data as a java.nio.ByteBuffer [pos:limit] within possibly larger array
+            PyBuffer.Pointer bp = pybuf.getBuf();
+            ByteBuffer byteBuffer = ByteBuffer.wrap(bp.storage, bp.offset, pybuf.getLen());
+            int count;
+            synchronized (ioDelegate) {
+                count = ioDelegate.write(byteBuffer);
+            }
+            return new PyLong(count);
+
+        } finally {
+            // Even if that went badly, we should release the lock on the client buffer
+            pybuf.release();
+        }
+    }
+
+    @Override
+    public long seek(long pos, int whence) {
+        return FileIO_seek(pos, whence);
+    }
+
+    @ExposedMethod(defaults = "0", doc = seek_doc)
+    final long FileIO_seek(long pos, int whence) {
+        if (__closed) {
+            throw closedValueError();
+        }
+        synchronized (ioDelegate) {
+            return ioDelegate.seek(pos, whence);
+        }
+    }
+
+    // _IOBase.tell() is correct for us
+
+    @Override
+    public long truncate() {
+        return _truncate();
+    }
+
+    @Override
+    public long truncate(long size) {
+        return _truncate(size);
+    }
+
+    @ExposedMethod(defaults = "null", doc = truncate_doc)
+    final long FileIO_truncate(PyObject size) {
+        return (size != null) ? _truncate(size.asLong()) : _truncate();
+    }
+
+    /** Common to FileIO_truncate(null) and truncate(). */
+    private final long _truncate() {
+        if (!writable) {            // ... (or closed)
+            throw tailoredValueError("writ");
+        }
+        synchronized (ioDelegate) {
+            return ioDelegate.truncate(ioDelegate.tell());
+        }
+    }
+
+    /** Common to FileIO_truncate(size) and truncate(size). */
+    private final long _truncate(long size) {
+        if (!writable) {            // ... (or closed)
+            throw tailoredValueError("writ");
+        }
+        synchronized (ioDelegate) {
+            return ioDelegate.truncate(size);
+        }
+    }
+
+    /**
+     * Close the underlying ioDelegate only if <code>closefd</code> was specified as (or defaulted
+     * to) <code>True</code>.
+     */
+    @Override
     public void close() {
         FileIO_close();
     }
 
-    public boolean readable() {
-        return FileIO_readable();
+    @ExposedMethod
+    final synchronized void FileIO_close() {
+        // Close this object to further input (also calls flush)
+        super.close();
+        // Now close downstream (if required to)
+        if (closefd) {
+            ioDelegate.close();
+        }
+        // This saves us doing two tests for each action (when the file is open)
+        readable = false;
+        writable = false;
     }
 
-    @ExposedMethod(doc = "True if file was opened in a read mode.")
-    final boolean FileIO_readable() {
-        return file.readable();
-    }
-
-    @ExposedMethod(defaults = {"0"}, doc = BuiltinDocs.file_seek_doc)
-    final synchronized PyObject FileIO_seek(long pos, int how) {
-        checkClosed();
-        return Py.java2py(file.seek(pos, how));
-    }
-
+    @Override
     public boolean seekable() {
         return FileIO_seekable();
     }
 
-    @ExposedMethod(doc = "True if file supports random-access.")
+    @ExposedMethod(doc = seekable_doc)
     final boolean FileIO_seekable() {
-    	if (seekable == null)
-    		seekable = file.seek(0, 0) >= 0;
-    	return seekable;
+        if (__closed) {
+            throw closedValueError();
+        }
+        if (!seekableKnown) {
+            seekable = ioDelegate.seek(0, 0) >= 0;
+            seekableKnown = true;
+        }
+        return seekable;
     }
 
-    @ExposedMethod(doc = BuiltinDocs.file_tell_doc)
-    final synchronized long FileIO_tell() {
-        checkClosed();
-        return file.tell();
+    @Override
+    public boolean readable() throws PyException {
+        return FileIO_readable();
     }
 
-    public long tell() {
-        return FileIO_tell();
+    @ExposedMethod(doc = readable_doc)
+    final boolean FileIO_readable() {
+        if (__closed) {
+            throw closedValueError();
+        }
+        return readable;
     }
 
-    @ExposedMethod(defaults = {"null"}, doc = BuiltinDocs.file_truncate_doc)
-    final PyObject FileIO_truncate(PyObject position) {
-        if (position == null)
-            return Py.java2py(FileIO_truncate());
-    	return Py.java2py(FileIO_truncate(position.asLong()));
-    }
-
-    final synchronized long FileIO_truncate(long position) {
-        return file.truncate(position);
-    }
-
-    public long truncate(long position) {
-        return FileIO_truncate(position);
-    }
-
-    final synchronized long FileIO_truncate() {
-        return file.truncate(file.tell());
-    }
-
-    public void truncate() {
-        FileIO_truncate();
-    }
-
-    public boolean isatty() {
-        return FileIO_isatty();
-    }
-
-    @ExposedMethod(doc = BuiltinDocs.file_isatty_doc)
-    final boolean FileIO_isatty() {
-        return file.isatty();
-    }
-
-    public boolean writable() {
+    @Override
+    public boolean writable() throws PyException {
         return FileIO_writable();
     }
 
-    @ExposedMethod(doc = "True if file was opened in a write mode.")
+    @ExposedMethod(doc = writable_doc)
     final boolean FileIO_writable() {
-        return file.writable();
+        if (__closed) {
+            throw closedValueError();
+        }
+        return writable;
     }
 
+    @Override
     public PyObject fileno() {
         return FileIO_fileno();
     }
 
-    @ExposedMethod(doc = BuiltinDocs.file_fileno_doc)
+    @ExposedMethod(doc = fileno_doc)
     final PyObject FileIO_fileno() {
-        return PyJavaType.wrapJavaObject(file.fileno());
+        return PyJavaType.wrapJavaObject(ioDelegate.fileno());
     }
 
-    @ExposedMethod(defaults = {"-1"}, doc = BuiltinDocs.file_read_doc)
-    final synchronized PyString FileIO_read(int size) {
-        checkClosed();
-        ByteBuffer buf = file.read(size);
-        return new PyString(StringUtil.fromBytes(buf));
-    }
-
-    public PyString read(int size) {
-        return FileIO_read(size);
-    }
-
-    @ExposedMethod(doc = BuiltinDocs.file_read_doc)
-    final synchronized PyString FileIO_readall() {
-    	return FileIO_read(-1);
-    }
-
-    /**
-     * Return a String for writing to the underlying file from obj.
-     */
-    private String asWritable(PyObject obj, String message) {
-        if (obj instanceof PyUnicode) {
-            return ((PyUnicode)obj).encode();
-        } else if (obj instanceof PyString) {
-            return ((PyString) obj).getString();
-        } else if (obj instanceof PyArray) {
-            return ((PyArray)obj).tostring();
-        } else if (obj instanceof BaseBytes) {
-            return StringUtil.fromBytes((BaseBytes)obj);
+    @ExposedMethod(doc = isatty_doc)
+    final boolean FileIO_isatty() {
+        if (__closed) {
+            throw closedValueError();
         }
-        if (message == null) {
-            message = String.format("argument 1 must be string or buffer, not %.200s",
-                                    obj.getType().fastGetName());
+        return ioDelegate.isatty();
+    }
+
+    // fileio.c has no flush(), but why not, when there is fdflush()?
+    // And it is a no-op for Jython io.FileIO, but why when there is FileChannel.force()?
+    @Override
+    public void flush() {
+        FileIO_flush();
+    }
+
+    @ExposedMethod(doc = "Flush write buffers.")
+    final void FileIO_flush() {
+        if (writable()) {
+            // Check for *downstream* close. (Locally, closed means "closed to client actions".)
+            ioDelegate.checkClosed();
+            ioDelegate.flush();
         }
-        throw Py.TypeError(message);
     }
 
-    @ExposedMethod(doc = BuiltinDocs.file_write_doc)
-    final PyObject FileIO_write(PyObject obj) {
-    	String writable = asWritable(obj, null);
-    	byte[] bytes = StringUtil.toBytes(writable);
-        int written = write(ByteBuffer.wrap(bytes));
-    	return new PyInteger(written);
-    }
-
-    final synchronized int write(ByteBuffer buf) {
-        checkClosed();
-        return file.write(buf);
-    }
-
-    @ExposedMethod(names = {"__str__", "__repr__"}, doc = BuiltinDocs.file___str___doc)
+    @ExposedMethod(names = {"__str__", "__repr__"}, doc = BuiltinDocs.object___str___doc)
     final String FileIO_toString() {
-        if (name instanceof PyUnicode) {
-            String escapedName = PyString.encode_UnicodeEscape(name.toString(), false);
-            return String.format("<_io.FileIO name='%s', mode='%s'>", escapedName, mode);
+        if (closed()) {
+            return "<_io.FileIO [closed]>";
+        } else {
+            PyObject name = fastGetDict().__finditem__("name");
+            if (name != null && (name instanceof PyString)) {
+                String xname = name.asString();
+                if (name instanceof PyUnicode) {
+                    xname = PyString.encode_UnicodeEscape(xname, false);
+                }
+                return String.format("<_io.FileIO name='%s' mode='%s'>", xname, mode);
+            } else {
+                return String.format("<_io.FileIO fd=%s mode='%s'>", fileno(), mode);
+            }
         }
-        return String.format("<_io.FileIO name='%s', mode='%s'>", name, mode);
     }
 
     @Override
     public String toString() {
-        return FileIO_toString();
-    }
-
-    private void checkClosed() {
-        file.checkClosed();
-    }
-
-    @ExposedGet(name = "closed", doc = BuiltinDocs.file_closed_doc)
-    public boolean getClosed() {
-        return file.closed();
+        return FileIO_toString().toString();
     }
 
     /**
-     * XXX update docs - A mechanism to make sure PyFiles are closed on exit. On creation Closer adds itself
-     * to a list of Closers that will be run by PyFileCloser on JVM shutdown. When a
-     * PyFile's close or finalize methods are called, PyFile calls its Closer.close which
-     * clears Closer out of the shutdown queue.
+     * Convenience method providing the exception when an method requires the file to be open, and
+     * it isn't.
      *
-     * We use a regular object here rather than WeakReferences and their ilk as they may
-     * be collected before the shutdown hook runs. There's no guarantee that finalize will
-     * be called during shutdown, so we can't use it. It's vital that this Closer has no
-     * reference to the PyFile it's closing so the PyFile remains garbage collectable.
+     * @return ValueError to throw
      */
-    private static class Closer implements Callable<Void> {
-
-        /**
-         * The underlying file
-         */
-        private final FileIO file;
-        private PySystemState sys;
-
-        public Closer(FileIO file, PySystemState sys) {
-            this.file = file;
-            this.sys = sys;
-            sys.registerCloser(this);
-        }
-
-        /** For closing directly */
-        public void close() {
-            sys.unregisterCloser(this);
-            file.close();
-            sys = null;
-        }
-
-        /** For closing as part of a shutdown process */
-        public Void call() {
-            file.close();
-            sys = null;
-            return null;
-        }
-
+    private PyException closedValueError() {
+        return Py.ValueError("I/O operation on closed file");
     }
+
+    /**
+     * Convenience method providing the exception when an method requires the file to be open,
+     * readable or writable, and it isn't. If the file is closed, return the message for that,
+     * otherwise, one about reading or writing.
+     *
+     * @param action type of operation not valid ("read" or "writ" in practice).
+     * @return ValueError to throw
+     */
+    private PyException tailoredValueError(String action) {
+        if (action == null || __closed) {
+            return closedValueError();
+        } else {
+            return Py.ValueError("File not open for " + action + "ing");
+        }
+    }
+
 }

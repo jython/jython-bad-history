@@ -1,6 +1,5 @@
 package org.python.core.buffer;
 
-import org.python.core.BufferPointer;
 import org.python.core.PyBuffer;
 import org.python.core.PyException;
 
@@ -30,32 +29,15 @@ public class Strided1DWritableBuffer extends Strided1DBuffer {
      * @param index0 index into storage of item[0]
      * @param length number of items in the slice
      * @param stride in between successive elements of the new PyBuffer
+     * @throws NullPointerException if <code>storage</code> is null
+     * @throws ArrayIndexOutOfBoundsException if <code>index0</code>, <code>length</code> and
+     *             <code>stride</code> are inconsistent with <code>storage.length</code>
      * @throws PyException (BufferError) when expectations do not correspond with the type
      */
     public Strided1DWritableBuffer(int flags, byte[] storage, int index0, int length, int stride)
-            throws PyException {
-
-        // Arguments programme the object directly
-        // this();
-        this.shape[0] = length;
-        this.index0 = index0;
-        this.stride = stride;
-
-        // Calculate buffer offset and size: start with distance of last item from first
-        int d = (length - 1) * stride;
-
-        if (stride >= 0) {
-            // Positive stride: indexing runs from first item
-            this.buf = new BufferPointer(storage, index0, 1 + d);
-            if (stride <= 1) {
-                // Really this is a simple buffer
-                addFeatureFlags(CONTIGUITY);
-            }
-        } else {
-            // Negative stride: indexing runs from last item
-            this.buf = new BufferPointer(storage, index0 + d, 1 - d);
-        }
-
+            throws ArrayIndexOutOfBoundsException, NullPointerException, PyException {
+        super(storage, index0, length, stride);
+        addFeatureFlags(WRITABLE);
         checkRequestFlags(flags);   // Check request is compatible with type
     }
 
@@ -66,7 +48,7 @@ public class Strided1DWritableBuffer extends Strided1DBuffer {
 
     @Override
     public void storeAt(byte value, int index) throws IndexOutOfBoundsException, PyException {
-        buf.storage[index0 + index * stride] = value;
+        storage[index0 + index * stride] = value;
     }
 
     /**
@@ -84,13 +66,13 @@ public class Strided1DWritableBuffer extends Strided1DBuffer {
         // Strategy depends on whether items are laid end-to-end or there are gaps
         if (stride == 1) {
             // Straight copy of contiguous bytes
-            System.arraycopy(src, srcPos, buf.storage, d, length);
+            System.arraycopy(src, srcPos, storage, d, length);
 
         } else {
-            // Discontiguous copy: single byte items
+            // Non-contiguous copy: single byte items
             int limit = d + length * stride;
             for (; d != limit; d += stride) {
-                buf.storage[d] = src[s++];
+                storage[d] = src[s++];
             }
         }
     }
@@ -101,22 +83,25 @@ public class Strided1DWritableBuffer extends Strided1DBuffer {
      * <code>Strided1DWritableBuffer</code> provides an implementation that returns a writable
      * slice.
      */
+    @Override
     public PyBuffer getBufferSlice(int flags, int start, int length, int stride) {
 
-        // Translate relative to underlying buffer
-        int compStride = this.stride * stride;
-        int compIndex0 = index0 + start * stride;
+        if (length > 0) {
+            // Translate start relative to underlying buffer
+            int compStride= this.stride * stride;
+            int compIndex0 = index0 + start * this.stride;
+            // Construct a view, taking a lock on the root object (this or this.root)
+            return new SlicedView(getRoot(), flags, storage, compIndex0, length, compStride);
 
-        // Check the slice sits within the present buffer (first and last indexes)
-        checkInBuf(compIndex0, compIndex0 + (length - 1) * compStride);
-
-        // Construct a view, taking a lock on the root object (this or this.root)
-        return new SlicedView(getRoot(), flags, buf.storage, compIndex0, length, compStride);
+        } else {
+            // Special case for length==0 where above logic would fail. Efficient too.
+            return new ZeroByteBuffer.View(getRoot(), flags);
+        }
     }
 
     /**
-     * A <code>Strided1DWritableBuffer.SlicedView</code> represents a discontiguous subsequence of a
-     * simple buffer.
+     * A <code>Strided1DWritableBuffer.SlicedView</code> represents a non-contiguous subsequence of
+     * a simple buffer.
      */
     static class SlicedView extends Strided1DWritableBuffer {
 

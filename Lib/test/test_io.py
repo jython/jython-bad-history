@@ -37,8 +37,9 @@ from collections import deque
 from test import test_support as support
 
 import codecs
-import io  # C implementation of io
-import _pyio as pyio # Python implementation of io
+import io               # subject of test
+import _io              # compiled implementation of io
+import _pyio as pyio    # Python implementation of io
 try:
     import threading
 except ImportError:
@@ -2546,9 +2547,8 @@ class MiscIOTest(unittest.TestCase):
 
         f = self.open(support.TESTFN, "w+")
         self.assertEqual(f.mode,            "w+")
-        #If next doesn't matter - does it matter it doesn't work in Jython?
-        #self.assertEqual(f.buffer.mode,     "rb+") # Does it really matter?
-        #self.assertEqual(f.buffer.raw.mode, "rb+")
+        self.assertEqual(f.buffer.mode,     "rb+") # Does it really matter?
+        self.assertEqual(f.buffer.raw.mode, "rb+")
 
         g = self.open(f.fileno(), "wb", closefd=False)
         self.assertEqual(g.mode,     "wb")
@@ -2723,7 +2723,9 @@ class PyMiscIOTest(MiscIOTest):
     io = pyio
 
 
-@unittest.skipIf(os.name == 'nt', 'POSIX signals required for this test.')
+@unittest.skipIf(os.name == 'nt' or 
+                 (sys.platform[:4] == 'java' and os._name == 'nt'),
+                 'POSIX signals required for this test.')
 class SignalsTest(unittest.TestCase):
 
     def setUp(self):
@@ -2949,9 +2951,6 @@ def test_main():
     py_io_ns.update((x.__name__, globs["Py" + x.__name__]) for x in mocks)
     # Avoid turning open into a bound method.
     py_io_ns["open"] = pyio.OpenWrapper
-    # XXX: While we use _jyio.py, the same trick is necessary for it too
-    import _jyio                              # XXX
-    c_io_ns["open"] = _jyio.OpenWrapper       # XXX
     for test in tests:
         if test.__name__.startswith("C"):
             for name, obj in c_io_ns.items():
