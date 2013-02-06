@@ -1,8 +1,8 @@
 /* Copyright (c) Jython Developers */
 package org.python.modules.posix;
 
-import com.kenai.constantine.Constant;
-import com.kenai.constantine.platform.Errno;
+import jnr.constants.Constant;
+import jnr.constants.platform.Errno;
 
 import java.io.File;
 import java.io.FileDescriptor;
@@ -17,10 +17,10 @@ import java.security.SecureRandom;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.jruby.ext.posix.FileStat;
-import org.jruby.ext.posix.POSIX;
-import org.jruby.ext.posix.POSIXFactory;
-import org.jruby.ext.posix.util.Platform;
+import jnr.posix.FileStat;
+import jnr.posix.POSIX;
+import jnr.posix.POSIXFactory;
+import jnr.posix.util.Platform;
 
 import org.python.core.ClassDictInit;
 import org.python.core.Py;
@@ -485,7 +485,7 @@ public class PosixModule implements ClassDictInit {
             if (!file.canRead()) {
                 throw Py.OSError(Errno.EACCES, path);
             }
-            throw Py.OSError("listdir(): an unknown error occured: " + path);
+            throw Py.OSError("listdir(): an unknown error occurred: " + path);
         }
 
         PyList list = new PyList();
@@ -688,8 +688,8 @@ public class PosixModule implements ClassDictInit {
         }
         if (errno.name() == errno.toString()) {
             // Fake constant or just lacks a description, fallback to Linux's
-            // XXX: have constantine handle this fallback
-            errno = Enum.valueOf(com.kenai.constantine.platform.linux.Errno.class,
+            // XXX: have jnr-constants handle this fallback
+            errno = Enum.valueOf(jnr.constants.platform.linux.Errno.class,
                                  errno.name());
         }
         return new PyString(errno.toString());
@@ -738,7 +738,7 @@ public class PosixModule implements ClassDictInit {
             if (!file.canWrite()) {
                 throw Py.OSError(Errno.EPERM, path);
             }
-            throw Py.OSError("unlink(): an unknown error occured" + absolutePath);
+            throw Py.OSError("unlink(): an unknown error occurred" + absolutePath);
         }
     }
 

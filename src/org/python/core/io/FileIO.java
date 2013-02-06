@@ -1,4 +1,4 @@
-/* Copyright (c) 2007 Jython Developers */
+/* Copyright (c) 2007-2012 Jython Developers */
 package org.python.core.io;
 
 import java.io.File;
@@ -12,8 +12,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 
-import com.kenai.constantine.platform.Errno;
-import org.jruby.ext.posix.util.Platform;
+import jnr.constants.platform.Errno;
+import jnr.posix.util.Platform;
 import org.python.core.Py;
 import org.python.core.PyString;
 import org.python.core.util.RelativeFile;
@@ -241,15 +241,16 @@ public class FileIO extends RawIOBase {
         checkClosed();
         checkReadable();
         try {
-            return fileChannel.read(buf);
+            int n = fileChannel.read(buf);
+            return n > 0 ? n : 0;
         } catch (IOException ioe) {
             throw Py.IOError(ioe);
         }
     }
 
     /**
-     * Read bytes into each of the specified ByteBuffers via scatter
-     * i/o.
+     * Read bytes into each of the specified ByteBuffers via scatter i/o. Returns number of bytes
+     * read (0 for EOF).
      *
      * @param bufs {@inheritDoc}
      * @return {@inheritDoc}
@@ -259,7 +260,8 @@ public class FileIO extends RawIOBase {
         checkClosed();
         checkReadable();
         try {
-            return fileChannel.read(bufs);
+            long n = fileChannel.read(bufs);
+            return n > 0L ? n : 0L;
         } catch (IOException ioe) {
             throw Py.IOError(ioe);
         }
