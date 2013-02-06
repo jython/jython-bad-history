@@ -16,9 +16,33 @@ public class PyPartialDerived extends PyPartial implements Slotted {
 
     private PyObject[]slots;
 
+    private PyObject dict;
+
+    public PyObject fastGetDict() {
+        return dict;
+    }
+
+    public PyObject getDict() {
+        return dict;
+    }
+
+    public void setDict(PyObject newDict) {
+        if (newDict instanceof PyStringMap||newDict instanceof PyDictionary) {
+            dict=newDict;
+        } else {
+            throw Py.TypeError("__dict__ must be set to a Dictionary "+newDict.getClass().getName());
+        }
+    }
+
+    public void delDict() {
+        // deleting an object's instance dict makes it grow a new one
+        dict=new PyStringMap();
+    }
+
     public PyPartialDerived(PyType subtype) {
         super(subtype);
         slots=new PyObject[subtype.getNumSlots()];
+        dict=subtype.instDict();
     }
 
     public PyString __str__() {
@@ -131,6 +155,14 @@ public class PyPartialDerived extends PyPartial implements Slotted {
         if (impl!=null)
             return impl.__get__(this,self_type).__call__();
         return super.__reduce__();
+    }
+
+    public PyObject __dir__() {
+        PyType self_type=getType();
+        PyObject impl=self_type.lookup("__dir__");
+        if (impl!=null)
+            return impl.__get__(this,self_type).__call__();
+        return super.__dir__();
     }
 
     public PyObject __add__(PyObject other) {

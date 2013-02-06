@@ -24,7 +24,6 @@ import org.python.core.PyObject;
 import org.python.core.PyString;
 import org.python.core.PyUnicode;
 import org.python.core.ThreadState;
-import org.python.util.Generic;
 
 import com.ziclix.python.sql.util.PyArgParser;
 
@@ -90,10 +89,10 @@ public class PyConnection extends PyObject implements ClassDictInit, ContextMana
      */
     public PyConnection(Connection connection) throws SQLException {
         this.closed = false;
-        cursors = Generic.newSetFromMap(new WeakHashMap<PyCursor, Boolean>());
+        cursors = Collections.newSetFromMap(new WeakHashMap<PyCursor, Boolean>());
         cursors = Collections.synchronizedSet(cursors);
         this.connection = connection;
-        statements = Generic.newSetFromMap(new WeakHashMap<PyStatement, Boolean>());
+        statements = Collections.newSetFromMap(new WeakHashMap<PyStatement, Boolean>());
         statements = Collections.synchronizedSet(statements);
         this.supportsTransactions = this.connection.getMetaData().supportsTransactions();
         this.supportsMultipleResultSets =
@@ -126,7 +125,6 @@ public class PyConnection extends PyObject implements ClassDictInit, ContextMana
      * @param dict
      */
     static public void classDictInit(PyObject dict) {
-        dict.__setitem__("__version__", Py.newString("7290"));
         dict.__setitem__("autocommit", new PyInteger(0));
         dict.__setitem__("close", new ConnectionFunc("close", 0, 0, 0, zxJDBC.getString("close")));
         dict.__setitem__("commit", new ConnectionFunc("commit", 1, 0, 0,
