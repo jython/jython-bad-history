@@ -1,7 +1,39 @@
 Jython NEWS
 
+Jython 2.7b1
+  Bugs Fixed
+    - [ 1716 ] xrange slicing raises NPE.
+    - [ 1968 ] Fixes for test_csv.py.
+    - [ 1989 ] condition.notify_all() is missing.
+    - [ 1994 ] threading.Event doesn't have is_set method fixed.
+    - [ 1327 ] ThreadState needs API cleanup work
+    - [ 1309 ] Server sockets do not support client options and propagate them to 'accept'ed client sockets.
+    - [ 1951 ] Bytecode Interpreter stack optimization for larger arguments
+    - [ 1894 ] bytearray does not support '+' or .join()
+    - [ 1921 ] compiler module broken in Jython 2.7 
+    - [ 1920 ] Backport CO_FUTURE_PRINT_FUNCTION to Lib/compiler/pycodegen.py
+    - [ 1914 ] Float formatting broken in many non-English locales in Jython 2.7
+    - [ 1909 ] attrgetter does not parse dotted attributes
+    - [ 1924 ] Implement operator.methodcaller
+    - [ 1934 ] Break itertools.compress into a separate class 
+    - [ 1933 ] Break itertools.cycle into a separate class
+    - [ 1932 ] Make check for iterability in chain() arguments lazy
+    - [ 1931 ] Check that there are exactly 2 filter args
+    - [ 1913 ] Support short -W options
+    - [ 1897 ] 2.7.0ax only has partial ssl support
+    - array_class in jarray module returns the "Array of a type" class
+  New Features
+    - bytearray complete
+    - a buffer API
+    - memoryview
+    - bz2 module
+
+Jython 2.7a2
+    - [ 1892 ] site-packages is not in sys.path
+
 Jython 2.7a1
   Bugs Fixed
+    - [ 1880 ] Sha 224 library not present in Jython
 
 Jython 2.5.4rc1
   Bugs Fixed
@@ -39,6 +71,7 @@ Jython 2.5.3b2
 
 Jython 2.5.3b1
   Bugs Fixed
+    - [ 1835 ] s/occured/occurred/ :)
     - [ 1727 ] Error in Jython 2.5.2 with os.stat and varargs
     - [ 1735 ] return type of os.read is unicode, not str
     - [ 1755 ] os.utime('/tmp/nonexistent-file', None) fails to raise OSError
