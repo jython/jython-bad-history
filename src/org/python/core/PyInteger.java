@@ -6,7 +6,12 @@ package org.python.core;
 
 import java.io.Serializable;
 import java.math.BigInteger;
+import java.text.NumberFormat;
+import java.util.Locale;
 
+import org.python.core.stringlib.InternalFormatSpec;
+import org.python.core.stringlib.InternalFormatSpecParser;
+import org.python.expose.ExposedGet;
 import org.python.expose.ExposedMethod;
 import org.python.expose.ExposedNew;
 import org.python.expose.ExposedType;
@@ -47,62 +52,137 @@ public class PyInteger extends PyObject {
     @ExposedNew
     public static PyObject int_new(PyNewWrapper new_, boolean init, PyType subtype,
             PyObject[] args, String[] keywords) {
+
         ArgParser ap = new ArgParser("int", args, keywords, new String[] {"x", "base"}, 0);
         PyObject x = ap.getPyObject(0, null);
         int base = ap.getInt(1, -909);
-        if (new_.for_type == subtype) {
+
+        if (new_.for_type == subtype) { // A substantive PyInteger is required as the return value
+
             if (x == null) {
                 return Py.Zero;
-            }
-            if (base == -909) {
+
+            } else if (base == -909) {
                 if (x instanceof PyBoolean) {
                     return (coerce(x) == 0) ? Py.Zero : Py.One;
+                } else if (x instanceof PyByteArray) {
+                    // Make use of the string to int conversion in PyString
+                    PyString xs = new PyString(x.asString());
+                    return asPyInteger(xs);
+                } else {
+                    return asPyInteger(x);
                 }
-                return asPyInteger(x);
-            }
-            if (!(x instanceof PyString)) {
+            } else if (!(x instanceof PyString)) {
                 throw Py.TypeError("int: can't convert non-string with explicit base");
             }
+
             try {
-                return Py.newInteger(((PyString) x).atoi(base));
+                return Py.newInteger(((PyString)x).atoi(base));
             } catch (PyException pye) {
                 if (pye.match(Py.OverflowError)) {
-                    return ((PyString) x).atol(base);
+                    return ((PyString)x).atol(base);
                 }
                 throw pye;
             }
-        } else {
+
+        } else { // A PyIntegerDerived(subtype, ... ) is required as the return value
+
             if (x == null) {
                 return new PyIntegerDerived(subtype, 0);
-            }
-            if (base == -909) {
+            } else if (base == -909) {
                 PyObject intOrLong = asPyInteger(x);
+
                 if (intOrLong instanceof PyInteger) {
-                    return new PyIntegerDerived(subtype, ((PyInteger) intOrLong).getValue());
+                    return new PyIntegerDerived(subtype, ((PyInteger)intOrLong).getValue());
                 } else {
                     throw Py.OverflowError("long int too large to convert to int");
                 }
-            }
-            if (!(x instanceof PyString)) {
+
+            } else if (!(x instanceof PyString)) {
                 throw Py.TypeError("int: can't convert non-string with explicit base");
             }
-            return new PyIntegerDerived(subtype, ((PyString) x).atoi(base));
+
+            return new PyIntegerDerived(subtype, ((PyString)x).atoi(base));
         }
     } // xxx
 
     /**
-     * @return the result of x.__int__
-     * @throws Py.Type error if x.__int__ throws an Py.AttributeError
+     * Convert all sorts of object types to either <code>PyInteger</code> or <code>PyLong</code>,
+     * using their {@link PyObject#__int__()} method, whether exposed or not, or if that raises an
+     * exception (as the base <code>PyObject</code> one does), using any <code>__trunc__()</code>
+     * the type may have exposed. If all this fails, this method raises an exception. Equivalent to CPython
+     * <code>PyNumber_Int()</code>.
+     * 
+     * @param x to convert to an int
+     * @return int or long result.
+     * @throws PyException (TypeError) if no method of conversion can be found
+     * @throws PyException (AttributeError) if neither __int__ nor __trunc__ found (?)
      */
-    private static PyObject asPyInteger(PyObject x) {
+    private static PyObject asPyInteger(PyObject x) throws PyException {
+        // XXX: Not sure that this perfectly matches CPython semantics.
         try {
+            // Try the object itself (raises AttributeError if not overridden from PyObject)
             return x.__int__();
+
         } catch (PyException pye) {
             if (!pye.match(Py.AttributeError)) {
+                // x had an __int__ method, but something else went wrong: pass it on
                 throw pye;
+
+            } else {
+                // x did not have an __int__ method, but maybe __trunc__ will work
+                try {
+                    PyObject integral = x.invoke("__trunc__");
+                    return convertIntegralToInt(integral);
+
+                } catch (PyException pye2) {
+                    if (!pye2.match(Py.AttributeError)) {
+                        throw pye2;
+                    }
+                    String fmt = "int() argument must be a string or a number, not '%.200s'";
+                    throw Py.TypeError(String.format(fmt, x));
+                }
             }
-            throw Py.TypeError("int() argument must be a string or a number");
         }
+    }
+
+    /**
+     * Helper called on whatever exposed method <code>__trunc__</code> returned: it may be
+     * <code>int</code>, <code>long</code> or something with an exposed <code>__int__</code>.
+     * 
+     * @return convert to an int.
+     * @throws TypeError and AttributeError.
+     */
+    private static PyObject convertIntegralToInt(PyObject integral) {
+        if (!(integral instanceof PyInteger) && !(integral instanceof PyLong)) {
+            PyObject i = integral.invoke("__int__");
+            if (!(i instanceof PyInteger) && !(i instanceof PyLong)) {
+                throw Py.TypeError(String.format("__trunc__ returned non-Integral (type %.200s)",
+                                                 integral.getType().fastGetName()));
+            }
+            return i;
+        }
+        return integral;
+    }
+
+    @ExposedGet(name = "real", doc = BuiltinDocs.int_real_doc)
+    public PyObject getReal() {
+        return int___int__();
+    }
+
+    @ExposedGet(name = "imag", doc = BuiltinDocs.int_imag_doc)
+    public PyObject getImag() {
+        return Py.newInteger(0);
+    }
+
+    @ExposedGet(name = "numerator", doc = BuiltinDocs.int_numerator_doc)
+    public PyObject getNumerator() {
+        return int___int__();
+    }
+
+    @ExposedGet(name = "denominator", doc = BuiltinDocs.int_denominator_doc)
+    public PyObject getDenominator() {
+        return Py.newInteger(1);
     }
 
     public int getValue() {
@@ -338,7 +418,7 @@ public class PyInteger extends PyObject {
         if (!canCoerce(right)) {
             return null;
         }
-        if (Options.divisionWarning > 0) {
+        if (Options.division_warning > 0) {
             Py.warning(Py.DeprecationWarning, "classic int division");
         }
         return Py.newInteger(divide(getValue(), coerce(right)));
@@ -354,7 +434,7 @@ public class PyInteger extends PyObject {
         if (!canCoerce(left)) {
             return null;
         }
-        if (Options.divisionWarning > 0) {
+        if (Options.division_warning > 0) {
             Py.warning(Py.DeprecationWarning, "classic int division");
         }
         return Py.newInteger(divide(coerce(left), getValue()));
@@ -532,7 +612,7 @@ public class PyInteger extends PyObject {
             if (value != 0) {
                 return left.__float__().__pow__(right, modulo);
             } else {
-                throw Py.ZeroDivisionError("cannot raise 0 to a negative power");
+                throw Py.ZeroDivisionError("0.0 cannot be raised to a negative power");
             }
         }
 
@@ -770,8 +850,13 @@ public class PyInteger extends PyObject {
 
     @ExposedMethod(doc = BuiltinDocs.int___neg___doc)
     final PyObject int___neg__() {
-        long x = -getValue();
-        return Py.newInteger(x);
+        long x = getValue();
+        long result = -x;
+        // check for overflow
+        if (x < 0 && result == x) {
+            return new PyLong(x).__neg__();
+        }
+        return Py.newInteger(result);
     }
 
     @Override
@@ -814,10 +899,7 @@ public class PyInteger extends PyObject {
 
     @ExposedMethod(doc = BuiltinDocs.int___int___doc)
     final PyInteger int___int__() {
-        if (getType() == TYPE) {
-            return this;
-        }
-        return Py.newInteger(getValue());
+        return getType() == TYPE ? this : Py.newInteger(getValue());
     }
 
     @Override
@@ -838,6 +920,26 @@ public class PyInteger extends PyObject {
     @ExposedMethod(doc = BuiltinDocs.int___float___doc)
     final PyFloat int___float__() {
         return new PyFloat((double) getValue());
+    }
+
+    @Override
+    public PyObject __trunc__() {
+        return int___trunc__();
+    }
+
+    @ExposedMethod(doc = BuiltinDocs.int___trunc___doc)
+    final PyObject int___trunc__() {
+        return this;
+    }
+
+    @Override
+    public PyObject conjugate() {
+        return int_conjugate();
+    }
+
+    @ExposedMethod(doc = BuiltinDocs.int_conjugate_doc)
+    final PyObject int_conjugate() {
+        return this;
     }
 
     @Override
@@ -891,6 +993,134 @@ public class PyInteger extends PyObject {
     @ExposedMethod(doc = BuiltinDocs.int___index___doc)
     final PyObject int___index__() {
         return this;
+    }
+
+    @Override
+    public int bit_length() {
+        return int_bit_length();
+    }
+
+    @ExposedMethod(doc = BuiltinDocs.int_bit_length_doc)
+    final int int_bit_length() {
+        int v = value;
+        if (v < 0) {
+            v = -v;
+        }
+        return BigInteger.valueOf(v).bitLength();
+    }
+
+    @Override
+    public PyObject __format__(PyObject formatSpec) {
+        return int___format__(formatSpec);
+    }
+
+    @ExposedMethod(doc = BuiltinDocs.int___format___doc)
+    final PyObject int___format__(PyObject formatSpec) {
+        return formatImpl(getValue(), formatSpec);
+    }
+
+    static PyObject formatImpl(Object value, PyObject formatSpec) {
+        if (!(formatSpec instanceof PyString)) {
+            throw Py.TypeError("__format__ requires str or unicode");
+        }
+
+        PyString formatSpecStr = (PyString) formatSpec;
+        String result;
+        try {
+            String specString = formatSpecStr.getString();
+            InternalFormatSpec spec = new InternalFormatSpecParser(specString).parse();
+            result = formatIntOrLong(value, spec);
+        } catch (IllegalArgumentException e) {
+            throw Py.ValueError(e.getMessage());
+        }
+        return formatSpecStr.createInstance(result);
+    }
+
+    /**
+     * Formats an integer or long number according to a PEP-3101 format specification.
+     *
+     * @param value Integer or BigInteger object specifying the value to format.
+     * @param spec parsed PEP-3101 format specification.
+     * @return result of the formatting.
+     */
+    public static String formatIntOrLong(Object value, InternalFormatSpec spec) {
+        if (spec.precision != -1) {
+            throw new IllegalArgumentException("Precision not allowed in integer format specifier");
+        }
+        int sign;
+        if (value instanceof Integer) {
+            int intValue = (Integer) value;
+            sign = intValue < 0 ? -1 : intValue == 0 ? 0 : 1;
+        } else {
+            sign = ((BigInteger) value).signum();
+        }
+        String strValue;
+        if (spec.type == 'c') {
+            if (spec.sign != '\0') {
+                throw new IllegalArgumentException("Sign not allowed with integer format "
+                                                   + "specifier 'c'");
+            }
+            if (value instanceof Integer) {
+                int intValue = (Integer) value;
+                if (intValue > 0xffff) {
+                    throw new IllegalArgumentException("%c arg not in range(0x10000)");
+                }
+                strValue = Character.toString((char) intValue);
+            } else {
+                BigInteger bigInt = (BigInteger) value;
+                if (bigInt.intValue() > 0xffff || bigInt.bitCount() > 16) {
+                    throw new IllegalArgumentException("%c arg not in range(0x10000)");
+                }
+                strValue = Character.toString((char) bigInt.intValue());
+            }
+        } else {
+            int radix = 10;
+            if (spec.type == 'o') {
+                radix = 8;
+            } else if (spec.type == 'x' || spec.type == 'X') {
+                radix = 16;
+            } else if (spec.type == 'b') {
+                radix = 2;
+            }
+
+            if (spec.type == 'n') {
+                strValue = NumberFormat.getNumberInstance().format(value);
+            } else if (spec.thousands_separators) {
+                NumberFormat format = NumberFormat.getNumberInstance(Locale.US);
+                format.setGroupingUsed(true);
+                strValue = format.format(value);
+            } else if (value instanceof BigInteger) {
+                strValue = ((BigInteger) value).toString(radix);
+            } else {
+                strValue = Integer.toString((Integer) value, radix);
+            }
+
+            if (spec.alternate) {
+                if (radix == 2) {
+                    strValue = "0b" + strValue;
+                } else if (radix == 8) {
+                    strValue = "0o" + strValue;
+                } else if (radix == 16) {
+                    strValue = "0x" + strValue;
+                }
+            }
+            if (spec.type == 'X') {
+                strValue = strValue.toUpperCase();
+            }
+
+            if (sign >= 0) {
+                if (spec.sign == '+') {
+                    strValue = "+" + strValue;
+                } else if (spec.sign == ' ') {
+                    strValue = " " + strValue;
+                }
+            }
+        }
+        if (spec.align == '=' && (sign < 0 || spec.sign == '+' || spec.sign == ' ')) {
+            char signChar = strValue.charAt(0);
+            return signChar + spec.pad(strValue.substring(1), '>', 1);
+        }
+        return spec.pad(strValue, '>', 0);
     }
 
     @Override

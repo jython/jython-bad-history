@@ -156,6 +156,14 @@ public class PyObjectDerived extends PyObject implements Slotted {
         return super.__reduce__();
     }
 
+    public PyObject __dir__() {
+        PyType self_type=getType();
+        PyObject impl=self_type.lookup("__dir__");
+        if (impl!=null)
+            return impl.__get__(this,self_type).__call__();
+        return super.__dir__();
+    }
+
     public PyObject __add__(PyObject other) {
         PyType self_type=getType();
         PyObject impl=self_type.lookup("__add__");
@@ -550,6 +558,18 @@ public class PyObjectDerived extends PyObject implements Slotted {
             return res;
         }
         return super.__ne__(other);
+    }
+
+    public PyObject __format__(PyObject other) {
+        PyType self_type=getType();
+        PyObject impl=self_type.lookup("__format__");
+        if (impl!=null) {
+            PyObject res=impl.__get__(this,self_type).__call__(other);
+            if (res==Py.NotImplemented)
+                return null;
+            return res;
+        }
+        return super.__format__(other);
     }
 
     public PyObject __iadd__(PyObject other) {
