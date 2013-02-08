@@ -1,7 +1,3 @@
-"""
-AMAK: 20050515: This module is the test_socket.py from cpython 2.4, ported to jython.
-"""
-
 import java
 
 import unittest
@@ -731,8 +727,9 @@ class TestSocketOptions(unittest.TestCase):
             self._testSetAndGetOption(sock, level, option, values)
             # now bind the socket i.e. cause the implementation socket to be created
             sock.bind( (HOST, PORT) )
-            self.failUnlessEqual(sock.getsockopt(level, option), values[-1], \
-                 "Option value '(%s, %s)'='%s' did not propagate to implementation socket" % (level, option, values[-1]) )
+            retrieved_option_value = sock.getsockopt(level, option)
+            self.failUnlessEqual(retrieved_option_value, values[-1], \
+                 "Option value '(%s, %s)'='%s' did not propagate to implementation socket: got %s" % (level, option, values[-1], retrieved_option_value) )
             self._testSetAndGetOption(sock, level, option, values)
         finally:
             sock.close()
@@ -742,6 +739,7 @@ class TestSocketOptions(unittest.TestCase):
         try:
             # First listen on a server socket, so that the connection won't be refused.
             server_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            server_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             server_sock.bind( (HOST, PORT) )
             server_sock.listen(50)
             # Now do the tests
@@ -751,35 +749,66 @@ class TestSocketOptions(unittest.TestCase):
             # First bind, so that the SO_REUSEADDR setting propagates
             sock.bind( (HOST, PORT+1) )
             sock.connect( (HOST, PORT) )
-            msg = "Option value '%s'='%s' did not propagate to implementation socket" % (option, values[-1])
+            retrieved_option_value = sock.getsockopt(level, option)
+            msg = "Option value '%s'='%s' did not propagate to implementation socket: got %s" % (option, values[-1], retrieved_option_value)
             if option in (socket.SO_RCVBUF, socket.SO_SNDBUF):
                 # NOTE: there's no guarantee that bufsize will be the
                 # exact setsockopt value, particularly after
                 # establishing a connection. seems it will be *at least*
                 # the values we test (which are rather small) on
                 # BSDs.
-                self.assert_(sock.getsockopt(level, option) >= values[-1], msg)
+                self.assert_(retrieved_option_value >= values[-1], msg)
             else:
-                self.failUnlessEqual(sock.getsockopt(level, option), values[-1], msg)
+                self.failUnlessEqual(retrieved_option_value, values[-1], msg)
             self._testSetAndGetOption(sock, level, option, values)
         finally:
             server_sock.close()
             if sock:
                 sock.close()
 
+    def _testTCPClientInheritedOption(self, level, option, values):
+        cli_sock = accepted_sock = None
+        try:
+            server_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            server_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            self._testSetAndGetOption(server_sock, level, option, values)
+            # now bind and listen on the socket i.e. cause the implementation socket to be created
+            server_sock.bind( (HOST, PORT) )
+            server_sock.listen(50)
+            # Now create client socket to connect to server
+            cli_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            cli_sock.connect( (HOST, PORT) )
+            accepted_sock = server_sock.accept()[0]
+            retrieved_option_value = accepted_sock.getsockopt(level, option)
+            msg = "Option value '(%s,%s)'='%s' did not propagate to accepted socket: got %s" % (level, option, values[-1], retrieved_option_value)
+            if option == socket.SO_RCVBUF:
+                # NOTE: see similar bsd/solaris workaround above
+                self.assert_(retrieved_option_value >= values[-1], msg)
+            else:
+                self.failUnlessEqual(retrieved_option_value, values[-1], msg)
+            self._testSetAndGetOption(accepted_sock, level, option, values)
+        finally:
+            server_sock.close()
+            if cli_sock:
+                cli_sock.close()
+            if accepted_sock:
+                accepted_sock.close()
+
     def _testTCPServerOption(self, level, option, values):
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self._testSetAndGetOption(sock, level, option, values)
             # now bind and listen on the socket i.e. cause the implementation socket to be created
             sock.bind( (HOST, PORT) )
             sock.listen(50)
-            msg = "Option value '(%s,%s)'='%s' did not propagate to implementation socket" % (level, option, values[-1])
-            if is_solaris and option == socket.SO_RCVBUF:
+            retrieved_option_value = sock.getsockopt(level, option)
+            msg = "Option value '(%s,%s)'='%s' did not propagate to implementation socket. Got %s" % (level, option, values[-1], retrieved_option_value)
+            if option == socket.SO_RCVBUF:
                 # NOTE: see similar bsd/solaris workaround above
-                self.assert_(sock.getsockopt(level, option) >= values[-1], msg)
+                self.assert_(retrieved_option_value >= values[-1], msg)
             else:
-                self.failUnlessEqual(sock.getsockopt(level, option), values[-1], msg)
+                self.failUnlessEqual(retrieved_option_value, values[-1], msg)
             self._testSetAndGetOption(sock, level, option, values)
         finally:
             sock.close()
@@ -787,8 +816,8 @@ class TestSocketOptions(unittest.TestCase):
     def _testOption(self, level, option, values):
         for flag, func in [
             (self.test_udp,        self._testUDPOption),
-            (self.test_tcp_server, self._testTCPServerOption),
             (self.test_tcp_client, self._testTCPClientOption),
+            (self.test_tcp_server, self._testTCPServerOption),
         ]:
             if flag:
                 func(level, option, values)
@@ -802,6 +831,12 @@ class TestSocketOptions(unittest.TestCase):
                 else:
                     self.fail("Setting unsupported option should have raised an exception")
 
+    def _testInheritedOption(self, level, option, values):
+        try:
+            self._testTCPClientInheritedOption(level, option, values)
+        except Exception, x:
+            self.fail("Inherited option should not have raised exception: %s" % str(x))
+
 class TestSupportedOptions(TestSocketOptions):
 
     def testSO_BROADCAST(self):
@@ -810,58 +845,107 @@ class TestSupportedOptions(TestSocketOptions):
 
     def testSO_KEEPALIVE(self):
         self.test_tcp_client = 1
+        self.test_tcp_server = 1
         self._testOption(socket.SOL_SOCKET, socket.SO_KEEPALIVE, [0, 1])
+        self._testInheritedOption(socket.SOL_SOCKET, socket.SO_KEEPALIVE, [0, 1])
 
     def testSO_LINGER(self):
         self.test_tcp_client = 1
+        self.test_tcp_server = 1
         off = struct.pack('ii', 0, 0)
         on_2_seconds = struct.pack('ii', 1, 2)
         self._testOption(socket.SOL_SOCKET, socket.SO_LINGER, [off, on_2_seconds])
+        self._testInheritedOption(socket.SOL_SOCKET, socket.SO_LINGER, [off, on_2_seconds])
 
     def testSO_OOBINLINE(self):
         self.test_tcp_client = 1
+        self.test_tcp_server = 1
         self._testOption(socket.SOL_SOCKET, socket.SO_OOBINLINE, [0, 1])
+        self._testInheritedOption(socket.SOL_SOCKET, socket.SO_OOBINLINE, [0, 1])
 
     def testSO_RCVBUF(self):
-        self.test_udp = 1
+        self.test_udp        = 1
         self.test_tcp_client = 1
         self.test_tcp_server = 1
         self._testOption(socket.SOL_SOCKET, socket.SO_RCVBUF, [1024, 4096, 16384])
+        self._testInheritedOption(socket.SOL_SOCKET, socket.SO_RCVBUF, [1024, 4096, 16384])
 
     def testSO_REUSEADDR(self):
-        self.test_udp = 1
+        self.test_udp        = 1
         self.test_tcp_client = 1
         self.test_tcp_server = 1
         self._testOption(socket.SOL_SOCKET, socket.SO_REUSEADDR, [0, 1])
+        self._testInheritedOption(socket.SOL_SOCKET, socket.SO_REUSEADDR, [0, 1])
 
     def testSO_SNDBUF(self):
-        self.test_udp = 1
+        self.test_udp        = 1
         self.test_tcp_client = 1
+        self.test_tcp_server = 1
         self._testOption(socket.SOL_SOCKET, socket.SO_SNDBUF, [1024, 4096, 16384])
+        self._testInheritedOption(socket.SOL_SOCKET, socket.SO_SNDBUF, [1024, 4096, 16384])
 
     def testSO_TIMEOUT(self):
-        self.test_udp = 1
+        self.test_udp        = 1
         self.test_tcp_client = 1
         self.test_tcp_server = 1
         self._testOption(socket.SOL_SOCKET, socket.SO_TIMEOUT, [0, 1, 1000])
+        # We don't test inheritance here because both server and client sockets have SO_TIMEOUT
+        # but it doesn't inherit.
 
     def testTCP_NODELAY(self):
         self.test_tcp_client = 1
+        self.test_tcp_server = 1
         self._testOption(socket.IPPROTO_TCP, socket.TCP_NODELAY, [0, 1])
+        self._testInheritedOption(socket.IPPROTO_TCP, socket.TCP_NODELAY, [0, 1])
 
-class TestUnsupportedOptions(TestSocketOptions):
+class TestPseudoOptions(unittest.TestCase):
 
     def testSO_ACCEPTCONN(self):
-        self.failUnless(hasattr(socket, 'SO_ACCEPTCONN'))
+        for socket_type, listen, expected_result in [
+            (socket.SOCK_STREAM, 0, 0),
+            (socket.SOCK_STREAM, 1, 1),
+            (socket.SOCK_DGRAM,   0, Exception),
+            ]:
+            s = socket.socket(socket.AF_INET, socket_type)
+            if listen:
+                s.listen(1)
+            try:
+                result = s.getsockopt(socket.SOL_SOCKET, socket.SO_ACCEPTCONN)
+                if expected_result is not Exception:
+                    self.failUnlessEqual(result, expected_result)
+            except socket.error, se:
+                if expected_result is Exception:
+                    if se[0] != errno.ENOPROTOOPT:
+                        self.fail("getsockopt(SO_ACCEPTCONN) on wrong socket type raised wrong exception: %s" % str(se))
+                else:
+                    self.fail("getsocket(SO_ACCEPTCONN) on valid socket type should not have raised exception: %s" % (str(se)))
+
+    def testSO_ERROR(self):
+        for socket_type in [socket.SOCK_STREAM, socket.SOCK_DGRAM]:
+            s = socket.socket(socket.AF_INET, socket_type)
+            self.failUnlessEqual(s.getsockopt(socket.SOL_SOCKET, socket.SO_ERROR), 0)
+            try:
+                # Now cause an error
+                s.connect(("localhost", 100000))
+                self.fail("Operation '%s' that should have failed to generate SO_ERROR did not" % operation)
+            except socket.error, se:
+                so_error = s.getsockopt(socket.SOL_SOCKET, socket.SO_ERROR)
+                self.failUnlessEqual(so_error, se[0])
+            # Now retrieve the option again - it should be zero
+            self.failUnlessEqual(s.getsockopt(socket.SOL_SOCKET, socket.SO_ERROR), 0)
+
+    def testSO_TYPE(self):
+        for socket_type in [socket.SOCK_STREAM, socket.SOCK_DGRAM]:
+            s = socket.socket(socket.AF_INET, socket_type)
+            self.failUnlessEqual(s.getsockopt(socket.SOL_SOCKET, socket.SO_TYPE), socket_type)
+
+class TestUnsupportedOptions(TestSocketOptions):
 
     def testSO_DEBUG(self):
         self.failUnless(hasattr(socket, 'SO_DEBUG'))
 
     def testSO_DONTROUTE(self):
         self.failUnless(hasattr(socket, 'SO_DONTROUTE'))
-
-    def testSO_ERROR(self):
-        self.failUnless(hasattr(socket, 'SO_ERROR'))
 
     def testSO_EXCLUSIVEADDRUSE(self):
         # this is an MS specific option that will not be appearing on java
@@ -885,9 +969,6 @@ class TestUnsupportedOptions(TestSocketOptions):
 
     def testSO_SNDTIMEO(self):
         self.failUnless(hasattr(socket, 'SO_SNDTIMEO'))
-
-    def testSO_TYPE(self):
-        self.failUnless(hasattr(socket, 'SO_TYPE'))
 
     def testSO_USELOOPBACK(self):
         self.failUnless(hasattr(socket, 'SO_USELOOPBACK'))
@@ -2025,10 +2106,17 @@ class TestJython_get_jsockaddr(unittest.TestCase):
 class TestExceptions(unittest.TestCase):
 
     def testExceptionTree(self):
-        self.assert_(issubclass(socket.error, Exception))
+        self.assert_(issubclass(socket.error, IOError))
         self.assert_(issubclass(socket.herror, socket.error))
         self.assert_(issubclass(socket.gaierror, socket.error))
         self.assert_(issubclass(socket.timeout, socket.error))
+
+    def testExceptionAtributes(self):
+        for exc_class_name in ['error', 'herror', 'gaierror', 'timeout']:
+            exc_class = getattr(socket, exc_class_name)
+            exc = exc_class(12345, "Expected message")
+            self.failUnlessEqual(getattr(exc, 'errno'), 12345, "Socket module exceptions must have an 'errno' attribute")
+            self.failUnlessEqual(getattr(exc, 'strerror'), "Expected message", "Socket module exceptions must have an 'strerror' attribute")
 
 class TestJythonExceptionsShared:
 
@@ -2373,6 +2461,7 @@ def test_main():
         GeneralModuleTests,
         IPAddressTests,
         TestSupportedOptions,
+        TestPseudoOptions,
         TestUnsupportedOptions,
         BasicTCPTest,
         TCPServerTimeoutTest,

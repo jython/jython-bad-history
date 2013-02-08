@@ -8,6 +8,7 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
+import org.python.expose.ExposedGet;
 import org.python.expose.ExposedMethod;
 import org.python.expose.ExposedNew;
 import org.python.expose.ExposedType;
@@ -81,20 +82,52 @@ public class PyLong extends PyObject {
             return new PyLong(0);
         }
         if (base == -909) {
-            try {
-                return x.__long__();
-            } catch (PyException pye) {
-                if (!pye.match(Py.AttributeError)) {
-                    throw pye;
-                }
-                throw Py.TypeError(String.format("long() argument must be a string or a number, "
-                                                 + "not '%.200s'", x.getType().fastGetName()));
-            }
+            return asPyLong(x);
         }
         if (!(x instanceof PyString)) {
             throw Py.TypeError("long: can't convert non-string with explicit base");
         }
         return ((PyString) x).atol(base);
+    }
+
+    /**
+     * @return convert to a long.
+     * @throws TypeError and AttributeError.
+     */
+    private static PyObject asPyLong(PyObject x) {
+        try {
+            return x.__long__();
+        } catch (PyException pye) {
+            if (!pye.match(Py.AttributeError)) {
+                throw pye;
+            }
+            try {
+                PyObject integral = x.invoke("__trunc__");
+                return convertIntegralToLong(integral);
+            } catch (PyException pye2) {
+                if (!pye2.match(Py.AttributeError)) {
+                    throw pye2;
+                }
+                throw Py.TypeError(
+                    String.format("long() argument must be a string or a number, not '%.200s'", x.getType().fastGetName()));
+            }
+        }
+    }
+
+    /**
+     * @return convert to an int.
+     * @throws TypeError and AttributeError.
+     */
+    private static PyObject convertIntegralToLong(PyObject integral) {
+        if (!(integral instanceof PyInteger) && !(integral instanceof PyLong)) {
+            PyObject i = integral.invoke("__int__");
+            if (!(i instanceof PyInteger) && !(i instanceof PyLong)) {
+                throw Py.TypeError(String.format("__trunc__ returned non-Integral (type %.200s)",
+                                                 integral.getType().fastGetName()));
+            }
+            return i;
+        }
+        return integral;
     }
 
     /**
@@ -124,9 +157,29 @@ public class PyLong extends PyObject {
             throw Py.OverflowError("cannot convert float infinity to long");
         }
         if (Double.isNaN(value)) {
-            return BigInteger.valueOf(0);
+            throw Py.ValueError("cannot convert float NaN to integer");
         }
         return new BigDecimal(value).toBigInteger();
+    }
+
+    @ExposedGet(name = "real", doc = BuiltinDocs.long_real_doc)
+    public PyObject getReal() {
+        return long___long__();
+    }
+
+    @ExposedGet(name = "imag", doc = BuiltinDocs.long_imag_doc)
+    public PyObject getImag() {
+        return Py.newLong(0);
+    }
+
+    @ExposedGet(name = "numerator", doc = BuiltinDocs.long_numerator_doc)
+    public PyObject getNumerator() {
+        return long___long__();
+    }
+
+    @ExposedGet(name = "denominator", doc = BuiltinDocs.long_denominator_doc)
+    public PyObject getDenominator() {
+        return Py.newLong(1);
     }
 
     @Override
@@ -146,7 +199,7 @@ public class PyLong extends PyObject {
 
     @ExposedMethod(doc = BuiltinDocs.long___hash___doc)
     final int long___hash__() {
-        return getValue().intValue();
+        return getValue().hashCode();
     }
 
     @Override
@@ -423,7 +476,7 @@ public class PyLong extends PyObject {
         if (!canCoerce(right)) {
             return null;
         }
-        if (Options.divisionWarning > 0) {
+        if (Options.division_warning > 0) {
             Py.warning(Py.DeprecationWarning, "classic long division");
         }
         return Py.newLong(divide( getValue(), coerce(right)));
@@ -439,7 +492,7 @@ public class PyLong extends PyObject {
         if (!canCoerce(left)) {
             return null;
         }
-        if (Options.divisionWarning > 0) {
+        if (Options.division_warning > 0) {
             Py.warning(Py.DeprecationWarning, "classic long division");
         }
         return Py.newLong(divide(coerce(left), getValue()));
@@ -624,8 +677,8 @@ public class PyLong extends PyObject {
 
     public static PyObject _pow(BigInteger value, BigInteger y, PyObject modulo, PyObject left,
                                 PyObject right) {
-        if (y.compareTo(BigInteger.valueOf(0)) < 0) {
-            if (value.compareTo(BigInteger.valueOf(0)) != 0) {
+        if (y.compareTo(BigInteger.ZERO) < 0) {
+            if (value.compareTo(BigInteger.ZERO) != 0) {
                 return left.__float__().__pow__(right, modulo);
             } else {
                 throw Py.ZeroDivisionError("zero to a negative power");
@@ -638,12 +691,11 @@ public class PyLong extends PyObject {
             // in modPow are fixed by SUN
 
             BigInteger z = coerce(modulo);
-            int zi = z.intValue();
             // Clear up some special cases right away
-            if (zi == 0) {
+            if (z.equals(BigInteger.ZERO)) {
                 throw Py.ValueError("pow(x, y, z) with z == 0");
             }
-            if (zi == 1 || zi == -1) {
+            if (z.abs().equals(BigInteger.ONE)) {
                 return Py.newLong(0);
             }
 
@@ -876,10 +928,7 @@ public class PyLong extends PyObject {
 
     @ExposedMethod(doc = BuiltinDocs.long___long___doc)
     final PyObject long___long__() {
-        if (getType() == TYPE) {
-            return this;
-        }
-        return Py.newLong(getValue());
+        return getType() == TYPE ? this : Py.newLong(getValue());
     }
 
     @Override
@@ -899,6 +948,26 @@ public class PyLong extends PyObject {
 
     final PyComplex long___complex__() {
         return new PyComplex(doubleValue(), 0.);
+    }
+
+    @Override
+    public PyObject __trunc__() {
+        return long___trunc__();
+    }
+
+    @ExposedMethod(doc = BuiltinDocs.long___trunc___doc)
+    final PyObject long___trunc__() {
+        return this;
+    }
+
+    @Override
+    public PyObject conjugate() {
+        return long_conjugate();
+    }
+
+    @ExposedMethod(doc = BuiltinDocs.long_conjugate_doc)
+    final PyObject long_conjugate() {
+        return this;
     }
 
     @Override
@@ -966,6 +1035,30 @@ public class PyLong extends PyObject {
     @ExposedMethod(doc = BuiltinDocs.long___index___doc)
     final PyObject long___index__() {
         return this;
+    }
+
+    @Override
+    public int bit_length() {
+        return long_bit_length();
+    }
+
+    @ExposedMethod(doc = BuiltinDocs.long_bit_length_doc)
+    final int long_bit_length() {
+        BigInteger v = value;
+        if (v.compareTo(BigInteger.ZERO) == -1) {
+            v = v.negate();
+        }
+        return v.bitLength();
+    }
+
+    @Override
+    public PyObject __format__(PyObject formatSpec) {
+        return long___format__(formatSpec);
+    }
+
+    @ExposedMethod(doc = BuiltinDocs.long___format___doc)
+    final PyObject long___format__(PyObject formatSpec) {
+        return PyInteger.formatImpl(getValue(), formatSpec);
     }
 
     @Override

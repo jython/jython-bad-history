@@ -2,6 +2,7 @@
 package org.python.core;
 
 import java.io.BufferedReader;
+import java.io.Console;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -16,7 +17,9 @@ import java.net.URLDecoder;
 import java.nio.charset.Charset;
 import java.nio.charset.UnsupportedCharsetException;
 import java.security.AccessControlException;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -27,7 +30,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
-import org.jruby.ext.posix.util.Platform;
+import jnr.posix.util.Platform;
 import org.python.Version;
 import org.python.core.adapter.ClassicPyObjectAdapter;
 import org.python.core.adapter.ExtensiblePyObjectAdapter;
@@ -36,6 +39,8 @@ import org.python.core.packagecache.SysPackageManager;
 import org.python.modules.Setup;
 import org.python.modules.zipimport.zipimporter;
 import org.python.util.Generic;
+import org.python.expose.ExposedGet;
+import org.python.expose.ExposedType;
 
 /**
  * The "sys" module.
@@ -57,6 +62,11 @@ public class PySystemState extends PyObject implements ClassDictInit {
     private static final String VFS_PREFIX = "vfs:";
 
     public static final PyString version = new PyString(Version.getVersion());
+
+    public static final PyTuple subversion = new PyTuple(new PyString("Jython"),
+                                                         Py.newString(""),
+                                                         Py.newString(""));
+
     public static final int hexversion = ((Version.PY_MAJOR_VERSION << 24) |
                                     (Version.PY_MINOR_VERSION << 16) |
                                     (Version.PY_MICRO_VERSION <<  8) |
@@ -66,8 +76,15 @@ public class PySystemState extends PyObject implements ClassDictInit {
     public static PyTuple version_info;
 
     public final static int maxunicode = 1114111;
-    public static PyTuple subversion;
 
+    //XXX: we should someday make this Long.MAX_VALUE, but see test_index.py
+    //     for tests that would need to pass but today would not.
+    public final static int maxsize = Integer.MAX_VALUE;
+
+    public static boolean py3kwarning = false;
+
+    public final static Class flags = Options.class;
+    
     public static PyTuple _mercurial;
     /**
      * The copyright notice for this release.
@@ -156,12 +173,21 @@ public class PySystemState extends PyObject implements ClassDictInit {
     /** true when a SystemRestart is triggered. */
     public boolean _systemRestart = false;
 
+    /** Whether bytecode should be written to disk on import. */
+    public boolean dont_write_bytecode = false;
+
     // Automatically close resources associated with a PySystemState when they get GCed
     private final PySystemStateCloser closer;
     private static final ReferenceQueue<PySystemState> systemStateQueue =
             new ReferenceQueue<PySystemState>();
     private static final ConcurrentMap<WeakReference<PySystemState>,
                                        PySystemStateCloser> sysClosers = Generic.concurrentMap();
+
+    // float_info
+    public static PyObject float_info;
+
+    // long_info
+    public static PyObject long_info;
 
     public PySystemState() {
         initialize();
@@ -183,6 +209,8 @@ public class PySystemState extends PyObject implements ClassDictInit {
 
         currentWorkingDir = new File("").getAbsolutePath();
 
+        dont_write_bytecode = Options.dont_write_bytecode;
+        py3kwarning = Options.py3k_warning;
         // Set up the initial standard ins and outs
         String mode = Options.unbuffered ? "b" : "";
         int buffering = Options.unbuffered ? 0 : 1;
@@ -202,6 +230,7 @@ public class PySystemState extends PyObject implements ClassDictInit {
         __dict__.invoke("update", getType().fastGetDict());
         __dict__.__setitem__("displayhook", __displayhook__);
         __dict__.__setitem__("excepthook", __excepthook__);
+
     }
 
     public static void classDictInit(PyObject dict) {
@@ -685,11 +714,9 @@ public class PySystemState extends PyObject implements ClassDictInit {
     private static String getConsoleEncoding() {
         String encoding = null;
         try {
-            // the Console class is only present in java 6 - have to use reflection
-            Class<?> consoleClass = Class.forName("java.io.Console");
-            Method encodingMethod = consoleClass.getDeclaredMethod("encoding");
+            Method encodingMethod = Console.class.getDeclaredMethod("encoding");
             encodingMethod.setAccessible(true); // private static method
-            encoding = (String)encodingMethod.invoke(consoleClass);
+            encoding = (String)encodingMethod.invoke(Console.class);
         } catch (Exception e) {
             // ignore any exception
         }
@@ -921,8 +948,11 @@ public class PySystemState extends PyObject implements ClassDictInit {
         Py.True = new PyBoolean(true);
 
         Py.EmptyString = new PyString("");
+        Py.EmptyUnicode = new PyUnicode("");
         Py.Newline = new PyString("\n");
+        Py.UnicodeNewline = new PyUnicode("\n");
         Py.Space = new PyString(" ");
+        Py.UnicodeSpace = new PyUnicode(" ");
 
         // Setup standard wrappers for stdout and stderr...
         Py.stderr = new StderrWrapper();
@@ -947,10 +977,13 @@ public class PySystemState extends PyObject implements ClassDictInit {
                                    Py.newInteger(Version.PY_MICRO_VERSION),
                                    Py.newString(s),
                                    Py.newInteger(Version.PY_RELEASE_SERIAL));
-        subversion = new PyTuple(Py.newString("Jython"), Py.EmptyString, Py.EmptyString);
         _mercurial = new PyTuple(Py.newString("Jython"), Py.newString(Version.getHGIdentifier()),
                                  Py.newString(Version.getHGVersion()));
+
+        float_info = FloatInfo.getInfo();
+        long_info = LongInfo.getInfo();
     }
+
 
     public static boolean isPackageCacheEnabled() {
         return cachedir != null;
@@ -1365,14 +1398,13 @@ public class PySystemState extends PyObject implements ClassDictInit {
                 }
             }
 
-            for (Callable<Void> callable : resourceClosers) {
-                try {
-                    callable.call();
-                } catch (Exception e) {
-                    // just continue, nothing we can do
-                }
-            }
+            // Close the listed resources (and clear the list)
+            runClosers(resourceClosers);
             resourceClosers.clear();
+
+            // XXX Not sure this is ok, but it makes repeat testing possible.
+            // Re-enable the management of resource closers
+            isCleanup = false;
         }
 
         // Python scripts expect that files are closed upon an orderly cleanup of the VM.
@@ -1395,22 +1427,42 @@ public class PySystemState extends PyObject implements ClassDictInit {
 
             @Override
             public synchronized void run() {
-                if (resourceClosers == null) {
-                    // resourceClosers can be null in some strange cases
-                    return;
-                }
-                for (Callable<Void> callable : resourceClosers) {
-                    try {
-                        callable.call(); // side effect of being removed from this set
-                    } catch (Exception e) {
-                        // continue - nothing we can do now!
-                    }
-                }
+                runClosers(resourceClosers);
                 resourceClosers.clear();
             }
         }
 
     }
+
+    /**
+     * Helper abstracting common code from {@link ShutdownCloser#run()} and
+     * {@link PySystemStateCloser#cleanup()} to close resources (such as still-open files). The
+     * closing sequence is from last-created resource to first-created, so that dependencies between
+     * them are respected. (There are some amongst layers in the _io module.)
+     * 
+     * @param resourceClosers to be called in turn
+     */
+    private static void runClosers(Set<Callable<Void>> resourceClosers) {
+        // resourceClosers can be null in some strange cases
+        if (resourceClosers != null) {
+            /*
+             * Although a Set, the container iterates in the order closers were added. Make a Deque
+             * of it and deal from the top.
+             */
+            LinkedList<Callable<Void>> rc = new LinkedList<Callable<Void>>(resourceClosers);
+            Iterator<Callable<Void>> iter = rc.descendingIterator();
+
+            while (iter.hasNext()) {
+                Callable<Void> callable = iter.next();
+                try {
+                    callable.call();
+                } catch (Exception e) {
+                    // just continue, nothing we can do
+                }
+            }
+        }
+    }
+
 }
 
 
@@ -1468,5 +1520,73 @@ class Shadow {
         builtins = PySystemState.getDefaultBuiltins();
         warnoptions = PySystemState.warnoptions;
         platform = PySystemState.platform;
+    }
+}
+
+
+@ExposedType(name = "sys.float_info", isBaseType = false)
+class FloatInfo extends PyTuple {
+    @ExposedGet
+    public PyObject max, max_exp, max_10_exp, min, min_exp, min_10_exp, dig,
+                    mant_dig, epsilon, radix, rounds;
+
+    public static final PyType TYPE = PyType.fromClass(FloatInfo.class);
+    
+    private FloatInfo(PyObject ...vals) {
+        super(TYPE, vals);
+
+        max = vals[0];
+        max_exp = vals[1];
+        max_10_exp = vals[2];
+        min = vals[3];
+        min_exp = vals[4];
+        min_10_exp = vals[5];
+        dig = vals[6];
+        mant_dig = vals[7];
+        epsilon = vals[8];
+        radix = vals[9];
+        rounds = vals[10];
+    }
+
+    static public FloatInfo getInfo() {
+        // max_10_exp, dig and epsilon taken from ssj library Num class
+        // min_10_exp, mant_dig, radix and rounds by ɲeuroburɳ (bit.ly/Iwo2LT)
+        return new FloatInfo(
+            Py.newFloat(Double.MAX_VALUE),       // DBL_MAX
+            Py.newLong(Double.MAX_EXPONENT),     // DBL_MAX_EXP
+            Py.newLong(308),                     // DBL_MIN_10_EXP
+            Py.newFloat(Double.MIN_VALUE),       // DBL_MIN
+            Py.newLong(Double.MIN_EXPONENT),     // DBL_MIN_EXP
+            Py.newLong(-307),                    // DBL_MIN_10_EXP
+            Py.newLong(10),                      // DBL_DIG
+            Py.newLong(53),                      // DBL_MANT_DIG
+            Py.newFloat(2.2204460492503131e-16), // DBL_EPSILON
+            Py.newLong(2),                       // FLT_RADIX
+            Py.newLong(1)                        // FLT_ROUNDS
+        );
+    }
+}
+
+@ExposedType(name = "sys.long_info", isBaseType = false)
+class LongInfo extends PyTuple {
+    @ExposedGet
+    public PyObject bits_per_digit, sizeof_digit;
+
+    public static final PyType TYPE = PyType.fromClass(LongInfo.class);
+    
+    private LongInfo(PyObject ...vals) {
+        super(TYPE, vals);
+
+        bits_per_digit = vals[0];
+        sizeof_digit = vals[1];
+    }
+
+    //XXX: I've cheated and just used the values that CPython gives me for my
+    //     local Ubuntu system. I'm not sure that they are correct.
+    static public LongInfo getInfo() {
+        return new LongInfo(
+            Py.newLong(30),
+            Py.newLong(4)
+        );
     }
 }
