@@ -32,7 +32,7 @@
   <property file="${user.home}/ant.properties" />
   <property file="${basedir}/default.properties"/>
 
-  <property name="project.version" value="2.5.3-SNAPSHOT"/>
+  <property name="project.version" value="2.5.4-SNAPSHOT"/>
 
   <property name="m2.repo" value="${user.home}/.m2/repository"/>
   <property name="m2.groupDir" value="org/python"/>
@@ -67,9 +67,13 @@
     <m2-bundle artifactId="jython-standalone"/>
   </target>
 
+  <target name="bundle-installer" depends="prep">
+    <m2-bundle artifactId="jython-installer"/>
+  </target>
+
   <target name="install-all" depends="install, install-standalone"/>
 
-  <target name="bundle-all" depends="bundle, bundle-standalone"/>
+  <target name="bundle-all" depends="bundle, bundle-standalone, bundle-installer"/>
 
   <target name="clean">
     <delete dir="${build.dir}"/>
