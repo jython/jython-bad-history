@@ -1,6 +1,7 @@
 
 package org.python.modules;
 
+import org.python.core.__builtin__;
 import org.python.core.Py;
 import org.python.core.PyFile;
 import org.python.core.PyList;
@@ -163,6 +164,10 @@ public class imp {
         return load_compiled(name, pathname, new PyFile(pathname, "rb", -1));
     }
 
+    public static PyObject reload(PyObject module) {
+        return __builtin__.reload(module);
+    }
+
     public static PyObject load_compiled(String name, String pathname, PyObject file) {
         InputStream stream = (InputStream) file.__tojava__(InputStream.class);
         if (stream == Py.NoConversion) {
@@ -261,6 +266,10 @@ public class imp {
         return mod;
     }
 
+    public static PyObject get_magic() {
+	return new PyString("\u0003\u00f3\r\n");
+    }
+    
     public static PyObject get_suffixes() {
         return new PyList(new PyObject[] {new PyTuple(new PyString(".py"),
                                                       new PyString("r"),

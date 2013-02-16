@@ -48,7 +48,7 @@ public class Setup
         "array:org.python.modules.ArrayModule",
         "_random:org.python.modules.random.RandomModule",
         "cmath",
-        "itertools",
+        "itertools:org.python.modules.itertools.itertools",
         "zipimport:org.python.modules.zipimport.zipimport",
         "_collections:org.python.modules._collections.Collections",
         "gc",
@@ -60,6 +60,8 @@ public class Setup
         "_marshal",
         "_threading:org.python.modules._threading._threading",
         PosixModule.getOSName() + ":org.python.modules.posix.PosixModule",
-        "jffi:org.python.modules.jffi.jffi"
+        "jffi:org.python.modules.jffi.jffi",
+        "_io:org.python.modules._io._io",
+        "bz2:org.python.modules.bz2.bz2"
     };
 }
