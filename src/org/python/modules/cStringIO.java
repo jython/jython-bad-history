@@ -303,21 +303,23 @@ public class cStringIO {
         /**
          * truncate the file at the current position.
          */
-        public void truncate() {
-            truncate(-1);
+        public synchronized void truncate() {
+            buf.setLength(this.pos);
         }
 
         /**
          * truncate the file at the position pos.
          */
         public synchronized void truncate(long pos) {
+            if (pos < 0) {
+                throw Py.IOError("Negative size not allowed");
+            }
             int pos_int = _convert_to_int(pos);
             if (pos_int < 0)
                 pos_int = this.pos;
             buf.setLength(pos_int);
             this.pos = pos_int;
         }
-
 
         /**
          * Write a string to the file.
