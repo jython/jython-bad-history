@@ -1,9 +1,14 @@
 import copy
+import glob
+import importlib
 import operator
 import os
+import os.path
 import unittest
+import shutil
 import subprocess
 import sys
+import tempfile
 import re
 
 from collections import deque
@@ -12,6 +17,7 @@ from test import test_support
 from java.lang import (ClassCastException, ExceptionInInitializerError, String, Runnable, System,
         Runtime, Math, Byte)
 from java.math import BigDecimal, BigInteger
+from java.net import URI
 from java.io import (ByteArrayInputStream, ByteArrayOutputStream, File, FileInputStream,
                      FileNotFoundException, FileOutputStream, FileWriter, ObjectInputStream,
                      ObjectOutputStream, OutputStreamWriter, UnsupportedEncodingException)
@@ -20,13 +26,23 @@ from java.util import ArrayList, Date, HashMap, Hashtable, StringTokenizer, Vect
 from java.awt import Dimension, Color, Component, Container
 from java.awt.event import ComponentEvent
 from javax.swing.tree import TreePath
+from javax.tools import SimpleJavaFileObject, JavaFileObject, ToolProvider
 
 from org.python.core.util import FileUtil
+from org.python.compiler import CustomMaker
 from org.python.tests import (BeanImplementation, Child, Child2,
                               CustomizableMapHolder, Listenable, ToUnicode)
 from org.python.tests.mro import (ConfusedOnGetitemAdd, FirstPredefinedGetitem, GetitemAdder)
+from org.python.util import PythonInterpreter
+
+import java
+import org.python.core.Options
+
 from javatests import Issue1833
 from javatests.ProxyTests import NullToString, Person
+
+from clamp import SerializableProxies
+
 
 
 class InstantiationTest(unittest.TestCase):
@@ -483,6 +499,25 @@ class JavaWrapperCustomizationTest(unittest.TestCase):
         self.assertEqual(str(nts), '')
         self.assertEqual(unicode(nts), '')
 
+    def test_diamond_inheritance_of_iterable_and_map(self):
+        """Test deeply nested diamond inheritance of Iterable and Map, as see in some Clojure classes"""
+        # http://bugs.jython.org/issue1878
+        from javatests import DiamondIterableMapMRO  # this will raise a TypeError re MRO conflict without the fix
+        # Verify the correct MRO is generated - order is of course *important*;
+        # the following used types are implemented as empty interfaces/abstract classes, but match the inheritance graph
+        # and naming of Clojure/Storm.
+        #
+        # Also instead of directly importing, which would cause annoying bloat in javatests by making lots of little files,
+        # just match using str - this will still be stable/robust.
+        self.assertEqual(
+            str(DiamondIterableMapMRO.__mro__),
+            "(<type 'javatests.DiamondIterableMapMRO'>, <type 'javatests.ILookup'>, <type 'javatests.IPersistentMap'>, <type 'java.lang.Iterable'>, <type 'javatests.Associative'>, <type 'javatests.IPersistentCollection'>, <type 'javatests.Seqable'>, <type 'javatests.Counted'>, <type 'java.util.Map'>, <type 'javatests.AFn'>, <type 'javatests.IFn'>, <type 'java.util.concurrent.Callable'>, <type 'java.lang.Runnable'>, <type 'java.lang.Object'>, <type 'object'>)")
+        # And usable with __iter__ and map functionality
+        m = DiamondIterableMapMRO()
+        m["abc"] = 42
+        m["xyz"] = 47
+        self.assertEqual(set(m), set(["abc", "xyz"]))
+        self.assertEqual(m["abc"], 42)
 
 def roundtrip_serialization(obj):
     """Returns a deep copy of an object, via serializing it
@@ -521,6 +556,53 @@ class CloneInput(ObjectInputStream):
         return self.output.classQueue.popleft()
 
 
+def find_jython_jars():
+    # Uses the same classpath resolution as bin/jython
+    jython_jar_path = os.path.normpath(os.path.join(sys.executable, "../../jython.jar"))
+    jython_jar_dev_path = os.path.normpath(os.path.join(sys.executable, "../../jython-dev.jar"))
+    if os.path.exists(jython_jar_dev_path):
+        jars = [jython_jar_dev_path]
+        jars.extend(glob.glob(os.path.normpath(os.path.join(jython_jar_dev_path, "../javalib/*.jar"))))
+    elif os.path.exists(jython_jar_path):
+        jars = [jython_jar_path]
+    else:
+        raise Exception("Cannot find jython jar")
+    return jars
+
+
+
+
+class JavaSource(SimpleJavaFileObject):
+
+    def __init__(self, name, source):
+        self._name = name
+        self._source = source
+        SimpleJavaFileObject.__init__(
+            self, 
+            URI.create("string:///" + name.replace(".", "/") + JavaFileObject.Kind.SOURCE.extension),
+            JavaFileObject.Kind.SOURCE)
+
+    def getName(self):
+        return self._name
+
+    def getCharContent(self, ignore):
+        return self._source
+
+
+def compile_java_source(options, class_name, source):
+    """Compiles a single java source "file" contained in the string source
+    
+    Use options, specifically -d DESTDIR, to control where the class
+    file is emitted. Note that we could use forwarding managers to
+    avoid tempdirs, but this is overkill here given that we still need
+    to run the emitted Java class.
+    """
+    f = JavaSource(class_name, source)
+    compiler = ToolProvider.getSystemJavaCompiler()
+    task = compiler.getTask(None, None, None, options, None, [f])
+    task.call()
+
+
 class SerializationTest(unittest.TestCase):
 
     def test_java_serialization(self):
@@ -540,6 +622,102 @@ class SerializationTest(unittest.TestCase):
         names = [x for x in dir(__builtin__)]
         self.assertEqual(names, roundtrip_serialization(names))
 
+    def test_proxy_serialization(self):
+        """Proxies can be deserializable in a fresh JVM, including being able to "findPython" to get a PySystemState"""
+        tempdir = tempfile.mkdtemp()
+        old_proxy_debug_dir = org.python.core.Options.proxyDebugDirectory
+        try:
+            # Generate a proxy for Cat class;
+            org.python.core.Options.proxyDebugDirectory = tempdir
+            from pounce import Cat
+            cat = Cat()
+            self.assertEqual(cat.whoami(), "Socks")
+
+            # Create a jar file containing the Cat proxy; could use Java to do this; do it the easy way for now
+            proxies_jar_path = os.path.join(tempdir, "proxies.jar")
+            subprocess.check_call(["jar", "cf", proxies_jar_path, "-C", tempdir, "org/"])
+
+            # Serialize our cat
+            output = ByteArrayOutputStream()
+            serializer = CloneOutput(output)
+            serializer.writeObject(cat)
+            serializer.close()
+            cat_path = os.path.join(tempdir, "serialized-cat")
+            with open(cat_path, "wb") as f:
+                f.write(output.toByteArray())
+
+            # Then in a completely different JVM running
+            # ProxyDeserialization, verify we get "meow" printed to
+            # stdout, which in turn ensures that PySystemState (and
+            # Jython runtime) is initialized for the proxy
+            jars = find_jython_jars()
+            jars.append(proxies_jar_path)
+            classpath = ":".join(jars)
+            env = dict(os.environ)
+            env.update(JYTHONPATH=os.path.normpath(os.path.join(__file__, "..")))
+            cmd = [os.path.join(System.getProperty("java.home"), "bin/java"),
+                   "-classpath", classpath, "ProxyDeserialization", cat_path]
+            self.assertEqual(subprocess.check_output(cmd, env=env), "meow\n")
+        finally:
+            org.python.core.Options.proxyDebugDirectory = old_proxy_debug_dir
+            shutil.rmtree(tempdir)
+
+    def test_custom_proxymaker(self):
+        """Verify custom proxymaker supports direct usage of Python code in Java"""
+        tempdir = tempfile.mkdtemp()
+        try:
+            SerializableProxies.serialized_path = tempdir
+            import bark #importlib.import_module("bark")
+            dog = bark.Dog()
+            self.assertEqual(dog.whoami(), "Rover")
+            self.assertEqual(dog.serialVersionUID, 1)
+            self.assertEqual(dog, roundtrip_serialization(dog))
+
+            # Create a jar file containing the org.python.test.Dog proxy
+            proxies_jar_path = os.path.join(tempdir, "proxies.jar")
+            subprocess.check_call(["jar", "cf", proxies_jar_path, "-C", tempdir, "org/"])
+
+            # Build a Java class importing Dog
+            source = """
+import org.python.test.bark.Dog;  // yes, it's that simple
+
+public class BarkTheDog {
+    public static void main(String[] args) {
+        Dog dog = new Dog();
+        try {
+            dog.call();
+        }
+        catch(Exception e) {
+            System.err.println(e);
+        }
+    }
+}
+"""
+            jars = find_jython_jars()
+            jars.append(proxies_jar_path)
+            classpath = ":".join(jars)
+            compile_java_source(
+                ["-classpath", classpath, "-d", tempdir],
+                "BarkTheDog", source)           
+
+            # Then in a completely different JVM running our
+            # BarkTheDog code, verify we get an appropriate bark
+            # message printed to stdout, which in turn ensures that
+            # PySystemState (and Jython runtime) is initialized for
+            # the proxy
+            classpath += ":" + tempdir
+            cmd = [os.path.join(System.getProperty("java.home"), "bin/java"),
+                   "-classpath", classpath, "BarkTheDog"]
+            env = dict(os.environ)
+            env.update(JYTHONPATH=os.path.normpath(os.path.join(__file__, "..")))
+            self.assertEqual(
+                subprocess.check_output(cmd, env=env),
+                "Class defined on CLASSPATH <type 'org.python.test.bark.Dog'>\n"
+                "Rover barks 42 times\n")
+        finally:
+            pass
+            # print "Will not remove", tempdir
+            #shutil.rmtree(tempdir)
 
 
 class CopyTest(unittest.TestCase):
@@ -614,24 +792,25 @@ class BeanPropertyTest(unittest.TestCase):
 
 
 def test_main():
-    test_support.run_unittest(InstantiationTest,
-                              BeanTest,
-                              SysIntegrationTest,
-                              IOTest,
-                              JavaReservedNamesTest,
-                              PyReservedNamesTest,
-                              ImportTest,
-                              ColorTest,
-                              TreePathTest,
-                              BigNumberTest,
-                              JavaStringTest,
-                              JavaDelegationTest,
-                              SecurityManagerTest,
-                              JavaWrapperCustomizationTest,
-                              SerializationTest,
-                              CopyTest,
-                              UnicodeTest,
-                              BeanPropertyTest)
+    test_support.run_unittest(
+        BeanPropertyTest,
+        BeanTest,
+        BigNumberTest,
+        ColorTest,
+        CopyTest,
+        IOTest,
+        ImportTest,
+        InstantiationTest,
+        JavaDelegationTest,
+        JavaReservedNamesTest,
+        JavaStringTest,
+        JavaWrapperCustomizationTest,
+        PyReservedNamesTest,
+        SecurityManagerTest,
+        SerializationTest,
+        SysIntegrationTest,
+        TreePathTest,
+        UnicodeTest)
 
 if __name__ == "__main__":
     test_main()
