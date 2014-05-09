@@ -83,7 +83,6 @@ public class Options {
     public static boolean dont_write_bytecode = false;
 
     /** Whether -E (ignore environment) was enabled via the command line. */
-    //XXX: place holder, not implemented yet.
     public static boolean ignore_environment = false;
 
     //XXX: place holder, not implemented yet.
@@ -109,6 +108,14 @@ public class Options {
      * </ul>
      */
     public static int division_warning = 0;
+
+    /**
+     * Cache spec for the SRE_STATE code point cache. The value maps to the
+     * CacheBuilderSpec string and affects how the SRE_STATE cache will behave/evict
+     * cached PyString -> int[] code points.
+     */
+    public static final String sreCacheSpecDefault = "weakKeys,concurrencyLevel=4,maximumWeight=2621440,expireAfterAccess=30s";
+    public static String sreCacheSpec = sreCacheSpecDefault;
 
     //
     // ####### END OF OPTIONS
@@ -192,5 +199,7 @@ public class Options {
                         + "setting: '" + prop + "'");
             }
         }
+
+        Options.sreCacheSpec = getStringOption("sre.cachespec", Options.sreCacheSpec);
     }
 }

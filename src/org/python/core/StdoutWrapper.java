@@ -84,8 +84,8 @@ public class StdoutWrapper extends OutputStream {
             PyFile file = (PyFile) out;
             if (file.softspace) {
                 file.write("\n");
-                file.flush();
             }
+            file.flush();
             file.softspace = false;
         } else {
             PyObject ss = out.__findattr__("softspace");
@@ -103,8 +103,9 @@ public class StdoutWrapper extends OutputStream {
 
     private String printToFile(PyFile file, PyObject o) {
         String s;
-        if (o instanceof PyUnicode && file.encoding != null) {
-            s = ((PyUnicode)o).encode(file.encoding, "strict");
+        if (o instanceof PyUnicode) {
+            // Use the encoding and policy defined for the stream. (Each may be null.)
+            s = ((PyUnicode)o).encode(file.encoding, file.errors);
         } else {
             s = o.__str__().toString();
         }
