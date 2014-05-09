@@ -52,9 +52,9 @@ An example ant.properties file:
 oracle.jar=C:/workspace/HEAD/for_development/bisdevsrv28/jboss/server/infra/lib/ojdbc14.jar
 #informix.jar=${basedir}/../externals/external-jars/ifxjdbc.jar
 
-# - option for javac (build.compiler=modern is a global option to use standard jdk 1.5/1.6/1.7)
+# - option for javac (build.compiler=modern is a global option to use standard jdk 1.7/1.8)
 #build.compiler=modern
-#jdk.target.version=1.6
+#jdk.target.version=1.7
 #debug=false
 #deprecation=off
 
@@ -84,27 +84,16 @@ oracle.jar=C:/workspace/HEAD/for_development/bisdevsrv28/jboss/server/infra/lib/
         <property name="PY_RELEASE_LEVEL_SNAPSHOT" value="170"/> <!-- 0xAA -->
 
         <!-- The current version info -->
-        <property name="jython.version" value="2.7b1+"/>
-        <property name="jython.version.noplus" value="2.7b1"/>
+        <property name="jython.version" value="2.7b2+"/>
+        <property name="jython.version.noplus" value="2.7b2"/>
         <property name="jython.major_version" value="2"/>
         <property name="jython.minor_version" value="7"/>
         <property name="jython.micro_version" value="0"/>
         <property name="jython.release_level" value="${PY_RELEASE_LEVEL_BETA}"/>
         <!-- Usually zero, only used for alpha, beta and candidate versions
              where it must be greater than zero. -->
-        <property name="jython.release_serial" value="1"/>
-		
-    	<!--- Indy support -->
-        <!-- FIXME: hard coding to 1.6 for now until the compiler is updated. -->
-        <property name="jython.java.version" value="1.6"/>
-        <!--
-    	<condition property="jython.use.invokedynamic">
-			<equals arg1="${java.specification.version}" arg2="1.7"/>
-    	</condition>
-    	<condition property="jython.java.version" value="1.7" else="1.6">
-    		<isset property="jython.use.invokedynamic"/>
-    	</condition>
-        -->
+        <property name="jython.release_serial" value="2"/>
+        <property name="jython.java.version" value="1.7"/>
 
         <condition property="do.snapshot.build">
             <isset property="snapshot.revision" />
@@ -159,7 +148,6 @@ oracle.jar=C:/workspace/HEAD/for_development/bisdevsrv28/jboss/server/infra/lib/
             <pathelement path="${extlibs.dir}/antlr-3.1.3.jar" />
             <pathelement path="${extlibs.dir}/stringtemplate-3.2.1.jar" />
             <pathelement path="${extlibs.dir}/livetribe-jsr223-2.0.6.jar" />
-
             <pathelement path="${extlibs.dir}/commons-compress-1.4.1.jar"/>
             <pathelement path="${extlibs.dir}/asm-4.0.jar" />
             <pathelement path="${extlibs.dir}/asm-commons-4.0.jar" />
@@ -263,12 +251,13 @@ oracle.jar=C:/workspace/HEAD/for_development/bisdevsrv28/jboss/server/infra/lib/
         <echo>templates.lazy     = '${templates.lazy}'</echo>
         <echo>python.lib         = '${python.lib}'</echo>
         <echo>build.compiler     = '${build.compiler}'</echo>
-    	<echo>jython.use.invokedynamic = '${jython.use.invokedynamic}'</echo>
         <echo>jdk.target.version = '${jdk.target.version}'</echo>
         <echo>jdk.source.version = '${jdk.source.version}'</echo>
         <echo>deprecation        = '${deprecation}'</echo>
         <echo>debug              = '${debug}'</echo>
         <echo>nowarn             = '${nowarn}'</echo>
+        <echo>test               = '${test}'</echo>
+        <echo>test.source.dir    = '${test.source.dir}'</echo>
         <echo>--- properties (used for full-build only) ---</echo>
         <echo>checkout.dir   = '${checkout.dir}'</echo>
         <echo>javahl.dir         = '${javahl.dir}'</echo>
@@ -455,7 +444,7 @@ The readme text for the next release will be like:
 
     <target name="antlr_gen" depends="prepare-output" unless="antlr.notneeded">
         <java classname="org.antlr.Tool" failonerror="true" fork="true" dir="${jython.base.dir}">
-            <jvmarg value="-Xmx128m"/>
+            <jvmarg value="-Xmx512m"/>
             <arg value="-Xconversiontimeout"/>
             <arg value="2000"/>
             <arg value="-fo"/>
@@ -490,8 +479,6 @@ The readme text for the next release will be like:
             <compilerarg line="${javac.Xlint}"/>
             <src path="${source.dir}"/>
             <src path="${gensrc.dir}"/>
-        	<exclude name="org/python/compiler/InvokedynamicCodeCompiler.java" unless="jython.use.invokedynamic"/>
-        	<exclude name="org/python/compiler/indy/**" unless="jython.use.invokedynamic"/>
             <exclude name="**/handler/InformixDataHandler.java" unless="informix.present" />
             <exclude name="**/handler/OracleDataHandler.java" unless="oracle.present" />
             <classpath refid="main.classpath" />
@@ -577,7 +564,7 @@ The readme text for the next release will be like:
     </target>
 
     <target name="jar-complete" depends="jar">
-        <taskdef name="jarjar" classname="com.tonicsystems.jarjar.JarJarTask" classpath="extlibs/jarjar-0.7.jar"/>
+        <taskdef name="jarjar" classname="com.tonicsystems.jarjar.JarJarTask" classpath="extlibs/jarjar-1.4.jar"/>
         <jarjar destfile="${dist.dir}/${jython.deploy.jar}">
             <zipfileset src="${dist.dir}/${jython.dev.jar}"/>
             <zipfileset src="extlibs/antlr-runtime-3.1.3.jar"/>
@@ -586,8 +573,26 @@ The readme text for the next release will be like:
             <zipfileset src="extlibs/asm-commons-4.0.jar"/>
             <zipfileset src="extlibs/asm-util-4.0.jar"/>
             <rule pattern="org.objectweb.asm.**" result="org.python.objectweb.asm.@1"/>
+	    <zipfileset src="extlibs/bcpkix-jdk15on-150.jar" excludes="META-INF/*.SF"/>
+	    <rule pattern="org.bouncycastle.**" result="org.python.bouncycastle.@1"/>
+	    <zipfileset src="extlibs/bcprov-jdk15on-150.jar" excludes="META-INF/*.SF"/>
+	    <rule pattern="org.bouncycastle.**" result="org.python.bouncycastle.@1"/>
+	    <zipfileset src="extlibs/commons-compress-1.4.1.jar"/>
+	    <rule pattern="org.apache.**" result="org.python.apache.@1"/>
             <zipfileset src="extlibs/guava-13.0.1.jar"/>
             <rule pattern="com.google.**" result="org.python.google.@1"/>
+            <zipfileset src="extlibs/icu4j-52_1.jar"/>
+            <rule pattern="com.ibm.icu.**" result="org.python.icu.@1"/>
+            <zipfileset src="extlibs/netty-buffer-4.0.18.Final.jar"/>
+            <rule pattern="io.netty.**" result="org.python.netty.@1"/>
+            <zipfileset src="extlibs/netty-codec-4.0.18.Final.jar"/>
+            <rule pattern="io.netty.**" result="org.python.netty.@1"/>
+            <zipfileset src="extlibs/netty-common-4.0.18.Final.jar"/>
+            <rule pattern="io.netty.**" result="org.python.netty.@1"/>
+            <zipfileset src="extlibs/netty-handler-4.0.18.Final.jar"/>
+            <rule pattern="io.netty.**" result="org.python.netty.@1"/>
+            <zipfileset src="extlibs/netty-transport-4.0.18.Final.jar"/>
+            <rule pattern="io.netty.**" result="org.python.netty.@1"/>
             <zipfileset src="extlibs/jffi-arm-Linux.jar"/>
             <zipfileset src="extlibs/jffi-Darwin.jar"/>
             <zipfileset src="extlibs/jffi-i386-FreeBSD.jar"/>
@@ -608,8 +613,8 @@ The readme text for the next release will be like:
             <zipfileset src="extlibs/jffi-x86_64-Windows.jar"/>
             <zipfileset src="extlibs/jffi-1.2.6.jar"/>
             <zipfileset src="${extlibs.dir}/jnr-ffi-0.7.10.jar"/>
-			<zipfileset src="${extlibs.dir}/jnr-netdb-1.1.1.jar"/>
-			<zipfileset src="${extlibs.dir}/jnr-posix-2.4.0.jar"/>
+	    <zipfileset src="${extlibs.dir}/jnr-netdb-1.1.1.jar"/>
+	    <zipfileset src="${extlibs.dir}/jnr-posix-2.4.0.jar"/>
             <zipfileset src="${extlibs.dir}/jnr-constants-0.8.4.jar"/>
             <zipfileset src="extlibs/xml-apis-2.11.0.jar" excludes="META-INF/services/*"/>
             <zipfileset src="extlibs/xercesImpl-2.11.0.jar" excludes="META-INF/services/*"/>
@@ -638,7 +643,7 @@ The readme text for the next release will be like:
     </target>
 
 <target name="jar-standalone" depends="jar-complete, copy-lib">
-        <taskdef name="jarjar" classname="com.tonicsystems.jarjar.JarJarTask" classpath="extlibs/jarjar-0.7.jar"/>
+        <taskdef name="jarjar" classname="com.tonicsystems.jarjar.JarJarTask" classpath="extlibs/jarjar-1.4.jar"/>
         <jarjar destfile="${dist.dir}/${jython.standalone.jar}">
             <zipfileset src="${dist.dir}/${jython.deploy.jar}"/>
             <fileset dir="${dist.dir}" includes="Lib/**" excludes="Lib/test/**,Lib/email/test/**"/>
@@ -711,7 +716,7 @@ The readme text for the next release will be like:
                  windowtitle="Jython API documentation"
                  bottom="&lt;a href='http://www.jython.org' target='_top'>Jython homepage&lt;/a>"
         >
-            <link href="http://java.sun.com/j2se/1.6.0/docs/api/" />
+            <link href="http://docs.oracle.com/javase/7/docs/api/" />
             <classpath refid="javadoc.classpath" />
         </javadoc>
     </target>

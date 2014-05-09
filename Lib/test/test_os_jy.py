@@ -22,6 +22,7 @@ class OSFileTestCase(unittest.TestCase):
         os.remove(test_support.TESTFN)
         self.assertRaises(OSError, os.utime, test_support.TESTFN, None)
 
+    @unittest.skipUnless(hasattr(os, 'link'), "os.link not available")
     def test_issue1824(self):
         os.remove(test_support.TESTFN)
         self.assertRaises(OSError, os.link,
@@ -76,10 +77,25 @@ class OSDirTestCase(unittest.TestCase):
         os.removedirs(p)
 
 
+class OSStatTestCase(unittest.TestCase):
+
+    def setUp(self):
+        open(test_support.TESTFN, 'w').close()
+
+    def tearDown(self):
+        if os.path.exists(test_support.TESTFN):
+            os.remove(test_support.TESTFN)
+
+    def test_stat_with_trailing_slash(self):
+        self.assertRaises(OSError, os.stat, test_support.TESTFN + os.path.sep)
+        self.assertRaises(OSError, os.lstat, test_support.TESTFN + os.path.sep)
+
+
 def test_main():
     test_support.run_unittest(
         OSFileTestCase, 
         OSDirTestCase,
+        OSStatTestCase,
     )
 
 if __name__ == '__main__':
