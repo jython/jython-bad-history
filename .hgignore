@@ -9,17 +9,20 @@ syntax: glob
 \#*
 *~
 # IntelliJ files
+*.eml
 *.ipr
 *.iml
 *.iws
-.idea/misc.xml
-.idea/workspace.xml
+.idea/*
+
+# Eclipse files
+.classpath
+.externalToolBuilders/*
+.project
+.pydevproject
 
 .AppleDouble
 .DS_Store
-.classpath
-.externalToolBuilders
-.project
 .settings
 __pycache__
 ant.properties

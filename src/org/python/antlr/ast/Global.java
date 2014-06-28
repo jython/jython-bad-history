@@ -15,6 +15,7 @@ import org.python.core.AstList;
 import org.python.core.Py;
 import org.python.core.PyObject;
 import org.python.core.PyString;
+import org.python.core.PyStringMap;
 import org.python.core.PyType;
 import org.python.expose.ExposedGet;
 import org.python.expose.ExposedMethod;
@@ -25,7 +26,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 
-@ExposedType(name = "_ast.Global", base = AST.class)
+@ExposedType(name = "_ast.Global", base = stmt.class)
 public class Global extends stmt {
 public static final PyType TYPE = PyType.fromClass(Global.class);
     private java.util.List<String> names;
@@ -40,10 +41,7 @@ public static final PyType TYPE = PyType.fromClass(Global.class);
     public void setNames(PyObject names) {
         this.names = AstAdapters.py2identifierList(names);
     }
-    private java.util.List<Name> nameNodes;
-    public java.util.List<Name> getInternalNameNodes() {
-        return nameNodes;
-    }
+
 
     private final static PyString[] fields =
     new PyString[] {new PyString("names")};
@@ -88,12 +86,6 @@ public static final PyType TYPE = PyType.fromClass(Global.class);
         this.names = names;
     }
 
-    public Global(Token token, java.util.List<String> names, java.util.List<Name> nameNodes) {
-        super(token);
-        this.names = names;
-        this.nameNodes = nameNodes;
-    }
-
     public Global(Integer ttype, Token token, java.util.List<String> names) {
         super(ttype, token);
         this.names = names;
@@ -125,6 +117,25 @@ public static final PyType TYPE = PyType.fromClass(Global.class);
     public void traverse(VisitorIF<?> visitor) throws Exception {
     }
 
+    public PyObject __dict__;
+
+    @Override
+    public PyObject fastGetDict() {
+        ensureDict();
+        return __dict__;
+    }
+
+    @ExposedGet(name = "__dict__")
+    public PyObject getDict() {
+        return fastGetDict();
+    }
+
+    private void ensureDict() {
+        if (__dict__ == null) {
+            __dict__ = new PyStringMap();
+        }
+    }
+
     private int lineno = -1;
     @ExposedGet(name = "lineno")
     public int getLineno() {
@@ -153,4 +164,15 @@ public static final PyType TYPE = PyType.fromClass(Global.class);
         col_offset = num;
     }
 
+    // Support for indexer below
+
+    private java.util.List<Name> nameNodes;
+    public java.util.List<Name> getInternalNameNodes() {
+        return nameNodes;
+    }
+    public Global(Token token, java.util.List<String> names, java.util.List<Name> nameNodes) {
+        super(token);
+        this.names = names;
+        this.nameNodes = nameNodes;
+    }
 }

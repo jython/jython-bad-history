@@ -605,6 +605,14 @@ _socket_options = {
     }
 }
 
+def _socktuple(addr):
+    port = addr.getPort()
+    inet_addr = addr.getAddress()
+    if isinstance(inet_addr, java.net.Inet6Address):
+        return str(inet_addr.getHostAddress()), port, 0, inet_addr.getScopeId()
+    else:
+        return str(inet_addr.getHostAddress()), port
+
 # actual socket support
 #######################
 
@@ -826,7 +834,7 @@ class _realsocket(object):
         self.child_handler = ChildSocketHandler(self)
         b.childHandler(self.child_handler)
 
-        future = b.bind(self.bind_addr)
+        future = b.bind(self.bind_addr.getAddress(), self.bind_addr.getPort())
         self._handle_channel_future(future, "listen")
         self.bind_timestamp = time.time()
         self.channel = future.channel()
@@ -1103,7 +1111,7 @@ class _realsocket(object):
             if self.bind_addr == _EPHEMERAL_ADDRESS:
                 raise error(errno.ENOTCONN, "Socket is not connected")
             else:
-                return self.bind_addr.getHostString(), self.bind_addr.getPort()
+                return _socktuple(self.bind_addr)
         # Netty 4 currently races between bind to ephemeral port and the availability
         # of the local address for the channel. Workaround for now is to poll.
         while True:
@@ -1116,14 +1124,19 @@ class _realsocket(object):
                 raise error(errno.ENOTCONN, "Socket is not connected")
             log.debug("Poll for local address", extra={"sock": self})
             time.sleep(0.1)  # completely arbitrary
-        return local_addr.getHostString(), local_addr.getPort()
+        if local_addr.getAddress().isAnyLocalAddress():
+            # Netty 4 will default to an IPv6 "any" address from a channel even if it was originally bound to an IPv4 "any" address
+            # so, as a workaround, let's construct a new "any" address using the port information gathered above
+            if type(self.bind_addr.getAddress()) != type(local_addr.getAddress()):
+                return _socktuple(java.net.InetSocketAddress(self.bind_addr.getAddress(), local_addr.getPort()))
+        return _socktuple(local_addr)
 
     def getpeername(self):
         self._verify_channel()
         remote_addr = self.channel.remoteAddress()
         if remote_addr is None:
             raise error(errno.ENOTCONN, "Socket is not connected")
-        return remote_addr.getHostString(), remote_addr.getPort()
+        return _socktuple(remote_addr)
 
 
 _socketmethods = (
@@ -1375,60 +1388,28 @@ def setdefaulttimeout(timeout):
 
 
 # Define data structures to support IPV4 and IPV6.
-# FIXME are these ip address classes required by CPython API? Must they be old-style classes?
 
-class _ip_address_t: pass
+class _ip_address_t(tuple):
+    pass
+
 
 class _ipv4_address_t(_ip_address_t):
 
-    def __init__(self, sockaddr, port, jaddress):
-        self.sockaddr = sockaddr
-        self.port     = port
-        self.jaddress = jaddress
+    jaddress = None
 
-    def __getitem__(self, index):
-        if   0 == index:
-            return self.sockaddr
-        elif 1 == index:
-            return self.port
-        else:
-            raise IndexError()
-
-    def __len__(self):
-        return 2
-
-    def __str__(self):
-        return "('%s', %d)" % (self.sockaddr, self.port)
-
-    __repr__ = __str__
+    def __new__(cls, sockaddr, port, jaddress):
+        ntup = tuple.__new__(cls, (sockaddr, port))
+        ntup.jaddress = jaddress
+        return ntup
 
 class _ipv6_address_t(_ip_address_t):
 
-    def __init__(self, sockaddr, port, jaddress):
-        self.sockaddr = sockaddr
-        self.port     = port
-        self.jaddress = jaddress
+    jaddress = None
 
-    def __getitem__(self, index):
-        if   0 == index:
-            return self.sockaddr
-        elif 1 == index:
-            return self.port
-        elif 2 == index:
-            return 0
-        elif 3 == index:
-            return self.jaddress.scopeId
-        else:
-            raise IndexError()
-
-    def __len__(self):
-        return 4
-
-    def __str__(self):
-        return "('%s', %d, 0, %d)" % (self.sockaddr, self.port, self.jaddress.scopeId)
-
-    __repr__ = __str__
-
+    def __new__(cls, sockaddr, port, jaddress):
+        ntup = tuple.__new__(cls, (sockaddr, port, 0, jaddress.scopeId))
+        ntup.jaddress = jaddress
+        return ntup
 
 
 def _get_jsockaddr(address_object, family, sock_type, proto, flags):

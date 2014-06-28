@@ -15,6 +15,7 @@ import org.python.core.AstList;
 import org.python.core.Py;
 import org.python.core.PyObject;
 import org.python.core.PyString;
+import org.python.core.PyStringMap;
 import org.python.core.PyType;
 import org.python.expose.ExposedGet;
 import org.python.expose.ExposedMethod;
@@ -25,7 +26,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 
-@ExposedType(name = "_ast.Attribute", base = AST.class)
+@ExposedType(name = "_ast.Attribute", base = expr.class)
 public class Attribute extends expr implements Context {
 public static final PyType TYPE = PyType.fromClass(Attribute.class);
     private expr value;
@@ -44,10 +45,6 @@ public static final PyType TYPE = PyType.fromClass(Attribute.class);
     private String attr;
     public String getInternalAttr() {
         return attr;
-    }
-    private Name attrName;
-    public Name getInternalAttrName() {
-        return attrName;
     }
     @ExposedGet(name = "attr")
     public PyObject getAttr() {
@@ -123,24 +120,6 @@ public static final PyType TYPE = PyType.fromClass(Attribute.class);
         this.ctx = ctx;
     }
 
-    public Attribute(Token token, expr value, Name attr, expr_contextType ctx) {
-        super(token);
-        this.value = value;
-        addChild(value);
-        this.attr = attr.getText();
-        this.attrName = attr;
-        this.ctx = ctx;
-    }
-
-    public Attribute(Integer ttype, Token token, expr value, Name attr, expr_contextType ctx) {
-        super(ttype, token);
-        this.value = value;
-        addChild(value);
-        this.attr = attr.getText();
-        this.attrName = attr;
-        this.ctx = ctx;
-    }
-
     public Attribute(Integer ttype, Token token, expr value, String attr, expr_contextType ctx) {
         super(ttype, token);
         this.value = value;
@@ -186,6 +165,25 @@ public static final PyType TYPE = PyType.fromClass(Attribute.class);
             value.accept(visitor);
     }
 
+    public PyObject __dict__;
+
+    @Override
+    public PyObject fastGetDict() {
+        ensureDict();
+        return __dict__;
+    }
+
+    @ExposedGet(name = "__dict__")
+    public PyObject getDict() {
+        return fastGetDict();
+    }
+
+    private void ensureDict() {
+        if (__dict__ == null) {
+            __dict__ = new PyStringMap();
+        }
+    }
+
     public void setContext(expr_contextType c) {
         this.ctx = c;
     }
@@ -218,4 +216,27 @@ public static final PyType TYPE = PyType.fromClass(Attribute.class);
         col_offset = num;
     }
 
+    // Support for indexer below
+
+    private Name attrName;
+    public Name getInternalAttrName() {
+        return attrName;
+    }
+    public Attribute(Token token, expr value, Name attr, expr_contextType ctx) {
+        super(token);
+        this.value = value;
+        addChild(value);
+        this.attr = attr.getText();
+        this.attrName = attr;
+        this.ctx = ctx;
+    }
+
+    public Attribute(Integer ttype, Token token, expr value, Name attr, expr_contextType ctx) {
+        super(ttype, token);
+        this.value = value;
+        addChild(value);
+        this.attr = attr.getText();
+        this.attrName = attr;
+        this.ctx = ctx;
+    }
 }

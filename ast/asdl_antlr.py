@@ -73,6 +73,7 @@ class EmitVisitor(asdl.VisitorBase):
             print >> self.file, 'import org.python.core.Py;'
             print >> self.file, 'import org.python.core.PyObject;'
             print >> self.file, 'import org.python.core.PyString;'
+            print >> self.file, 'import org.python.core.PyStringMap;'
             print >> self.file, 'import org.python.core.PyType;'
             print >> self.file, 'import org.python.expose.ExposedGet;'
             print >> self.file, 'import org.python.expose.ExposedMethod;'
@@ -179,6 +180,7 @@ class JavaVisitor(EmitVisitor):
             type = sum.types[i]
             self.open("op", type.name, refersToPythonTree=0)
             self.emit('import org.python.antlr.AST;', depth)
+            self.emit('import org.python.antlr.base.%s;' % name, depth)
             self.emit('import org.python.antlr.PythonTree;', depth)
             self.emit('import org.python.core.Py;', depth)
             self.emit('import org.python.core.PyObject;', depth)
@@ -191,7 +193,7 @@ class JavaVisitor(EmitVisitor):
             self.emit('import org.python.expose.ExposedType;', depth)
             self.emit('', 0)
 
-            self.emit('@ExposedType(name = "_ast.%s", base = AST.class)' % type.name, depth)
+            self.emit('@ExposedType(name = "_ast.%s", base = %s.class)' % (type.name, name), depth)
             self.emit("public class %s extends PythonTree {" % type.name, depth)
             self.emit('public static final PyType TYPE = PyType.fromClass(%s.class);' % type.name, depth + 1)
             self.emit('', 0)
@@ -327,7 +329,7 @@ class JavaVisitor(EmitVisitor):
             s = "implements %s " % ", ".join(ifaces)
         else:
             s = ""
-        self.emit('@ExposedType(name = "_ast.%s", base = AST.class)' % cons.name, depth);
+        self.emit('@ExposedType(name = "_ast.%s", base = %s.class)' % (cons.name, name), depth);
         self.emit("public class %s extends %s %s{" %
                     (cons.name, name, s), depth)
         self.emit("public static final PyType TYPE = PyType.fromClass(%s.class);" % cons.name, depth);
@@ -465,6 +467,29 @@ class JavaVisitor(EmitVisitor):
                 self.emit('%s.accept(visitor);' % f.name, depth+2)
         self.emit('}', depth)
         self.emit("", 0)
+
+        self.emit('public PyObject __dict__;', depth)
+        self.emit("", 0)
+        self.emit('@Override', depth)
+        self.emit('public PyObject fastGetDict() {', depth)
+        self.emit('ensureDict();', depth+1)
+        self.emit('return __dict__;', depth+1)
+        self.emit('}', depth)
+        self.emit("", 0)
+
+        self.emit('@ExposedGet(name = "__dict__")', depth)
+        self.emit('public PyObject getDict() {', depth)
+        self.emit('return fastGetDict();', depth+1)
+        self.emit('}', depth)
+        self.emit("", 0)
+
+        self.emit('private void ensureDict() {', depth)
+        self.emit('if (__dict__ == null) {', depth+1)
+        self.emit('__dict__ = new PyStringMap();', depth+2)
+        self.emit('}', depth+1)
+        self.emit('}', depth)
+        self.emit("", 0)
+
 
     def javaConstructors(self, type, name, clsname, is_product, fields, depth):
         self.emit("public %s(PyType subType) {" % (clsname), depth)
@@ -616,7 +641,6 @@ class JavaVisitor(EmitVisitor):
         return jtype
     
     def indexerSupport(self, name, depth):
-        print "emitting indexer support for", name
 	self.emit("// Support for indexer below", depth + 1)
         self.file.write(indexer_support[name])
 
@@ -846,8 +870,8 @@ indexer_support = {"Attribute": """
     // XXX: vararg and kwarg are deliberately moved to the end of the
     // method signature to avoid clashes with the (Token, List<expr>,
     // String, String, List<expr>) version of the constructor.
-    public arguments(Token token, java.util.List<expr> args,
-            java.util.List<expr> defaults, Name vararg, Name kwarg) {
+    public arguments(Token token, java.util.List<expr> args, Name vararg, Name kwarg,
+            java.util.List<expr> defaults) {
         super(token);
         this.args = args;
         if (args == null) {
