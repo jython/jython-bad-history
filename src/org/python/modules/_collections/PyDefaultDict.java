@@ -4,6 +4,9 @@ package org.python.modules._collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import org.python.core.Py;
 import org.python.core.PyDictionary;
 import org.python.core.PyObject;
@@ -40,10 +43,10 @@ public class PyDefaultDict extends PyDictionary {
      * argument to the constructor, if present, or to None, if absent.
      */
     private PyObject defaultFactory = Py.None;
-    private final ConcurrentMap<PyObject, PyObject> backingMap;
+    private final LoadingCache<PyObject, PyObject> backingMap;
 
     public ConcurrentMap<PyObject, PyObject> getMap() {
-        return backingMap;
+        return backingMap.asMap();
     }
 
     public PyDefaultDict() {
@@ -52,15 +55,10 @@ public class PyDefaultDict extends PyDictionary {
 
     public PyDefaultDict(PyType subtype) {
         super(subtype, false);
-        backingMap =
-                new MapMaker().makeComputingMap(
-                new Function<PyObject, PyObject>() {
-
-                    public PyObject apply(PyObject key) {
-                        if (defaultFactory == Py.None) {
-                            throw Py.KeyError(key);
-                        }
-                        return defaultFactory.__call__();
+        backingMap = CacheBuilder.newBuilder().build(
+                new CacheLoader<PyObject, PyObject>() {
+                    public PyObject load(PyObject key) {
+                        return __missing__(key);
                     }
                 });
     }
@@ -76,7 +74,7 @@ public class PyDefaultDict extends PyDictionary {
         int nargs = args.length - kwds.length;
         if (nargs != 0) {
             defaultFactory = args[0];
-            if (!defaultFactory.isCallable()) {
+            if (!(defaultFactory == Py.None || defaultFactory.isCallable())) {
                 throw Py.TypeError("first argument must be callable");
             }
             PyObject newargs[] = new PyObject[args.length - 1];
@@ -85,22 +83,21 @@ public class PyDefaultDict extends PyDictionary {
         }
     }
 
+    public PyObject __missing__(PyObject key) {
+        return defaultdict___missing__(key);
+    }
+
     /**
-     * This method is NOT called by the __getitem__ method of the dict class when the
-     * requested key is not found. It is simply here as an alternative to the atomic
-     * construction of that factory. (We actually inline it in.)
+     * This method does NOT call __setitem__ instead it relies on the fact that it is
+     * called within the context of `CacheLoader#load` to actually insert the value
+     * into the dict.
      */
     @ExposedMethod
     final PyObject defaultdict___missing__(PyObject key) {
         if (defaultFactory == Py.None) {
             throw Py.KeyError(key);
         }
-        PyObject value = defaultFactory.__call__();
-        if (value == null) {
-            return value;
-        }
-        __setitem__(key, value);
-        return value;
+        return defaultFactory.__call__();
     }
 
     @Override
@@ -165,11 +162,18 @@ public class PyDefaultDict extends PyDictionary {
     @ExposedMethod(doc = BuiltinDocs.dict___getitem___doc)
     protected final PyObject defaultdict___getitem__(PyObject key) {
         try {
-            return getMap().get(key);
-//        } catch (ComputationException ex) {
-//            throw Py.RuntimeError(ex.getCause());
+            return backingMap.get(key);
         } catch (Exception ex) {
             throw Py.KeyError(key);
+        }
+    }
+
+    public PyObject get(PyObject key, PyObject defaultObj) {
+        PyObject value = getMap().get(key);
+        if (value != null) {
+            return value;
+        } else {
+            return defaultObj;
         }
     }
 }

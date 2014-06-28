@@ -84,8 +84,8 @@ oracle.jar=C:/workspace/HEAD/for_development/bisdevsrv28/jboss/server/infra/lib/
         <property name="PY_RELEASE_LEVEL_SNAPSHOT" value="170"/> <!-- 0xAA -->
 
         <!-- The current version info -->
-        <property name="jython.version" value="2.7b2+"/>
-        <property name="jython.version.noplus" value="2.7b2"/>
+        <property name="jython.version" value="2.7b3+"/>
+        <property name="jython.version.noplus" value="2.7b3"/>
         <property name="jython.major_version" value="2"/>
         <property name="jython.minor_version" value="7"/>
         <property name="jython.micro_version" value="0"/>
@@ -152,14 +152,31 @@ oracle.jar=C:/workspace/HEAD/for_development/bisdevsrv28/jboss/server/infra/lib/
             <pathelement path="${extlibs.dir}/asm-4.0.jar" />
             <pathelement path="${extlibs.dir}/asm-commons-4.0.jar" />
             <pathelement path="${extlibs.dir}/asm-util-4.0.jar" />
-            <pathelement path="${extlibs.dir}/guava-13.0.1.jar" />
+            <pathelement path="${extlibs.dir}/guava-17.0.jar" />
             <pathelement path="${extlibs.dir}/icu4j-52_1.jar" />
-            <pathelement path="${extlibs.dir}/jffi-1.2.7.jar"/>
-            <pathelement path="${extlibs.dir}/jffi-1.2.7-native.jar"/>
-            <pathelement path="${extlibs.dir}/jnr-constants-0.8.5.jar"/>
-            <pathelement path="${extlibs.dir}/jnr-ffi-1.0.10.jar"/>
-            <pathelement path="${extlibs.dir}/jnr-netdb-1.1.2.jar"/>
-            <pathelement path="${extlibs.dir}/jnr-posix-3.0.1.jar"/>
+            <pathelement path="${extlibs.dir}/jffi-arm-Linux.jar"/>
+            <pathelement path="${extlibs.dir}/jffi-Darwin.jar"/>
+            <pathelement path="${extlibs.dir}/jffi-i386-FreeBSD.jar"/>
+            <pathelement path="${extlibs.dir}/jffi-i386-Linux.jar"/>
+            <pathelement path="${extlibs.dir}/jffi-i386-OpenBSD.jar"/>
+            <pathelement path="${extlibs.dir}/jffi-i386-SunOS.jar"/>
+            <pathelement path="${extlibs.dir}/jffi-i386-Windows.jar"/>
+            <pathelement path="${extlibs.dir}/jffi-ppc-AIX.jar"/>
+            <pathelement path="${extlibs.dir}/jffi-ppc-Linux.jar"/>
+            <pathelement path="${extlibs.dir}/jffi-ppc64-Linux.jar"/>
+            <pathelement path="${extlibs.dir}/jffi-s390x-Linux.jar"/>
+            <pathelement path="${extlibs.dir}/jffi-sparc-SunOS.jar"/>
+            <pathelement path="${extlibs.dir}/jffi-sparcv9-SunOS.jar"/>
+            <pathelement path="${extlibs.dir}/jffi-x86_64-FreeBSD.jar"/>
+            <pathelement path="${extlibs.dir}/jffi-x86_64-Linux.jar"/>
+            <pathelement path="${extlibs.dir}/jffi-x86_64-OpenBSD.jar"/>
+            <pathelement path="${extlibs.dir}/jffi-x86_64-SunOS.jar"/>
+            <pathelement path="${extlibs.dir}/jffi-x86_64-Windows.jar"/>
+            <pathelement path="${extlibs.dir}/jffi-1.2.6.jar"/>
+            <pathelement path="${extlibs.dir}/jnr-ffi-0.7.10.jar"/>
+            <pathelement path="${extlibs.dir}/jnr-netdb-1.1.1.jar"/>
+            <pathelement path="${extlibs.dir}/jnr-posix-2.4.0.jar"/>
+            <pathelement path="${extlibs.dir}/jnr-constants-0.8.4.jar"/>
             <pathelement path="${extlibs.dir}/jline-1.0.jar" />
         </path>
 
@@ -390,8 +407,8 @@ jython.build.hg_version=${build.hg.version}</echo>
     <target name="brand-readme-version" depends="checkout" if="do.snapshot.build">
         <!-- change README.txt version string, if so defined: used for
         snapshot builds. XXX: a bit broken for now-->
-        <replace file="${jython.base.dir}/README.txt" token='2.7a1+'
-        value='2.7a${xxx.revision}' />
+        <replace file="${jython.base.dir}/README.txt" token='2.7b3+'
+        value='2.7b${xxx.revision}' />
         <replace file="${jython.base.dir}/README.txt">
             <replacetoken>=======================</replacetoken>
             <replacevalue>--------------------------
@@ -562,7 +579,7 @@ The readme text for the next release will be like:
 	    <rule pattern="org.bouncycastle.**" result="org.python.bouncycastle.@1"/>
 	    <zipfileset src="extlibs/commons-compress-1.8.jar"/>
 	    <rule pattern="org.apache.**" result="org.python.apache.@1"/>
-            <zipfileset src="extlibs/guava-13.0.1.jar"/>
+            <zipfileset src="extlibs/guava-17.0.jar"/>
             <rule pattern="com.google.**" result="org.python.google.@1"/>
             <zipfileset src="extlibs/icu4j-52_1.jar"/>
             <rule pattern="com.ibm.icu.**" result="org.python.icu.@1"/>
@@ -576,12 +593,29 @@ The readme text for the next release will be like:
             <rule pattern="io.netty.**" result="org.python.netty.@1"/>
             <zipfileset src="extlibs/netty-transport-4.0.18.Final.jar"/>
             <rule pattern="io.netty.**" result="org.python.netty.@1"/>
-            <zipfileset src="${extlibs.dir}/jffi-1.2.7.jar"/>
-            <zipfileset src="${extlibs.dir}/jffi-1.2.7-native.jar"/>
-            <zipfileset src="${extlibs.dir}/jnr-constants-0.8.5.jar"/>
-            <zipfileset src="${extlibs.dir}/jnr-ffi-1.0.10.jar"/>
-	    <zipfileset src="${extlibs.dir}/jnr-netdb-1.1.2.jar"/>
-	    <zipfileset src="${extlibs.dir}/jnr-posix-3.0.1.jar"/>
+            <zipfileset src="extlibs/jffi-arm-Linux.jar"/>
+            <zipfileset src="extlibs/jffi-Darwin.jar"/>
+            <zipfileset src="extlibs/jffi-i386-FreeBSD.jar"/>
+            <zipfileset src="extlibs/jffi-i386-Linux.jar"/>
+            <zipfileset src="extlibs/jffi-i386-OpenBSD.jar"/>
+            <zipfileset src="extlibs/jffi-i386-SunOS.jar"/>
+            <zipfileset src="extlibs/jffi-i386-Windows.jar"/>
+            <zipfileset src="extlibs/jffi-ppc-AIX.jar"/>
+            <zipfileset src="extlibs/jffi-ppc-Linux.jar"/>
+            <zipfileset src="extlibs/jffi-ppc64-Linux.jar"/>
+            <zipfileset src="extlibs/jffi-s390x-Linux.jar"/>
+            <zipfileset src="extlibs/jffi-sparc-SunOS.jar"/>
+            <zipfileset src="extlibs/jffi-sparcv9-SunOS.jar"/>
+            <zipfileset src="extlibs/jffi-x86_64-FreeBSD.jar"/>
+            <zipfileset src="extlibs/jffi-x86_64-Linux.jar"/>
+            <zipfileset src="extlibs/jffi-x86_64-OpenBSD.jar"/>
+            <zipfileset src="extlibs/jffi-x86_64-SunOS.jar"/>
+            <zipfileset src="extlibs/jffi-x86_64-Windows.jar"/>
+            <zipfileset src="extlibs/jffi-1.2.6.jar"/>
+            <zipfileset src="${extlibs.dir}/jnr-ffi-0.7.10.jar"/>
+	    <zipfileset src="${extlibs.dir}/jnr-netdb-1.1.1.jar"/>
+	    <zipfileset src="${extlibs.dir}/jnr-posix-2.4.0.jar"/>
+            <zipfileset src="${extlibs.dir}/jnr-constants-0.8.4.jar"/>
             <zipfileset src="extlibs/xml-apis-2.11.0.jar" excludes="META-INF/services/*"/>
             <zipfileset src="extlibs/xercesImpl-2.11.0.jar" excludes="META-INF/services/*"/>
             <rule pattern="org.apache.xml.**" result="org.python.apache.xml.@1"/>

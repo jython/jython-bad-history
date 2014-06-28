@@ -15,6 +15,7 @@ import org.python.core.AstList;
 import org.python.core.Py;
 import org.python.core.PyObject;
 import org.python.core.PyString;
+import org.python.core.PyStringMap;
 import org.python.core.PyType;
 import org.python.expose.ExposedGet;
 import org.python.expose.ExposedMethod;
@@ -25,16 +26,12 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 
-@ExposedType(name = "_ast.ClassDef", base = AST.class)
+@ExposedType(name = "_ast.ClassDef", base = stmt.class)
 public class ClassDef extends stmt {
 public static final PyType TYPE = PyType.fromClass(ClassDef.class);
     private String name;
     public String getInternalName() {
         return name;
-    }
-    private Name nameNode;
-    public Name getInternalNameNode() {
-        return nameNode;
     }
     @ExposedGet(name = "name")
     public PyObject getName() {
@@ -135,34 +132,6 @@ public static final PyType TYPE = PyType.fromClass(ClassDef.class);
     body, java.util.List<expr> decorator_list) {
         super(token);
         this.name = name;
-        this.bases = bases;
-        if (bases == null) {
-            this.bases = new ArrayList<expr>();
-        }
-        for(PythonTree t : this.bases) {
-            addChild(t);
-        }
-        this.body = body;
-        if (body == null) {
-            this.body = new ArrayList<stmt>();
-        }
-        for(PythonTree t : this.body) {
-            addChild(t);
-        }
-        this.decorator_list = decorator_list;
-        if (decorator_list == null) {
-            this.decorator_list = new ArrayList<expr>();
-        }
-        for(PythonTree t : this.decorator_list) {
-            addChild(t);
-        }
-    }
-
-    public ClassDef(Token token, Name name, java.util.List<expr> bases, java.util.List<stmt>
-    body, java.util.List<expr> decorator_list) {
-        super(token);
-        this.name = name.getText();
-        this.nameNode = name;
         this.bases = bases;
         if (bases == null) {
             this.bases = new ArrayList<expr>();
@@ -288,6 +257,25 @@ public static final PyType TYPE = PyType.fromClass(ClassDef.class);
         }
     }
 
+    public PyObject __dict__;
+
+    @Override
+    public PyObject fastGetDict() {
+        ensureDict();
+        return __dict__;
+    }
+
+    @ExposedGet(name = "__dict__")
+    public PyObject getDict() {
+        return fastGetDict();
+    }
+
+    private void ensureDict() {
+        if (__dict__ == null) {
+            __dict__ = new PyStringMap();
+        }
+    }
+
     private int lineno = -1;
     @ExposedGet(name = "lineno")
     public int getLineno() {
@@ -316,4 +304,37 @@ public static final PyType TYPE = PyType.fromClass(ClassDef.class);
         col_offset = num;
     }
 
+    // Support for indexer below
+
+    private Name nameNode;
+    public Name getInternalNameNode() {
+        return nameNode;
+    }
+    public ClassDef(Token token, Name name, java.util.List<expr> bases, java.util.List<stmt>
+    body, java.util.List<expr> decorator_list) {
+        super(token);
+        this.name = name.getText();
+        this.nameNode = name;
+        this.bases = bases;
+        if (bases == null) {
+            this.bases = new ArrayList<expr>();
+        }
+        for(PythonTree t : this.bases) {
+            addChild(t);
+        }
+        this.body = body;
+        if (body == null) {
+            this.body = new ArrayList<stmt>();
+        }
+        for(PythonTree t : this.body) {
+            addChild(t);
+        }
+        this.decorator_list = decorator_list;
+        if (decorator_list == null) {
+            this.decorator_list = new ArrayList<expr>();
+        }
+        for(PythonTree t : this.decorator_list) {
+            addChild(t);
+        }
+    }
 }

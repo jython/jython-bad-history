@@ -11,7 +11,7 @@ public class ThreadState {
 
     public PyException exception;
 
-    public Thread thread;
+    public int call_depth;
 
     public boolean tracing;
 
@@ -19,17 +19,14 @@ public class ThreadState {
 
     public int compareStateNesting;
 
-    public int recursion_depth;
-
     public TraceFunction tracefunc;
 
     public TraceFunction profilefunc;
 
     private PyDictionary compareStateDict;
 
-    public ThreadState(Thread t, PySystemState systemState) {
+    public ThreadState(PySystemState systemState) {
         this.systemState = systemState;
-        thread = t;
     }
 
     public boolean enterRepr(PyObject obj) {
@@ -64,13 +61,4 @@ public class ThreadState {
         return compareStateDict;
     }
 
-    public void enterRecursiveCall(String where) {
-        if (recursion_depth++ > systemState.getrecursionlimit()) {
-            throw Py.RuntimeError("maximum recursion depth exceeded" + where);
-        }
-    }
-
-    public void leaveRecursiveCall() {
-        --recursion_depth;
-    }
 }

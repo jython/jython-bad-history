@@ -15,6 +15,7 @@ import org.python.core.AstList;
 import org.python.core.Py;
 import org.python.core.PyObject;
 import org.python.core.PyString;
+import org.python.core.PyStringMap;
 import org.python.core.PyType;
 import org.python.expose.ExposedGet;
 import org.python.expose.ExposedMethod;
@@ -45,12 +46,6 @@ public class arguments extends PythonTree {
     public String getInternalVararg() {
         return vararg;
     }
-
-    private Name varargName;
-    public Name getInternalVarargName() {
-        return varargName;
-    }
-
     @ExposedGet(name = "vararg")
     public PyObject getVararg() {
         if (vararg == null) return Py.None;
@@ -65,12 +60,6 @@ public class arguments extends PythonTree {
     public String getInternalKwarg() {
         return kwarg;
     }
-
-    private Name kwargName;
-    public Name getInternalKwargName() {
-        return kwargName;
-    }
-
     @ExposedGet(name = "kwarg")
     public PyObject getKwarg() {
         if (kwarg == null) return Py.None;
@@ -129,29 +118,8 @@ public class arguments extends PythonTree {
         setDefaults(defaults);
     }
 
-    // public arguments(Token token, java.util.List<expr> args, String vararg, String kwarg,
-    // java.util.List<expr> defaults) {
-    //     super(token);
-    //     this.args = args;
-    //     if (args == null) {
-    //         this.args = new ArrayList<expr>();
-    //     }
-    //     for(PythonTree t : this.args) {
-    //         addChild(t);
-    //     }
-    //     this.vararg = vararg;
-    //     this.kwarg = kwarg;
-    //     this.defaults = defaults;
-    //     if (defaults == null) {
-    //         this.defaults = new ArrayList<expr>();
-    //     }
-    //     for(PythonTree t : this.defaults) {
-    //         addChild(t);
-    //     }
-    // }
-
-    public arguments(Token token, java.util.List<expr> args, Name vararg, Name kwarg,
-            java.util.List<expr> defaults) {
+    public arguments(Token token, java.util.List<expr> args, String vararg, String kwarg,
+    java.util.List<expr> defaults) {
         super(token);
         this.args = args;
         if (args == null) {
@@ -160,10 +128,8 @@ public class arguments extends PythonTree {
         for(PythonTree t : this.args) {
             addChild(t);
         }
-        this.vararg = vararg == null ? null : vararg.getText();
-        this.varargName = vararg;
-        this.kwarg = kwarg == null ? null : kwarg.getText();
-        this.kwargName = kwarg;
+        this.vararg = vararg;
+        this.kwarg = kwarg;
         this.defaults = defaults;
         if (defaults == null) {
             this.defaults = new ArrayList<expr>();
@@ -258,4 +224,58 @@ public class arguments extends PythonTree {
         }
     }
 
+    public PyObject __dict__;
+
+    @Override
+    public PyObject fastGetDict() {
+        ensureDict();
+        return __dict__;
+    }
+
+    @ExposedGet(name = "__dict__")
+    public PyObject getDict() {
+        return fastGetDict();
+    }
+
+    private void ensureDict() {
+        if (__dict__ == null) {
+            __dict__ = new PyStringMap();
+        }
+    }
+
+    // Support for indexer below
+
+    private Name varargName;
+    public Name getInternalVarargName() {
+        return varargName;
+    }
+    private Name kwargName;
+    public Name getInternalKwargName() {
+        return kwargName;
+    }
+    // XXX: vararg and kwarg are deliberately moved to the end of the
+    // method signature to avoid clashes with the (Token, List<expr>,
+    // String, String, List<expr>) version of the constructor.
+    public arguments(Token token, java.util.List<expr> args, Name vararg, Name kwarg,
+            java.util.List<expr> defaults) {
+        super(token);
+        this.args = args;
+        if (args == null) {
+            this.args = new ArrayList<expr>();
+        }
+        for(PythonTree t : this.args) {
+            addChild(t);
+        }
+        this.vararg = vararg == null ? null : vararg.getText();
+        this.varargName = vararg;
+        this.kwarg = kwarg == null ? null : kwarg.getText();
+        this.kwargName = kwarg;
+        this.defaults = defaults;
+        if (defaults == null) {
+            this.defaults = new ArrayList<expr>();
+        }
+        for(PythonTree t : this.defaults) {
+            addChild(t);
+        }
+    }
 }

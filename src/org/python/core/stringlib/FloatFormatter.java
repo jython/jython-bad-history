@@ -16,7 +16,11 @@ import org.python.core.stringlib.InternalFormat.Spec;
 public class FloatFormatter extends InternalFormat.Formatter {
 
     /** The rounding mode dominant in the formatter. */
-    static final RoundingMode ROUND_PY = RoundingMode.HALF_UP; // Believed to be HALF_EVEN in Py3k
+    static final RoundingMode ROUND_PY = RoundingMode.HALF_EVEN;
+
+    /** Limit the size of results. */
+    // No-one needs more than log(Double.MAX_VALUE) - log2(Double.MIN_VALUE) = 1383 digits.
+    static final int MAX_PRECISION = 1400;
 
     /** If it contains no decimal point, this length is zero, and 1 otherwise. */
     private int lenPoint;
@@ -30,26 +34,14 @@ public class FloatFormatter extends InternalFormat.Formatter {
     private int minFracDigits;
 
     /**
-     * Construct the formatter from a specification. A reference is held to this specification, but
-     * it will not be modified by the actions of this class.
+     * Construct the formatter from a client-supplied buffer, to which the result will be appended,
+     * and a specification. Sets {@link #mark} to the end of the buffer.
      *
+     * @param result destination buffer
      * @param spec parsed conversion specification
      */
-    public FloatFormatter(Spec spec) {
-        // Space for result is based on padded width, or precision, whole part & furniture.
-        this(spec, 1, 0);
-    }
-
-    /**
-     * Construct the formatter from a specification and an explicit initial buffer capacity. A
-     * reference is held to this specification, but it will not be modified by the actions of this
-     * class.
-     *
-     * @param spec parsed conversion specification
-     * @param width expected for the formatted result
-     */
-    public FloatFormatter(Spec spec, int width) {
-        super(spec, width);
+    public FloatFormatter(StringBuilder result, Spec spec) {
+        super(result, spec);
         if (spec.alternate) {
             // Alternate form means do not trim the zero fractional digits.
             minFracDigits = -1;
@@ -66,20 +58,26 @@ public class FloatFormatter extends InternalFormat.Formatter {
     }
 
     /**
-     * Construct the formatter from a specification and two extra hints about the initial buffer
-     * capacity. A reference is held to this specification, but it will not be modified by the
-     * actions of this class.
+     * Construct the formatter from a specification, allocating a buffer internally for the result.
      *
      * @param spec parsed conversion specification
-     * @param count of elements likely to be formatted
-     * @param margin for elements formatted only once
      */
-    public FloatFormatter(Spec spec, int count, int margin) {
-        /*
-         * Rule of thumb used here: in e format w = (p-1) + len("+1.e+300") = p+7; in f format w = p
-         * + len("1,000,000.") = p+10. If we're wrong, the result will have to grow. No big deal.
-         */
-        this(spec, Math.max(spec.width + 1, count * (spec.precision + 10) + margin));
+    public FloatFormatter(Spec spec) {
+        this(new StringBuilder(size(spec)), spec);
+    }
+
+    /**
+     * Recommend a buffer size for a given specification, assuming one float is converted. This will
+     * be a "right" answer for e and g-format, and for f-format with values up to 9,999,999.
+     *
+     * @param spec parsed conversion specification
+     */
+    public static int size(Spec spec) {
+        // Rule of thumb used here (no right answer):
+        // in e format each float occupies: (p-1) + len("+1.e+300") = p+7;
+        // in f format each float occupies: p + len("1,000,000.%") = p+11;
+        // or an explicit (minimum) width may be given, with one overshoot possible.
+        return Math.max(spec.width + 1, spec.getPrecision(6) + 11);
     }
 
     /**
@@ -160,12 +158,19 @@ public class FloatFormatter extends InternalFormat.Formatter {
         // Precision defaults to 6 (or 12 for none-format)
         int precision = spec.getPrecision(Spec.specified(spec.type) ? 6 : 12);
 
+        // Guard against excessive result precision
+        // XXX Possibly better raised before result is allocated/sized.
+        if (precision > MAX_PRECISION) {
+            throw precisionTooLarge("float");
+        }
+
         /*
          * By default, the prefix of a positive number is "", but the format specifier may override
          * it, and the built-in type complex needs to override the format.
          */
-        if (positivePrefix == null && Spec.specified(spec.sign) && spec.sign != '-') {
-            positivePrefix = Character.toString(spec.sign);
+        char sign = spec.sign;
+        if (positivePrefix == null && Spec.specified(sign) && sign != '-') {
+            positivePrefix = Character.toString(sign);
         }
 
         // Different process for each format type, ignoring case for now.
@@ -325,10 +330,9 @@ public class FloatFormatter extends InternalFormat.Formatter {
             exp = lenFraction - vv.scale();
         }
 
-        // Finally add zeros, as necessary, and stick on the exponent.
-
+        // If the result is not already complete, add point and zeros as necessary, and exponent.
         if (lenMarker == 0) {
-            appendTrailingZeros(precision);
+            ensurePointAndTrailingZeros(precision);
             appendExponent(exp);
         }
     }
@@ -345,14 +349,7 @@ public class FloatFormatter extends InternalFormat.Formatter {
      */
     private void format_f(double value, String positivePrefix, int precision) {
 
-        if (signAndSpecialNumber(value, positivePrefix)) {
-
-            if (lenMarker == 0) {
-                // May be 0 or -0 so we still need to ...
-                appendTrailingZeros(precision);
-            }
-
-        } else {
+        if (!signAndSpecialNumber(value, positivePrefix)) {
             // Convert value to decimal exactly. (This can be very long.)
             BigDecimal vLong = new BigDecimal(Math.abs(value));
 
@@ -366,9 +363,53 @@ public class FloatFormatter extends InternalFormat.Formatter {
                 // There is a decimal point and some digits following
                 lenWhole = result.length() - (start + lenSign + (lenPoint = 1) + lenFraction);
             } else {
+                // There are no fractional digits and so no decimal point
                 lenWhole = result.length() - (start + lenSign);
             }
+        }
 
+        // Finally, ensure we have all the fractional digits we should.
+        if (lenMarker == 0) {
+            ensurePointAndTrailingZeros(precision);
+        }
+    }
+
+    /**
+     * Append a decimal point and trailing fractional zeros if necessary for 'e' and 'f' format.
+     * This should not be called if the result is not numeric ("inf" for example). This method deals
+     * with the following complexities: on return there will be at least the number of fractional
+     * digits specified in the argument <code>n</code>, and at least {@link #minFracDigits};
+     * further, if <code>minFracDigits&lt;0</code>, signifying the "alternate mode" of certain
+     * formats, the method will ensure there is a decimal point, even if there are no fractional
+     * digits to follow.
+     *
+     * @param n smallest number of fractional digits on return
+     */
+    private void ensurePointAndTrailingZeros(int n) {
+
+        // Set n to the number of fractional digits we should have.
+        if (n < minFracDigits) {
+            n = minFracDigits;
+        }
+
+        // Do we have a decimal point already?
+        if (lenPoint == 0) {
+            // No decimal point: add one if there will be any fractional digits or
+            if (n > 0 || minFracDigits < 0) {
+                // First need to add a decimal point.
+                result.append('.');
+                lenPoint = 1;
+            }
+        }
+
+        // Do we have enough fractional digits already?
+        int f = lenFraction;
+        if (n > f) {
+            // Make up the required number of zeros.
+            for (; f < n; f++) {
+                result.append('0');
+            }
+            lenFraction = f;
         }
     }
 
@@ -635,7 +676,7 @@ public class FloatFormatter extends InternalFormat.Formatter {
 
         // In no-truncate mode, the fraction is full precision. Otherwise trim it.
         if (minFracDigits >= 0) {
-            // Note minFracDigits only applies to fixed formats.
+            // Note positive minFracDigits only applies to fixed formats.
             removeTrailingZeros(0);
         }
 
@@ -757,16 +798,16 @@ public class FloatFormatter extends InternalFormat.Formatter {
 
     /**
      * Append the trailing fractional zeros, as required by certain formats, so that the total
-     * number of fractional digits is no less than specified. If <code>minFracDigits&lt;=0</code>,
-     * the method leaves the {@link #result} buffer unchanged.
+     * number of fractional digits is no less than specified. If <code>n&lt;=0</code>, the method
+     * leaves the {@link #result} buffer unchanged.
      *
-     * @param minFracDigits smallest number of fractional digits on return
+     * @param n smallest number of fractional digits on return
      */
-    private void appendTrailingZeros(int minFracDigits) {
+    private void appendTrailingZeros(int n) {
 
         int f = lenFraction;
 
-        if (minFracDigits > f) {
+        if (n > f) {
             if (lenPoint == 0) {
                 // First need to add a decimal point. (Implies lenFraction=0.)
                 result.append('.');
@@ -774,7 +815,7 @@ public class FloatFormatter extends InternalFormat.Formatter {
             }
 
             // Now make up the required number of zeros.
-            for (; f < minFracDigits; f++) {
+            for (; f < n; f++) {
                 result.append('0');
             }
             lenFraction = f;
@@ -787,9 +828,9 @@ public class FloatFormatter extends InternalFormat.Formatter {
      * originally (and therefore no fractional part), the method will add a decimal point, even if
      * it adds no zeros.
      *
-     * @param minFracDigits smallest number of fractional digits on return
+     * @param n smallest number of fractional digits on return
      */
-    private void appendPointAndTrailingZeros(int minFracDigits) {
+    private void appendPointAndTrailingZeros(int n) {
 
         if (lenPoint == 0) {
             // First need to add a decimal point. (Implies lenFraction=0.)
@@ -799,7 +840,7 @@ public class FloatFormatter extends InternalFormat.Formatter {
 
         // Now make up the required number of zeros.
         int f;
-        for (f = lenFraction; f < minFracDigits; f++) {
+        for (f = lenFraction; f < n; f++) {
             result.append('0');
         }
         lenFraction = f;
@@ -810,18 +851,17 @@ public class FloatFormatter extends InternalFormat.Formatter {
      * least the number of fractional digits specified. If the resultant number of fractional digits
      * is zero, this method will also remove the trailing decimal point (if there is one).
      *
-     * @param minFracDigits smallest number of fractional digits on return
+     * @param n smallest number of fractional digits on return
      */
-    private void removeTrailingZeros(int minFracDigits) {
-
-        int f = lenFraction;
+    private void removeTrailingZeros(int n) {
 
         if (lenPoint > 0) {
             // There's a decimal point at least, and there may be some fractional digits.
-            if (minFracDigits == 0 || f > minFracDigits) {
+            int f = lenFraction;
+            if (n == 0 || f > n) {
 
                 int fracStart = result.length() - f;
-                for (; f > minFracDigits; --f) {
+                for (; f > n; --f) {
                     if (result.charAt(fracStart - 1 + f) != '0') {
                         // Keeping this one as it isn't a zero
                         break;
@@ -870,8 +910,8 @@ public class FloatFormatter extends InternalFormat.Formatter {
     }
 
     /**
-     * Return the index in {@link #result} of the first letter. helper for {@link #uppercase()} and
-     * {@link #getExponent()}
+     * Return the index in {@link #result} of the first letter. This is a helper for
+     * {@link #uppercase()} and {@link #getExponent()}
      */
     private int indexOfMarker() {
         return start + lenSign + lenWhole + lenPoint + lenFraction;
