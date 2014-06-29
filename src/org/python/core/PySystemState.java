@@ -2,6 +2,7 @@
 package org.python.core;
 
 import java.io.BufferedReader;
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -48,7 +49,7 @@ import org.python.util.Generic;
  */
 // xxx Many have lamented, this should really be a module!
 // but it will require some refactoring to see this wish come true.
-public class PySystemState extends PyObject implements ClassDictInit {
+public class PySystemState extends PyObject implements AutoCloseable, ClassDictInit, Closeable {
 
     public static final String PYTHON_CACHEDIR = "python.cachedir";
     public static final String PYTHON_CACHEDIR_SKIP = "python.cachedir.skip";
@@ -116,9 +117,6 @@ public class PySystemState extends PyObject implements ClassDictInit {
     private static PyList defaultArgv;
     private static PyObject defaultExecutable;
 
-    // XXX - from Jython code, these statics are immutable; we may wish to consider
-    // using the shadowing mechanism for them as well if in practice it makes
-    // sense for them to be changed
     public static Properties registry; // = init_registry();
     public static PyObject prefix;
     public static PyObject exec_prefix = Py.EmptyString;
@@ -135,10 +133,10 @@ public class PySystemState extends PyObject implements ClassDictInit {
     public PyObject modules;
     public PyList path;
 
-    // shadowed statics - don't use directly
-    public static PyList warnoptions = new PyList();
-    public static PyObject builtins;
-    public static PyObject platform = new PyString("java");
+    public PyList warnoptions = new PyList();
+    public PyObject builtins;
+    private static PyObject defaultPlatform = new PyString("java");
+    public PyObject platform = defaultPlatform;
 
     public PyList meta_path;
     public PyList path_hooks;
@@ -199,6 +197,8 @@ public class PySystemState extends PyObject implements ClassDictInit {
         path.append(Py.newString(JavaImporter.JAVA_IMPORT_PATH_ENTRY));
         path.append(Py.newString(ClasspathPyImporter.PYCLASSPATH_PREFIX));
         executable = defaultExecutable;
+        builtins = getDefaultBuiltins();
+        platform = defaultPlatform;
 
         meta_path = new PyList();
         path_hooks = new PyList();
@@ -279,14 +279,9 @@ public class PySystemState extends PyObject implements ClassDictInit {
         ((PyFile)stderr).setEncoding(encoding, "backslashreplace");
     }
 
-    // might be nice to have something general here, but for now these
-    // seem to be the only values that need to be explicitly shadowed
-    private Shadow shadowing;
-
-    public synchronized void shadow() {
-        if (shadowing == null) {
-            shadowing = new Shadow();
-        }
+    @Deprecated
+    public void shadow() {
+        // Now a no-op
     }
 
     private static class DefaultBuiltinsHolder {
@@ -304,53 +299,29 @@ public class PySystemState extends PyObject implements ClassDictInit {
         return DefaultBuiltinsHolder.builtins;
     }
 
-    public synchronized PyObject getBuiltins() {
-        if (shadowing == null) {
-            return getDefaultBuiltins();
-        } else {
-            return shadowing.builtins;
-        }
+    public PyObject getBuiltins() {
+        return builtins;
     }
 
-    public synchronized void setBuiltins(PyObject value) {
-        if (shadowing == null) {
-            builtins = value;
-        } else {
-            shadowing.builtins = value;
-        }
+    public void setBuiltins(PyObject value) {
+        builtins = value;
         modules.__setitem__("__builtin__", new PyModule("__builtin__", value));
     }
 
-    public synchronized PyObject getWarnoptions() {
-        if (shadowing == null) {
-            return warnoptions;
-        } else {
-            return shadowing.warnoptions;
-        }
+    public PyObject getWarnoptions() {
+        return warnoptions;
     }
 
-    public synchronized void setWarnoptions(PyObject value) {
-        if (shadowing == null) {
-            warnoptions = new PyList(value);
-        } else {
-            shadowing.warnoptions = new PyList(value);
-        }
+    public void setWarnoptions(PyObject value) {
+        warnoptions = new PyList(value);
     }
 
-    public synchronized PyObject getPlatform() {
-        if (shadowing == null) {
-            return platform;
-        } else {
-            return shadowing.platform;
-        }
+    public PyObject getPlatform() {
+        return platform;
     }
 
-    public synchronized void setPlatform(PyObject value) {
-        if (shadowing == null) {
-            platform = value;
-        } else {
-            shadowing.platform = value;
-        }
+    public void setPlatform(PyObject value) {
+        platform = value;
     }
 
     public synchronized codecs.CodecState getCodecState() {
@@ -388,12 +359,6 @@ public class PySystemState extends PyObject implements ClassDictInit {
                 return null;
             }
             return exc.traceback;
-        } else if (name == "warnoptions") {
-            return getWarnoptions();
-        } else if (name == "builtins") {
-            return getBuiltins();
-        } else if (name == "platform") {
-            return getPlatform();
         } else {
             PyObject ret = super.__findattr_ex__(name);
             if (ret != null) {
@@ -416,14 +381,7 @@ public class PySystemState extends PyObject implements ClassDictInit {
     public void __setattr__(String name, PyObject value) {
         checkReadOnly(name);
         if (name == "builtins") {
-            shadow();
             setBuiltins(value);
-        } else if (name == "warnoptions") {
-            shadow();
-            setWarnoptions(value);
-        } else if (name == "platform") {
-            shadow();
-            setPlatform(value);
         } else {
             PyObject ret = getType().lookup(name); // xxx fix fix fix
             if (ret != null && ret._doset(this, value)) {
@@ -761,7 +719,7 @@ public class PySystemState extends PyObject implements ClassDictInit {
         }
     }
 
-    public static void determinePlatform(Properties props) {
+    private static void determinePlatform(Properties props) {
         String version = props.getProperty("java.version");
         if (version == null) {
             version = "???";
@@ -776,7 +734,7 @@ public class PySystemState extends PyObject implements ClassDictInit {
         if (version.equals("12")) {
             version = "1.2";
         }
-        platform = new PyString("java" + version);
+        defaultPlatform = new PyString("java" + version);
     }
 
     private static void initRegistry(Properties preProperties, Properties postProperties,
@@ -1584,6 +1542,8 @@ public class PySystemState extends PyObject implements ClassDictInit {
         closer.cleanup();
     }
 
+    public void close() { cleanup(); }
+
     private static class PySystemStateCloser {
 
         private final Set<Callable<Void>> resourceClosers = new LinkedHashSet<Callable<Void>>();
@@ -1633,12 +1593,33 @@ public class PySystemState extends PyObject implements ClassDictInit {
             }
 
             // Close the listed resources (and clear the list)
-            runClosers(resourceClosers);
+            runClosers();
             resourceClosers.clear();
 
             // XXX Not sure this is ok, but it makes repeat testing possible.
             // Re-enable the management of resource closers
             isCleanup = false;
+        }
+
+        private synchronized void runClosers() {
+            // resourceClosers can be null in some strange cases
+            if (resourceClosers != null) {
+            /*
+             * Although a Set, the container iterates in the order closers were added. Make a Deque
+             * of it and deal from the top.
+             */
+                LinkedList<Callable<Void>> rc = new LinkedList<Callable<Void>>(resourceClosers);
+                Iterator<Callable<Void>> iter = rc.descendingIterator();
+
+                while (iter.hasNext()) {
+                    Callable<Void> callable = iter.next();
+                    try {
+                        callable.call();
+                    } catch (Exception e) {
+                        // just continue, nothing we can do
+                    }
+                }
+            }
         }
 
         // Python scripts expect that files are closed upon an orderly cleanup of the VM.
@@ -1657,7 +1638,7 @@ public class PySystemState extends PyObject implements ClassDictInit {
 
         	@Override
             public synchronized void run() {
-                runClosers(resourceClosers);
+                runClosers();
                 resourceClosers.clear();
             }
         }
@@ -1672,26 +1653,7 @@ public class PySystemState extends PyObject implements ClassDictInit {
      *
      * @param resourceClosers to be called in turn
      */
-    private static void runClosers(Set<Callable<Void>> resourceClosers) {
-        // resourceClosers can be null in some strange cases
-        if (resourceClosers != null) {
-            /*
-             * Although a Set, the container iterates in the order closers were added. Make a Deque
-             * of it and deal from the top.
-             */
-            LinkedList<Callable<Void>> rc = new LinkedList<Callable<Void>>(resourceClosers);
-            Iterator<Callable<Void>> iter = rc.descendingIterator();
 
-            while (iter.hasNext()) {
-                Callable<Void> callable = iter.next();
-                try {
-                    callable.call();
-                } catch (Exception e) {
-                    // just continue, nothing we can do
-                }
-            }
-        }
-    }
 }
 
 
@@ -1751,20 +1713,6 @@ class PyAttributeDeleted extends PyObject {
             return Py.NoConversion;
         }
         return null;
-    }
-}
-
-
-class Shadow {
-
-    PyObject builtins;
-    PyList warnoptions;
-    PyObject platform;
-
-    Shadow() {
-        builtins = PySystemState.getDefaultBuiltins();
-        warnoptions = PySystemState.warnoptions;
-        platform = PySystemState.platform;
     }
 }
 
