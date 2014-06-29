@@ -1,5 +1,6 @@
 package org.python.util;
 
+import java.io.Closeable;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.Properties;
@@ -7,6 +8,8 @@ import java.util.Properties;
 import org.python.antlr.base.mod;
 import org.python.core.CompileMode;
 import org.python.core.CompilerFlags;
+import org.python.core.imp;
+import org.python.core.Options;
 import org.python.core.ParserFacade;
 import org.python.core.Py;
 import org.python.core.PyCode;
@@ -25,15 +28,24 @@ import org.python.core.PyFileReader;
  * The PythonInterpreter class is a standard wrapper for a Jython interpreter
  * for embedding in a Java application.
  */
-public class PythonInterpreter {
+public class PythonInterpreter implements AutoCloseable, Closeable {
 
     // Defaults if the interpreter uses thread-local state
     protected PySystemState systemState;
     PyObject globals;
 
-    protected ThreadLocal<PyObject> threadLocals;
+    protected final boolean useThreadLocalState;
+
+    protected static ThreadLocal<Object[]> threadLocals = new ThreadLocal<Object[]>() {
+        @Override
+        protected Object[] initialValue() {
+            return new Object[1];
+        }
+    };
 
     protected CompilerFlags cflags = new CompilerFlags();
+
+    private volatile boolean closed = false;
 
     /**
      * Initializes the Jython runtime. This should only be called
@@ -103,11 +115,15 @@ public class PythonInterpreter {
         this.systemState = systemState;
         setSystemState();
 
-        if (useThreadLocalState) {
-            threadLocals = new ThreadLocal<PyObject>();
-        } else {
+        this.useThreadLocalState = useThreadLocalState;
+        if (!useThreadLocalState) {
             PyModule module = new PyModule("__main__", dict);
             systemState.modules.__setitem__("__main__", module);
+        }
+        
+        if (Options.importSite) {
+            // Ensure site-packages are available
+            imp.load("site");
         }
     }
 
@@ -263,20 +279,24 @@ public class PythonInterpreter {
 
 
     public PyObject getLocals() {
-        if (threadLocals == null)
+        if (!useThreadLocalState) {
             return globals;
-
-        PyObject locals = threadLocals.get();
-        if (locals != null)
-            return locals;
-        return globals;
+        } else {
+            PyObject locals = (PyObject) threadLocals.get()[0];
+            if (locals != null) {
+                return locals;
+            }
+            return globals;
+        }
     }
 
     public void setLocals(PyObject d) {
-        if (threadLocals == null)
+        if (!useThreadLocalState) {
             globals = d;
-        else
-            threadLocals.set(d);
+        }
+        else {
+            threadLocals.get()[0] = d;
+        }
     }
 
     /**
@@ -352,6 +372,14 @@ public class PythonInterpreter {
         } catch (PyException pye) {
             // fall through
         }
+        threadLocals.remove();
         sys.cleanup();
+    }
+
+    public void close() {
+        if (!closed) {
+            closed = true;
+            cleanup();
+        }
     }
 }
