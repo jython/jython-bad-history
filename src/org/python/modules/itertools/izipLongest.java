@@ -4,15 +4,14 @@ package org.python.modules.itertools;
 import org.python.core.Py;
 import org.python.core.PyIterator;
 import org.python.core.PyObject;
-import org.python.core.PyString;
 import org.python.core.PyTuple;
 import org.python.core.PyType;
-import org.python.expose.ExposedGet;
 import org.python.expose.ExposedMethod;
 import org.python.expose.ExposedNew;
 import org.python.expose.ExposedType;
 
-@ExposedType(name = "itertools.izip_longest", base = PyObject.class)
+@ExposedType(name = "itertools.izip_longest", base = PyObject.class,
+    doc = izipLongest.izip_longest_doc)
 public class izipLongest extends PyIterator {
 
     public static final PyType TYPE = PyType.fromClass(izipLongest.class);
@@ -31,15 +30,14 @@ public class izipLongest extends PyIterator {
         izipLongest___init__(iterables, fillvalue);
     }
 
-    @ExposedGet
-    public static PyString __doc__ = new PyString(
+    public static final String izip_longest_doc =
         "izip_longest(iter1 [,iter2 [...]], [fillvalue=None]) --> izip_longest object\n\n" +
-            "Return an izip_longest object whose .next() method returns a tuple where\n" +
-            "the i-th element comes from the i-th iterable argument.  The .next()\n" +
-            "method continues until the longest iterable in the argument sequence\n" +
-            "is exhausted and then it raises StopIteration.  When the shorter iterables\n" +
-            "are exhausted, the fillvalue is substituted in their place.  The fillvalue\n" +
-            "defaults to None or can be specified by a keyword argument.");
+        "Return an izip_longest object whose .next() method returns a tuple where\n" +
+        "the i-th element comes from the i-th iterable argument.  The .next()\n" +
+        "method continues until the longest iterable in the argument sequence\n" +
+        "is exhausted and then it raises StopIteration.  When the shorter iterables\n" +
+        "are exhausted, the fillvalue is substituted in their place.  The fillvalue\n" +
+        "defaults to None or can be specified by a keyword argument.";
 
     /**
      * Create an iterator that returns items from the iterable while <code>predicate(item)</code>

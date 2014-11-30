@@ -4,14 +4,12 @@ package org.python.modules.itertools;
 import org.python.core.ArgParser;
 import org.python.core.PyIterator;
 import org.python.core.PyObject;
-import org.python.core.PyString;
 import org.python.core.PyType;
-import org.python.expose.ExposedGet;
 import org.python.expose.ExposedMethod;
 import org.python.expose.ExposedNew;
 import org.python.expose.ExposedType;
 
-@ExposedType(name = "itertools.dropwhile", base = PyObject.class)
+@ExposedType(name = "itertools.dropwhile", base = PyObject.class, doc = dropwhile.dropwhile_doc)
 public class dropwhile extends PyIterator {
 
     public static final PyType TYPE = PyType.fromClass(dropwhile.class);
@@ -30,11 +28,10 @@ public class dropwhile extends PyIterator {
         dropwhile___init__(predicate, iterable);
     }
 
-    @ExposedGet
-    public static PyString __doc__ = new PyString(
-        "dropwhile(predicate, iterable) --> dropwhile object\n\n"
-            + "Drop items from the iterable while predicate(item) is true.\n"
-            + "Afterwards, return every element until the iterable is exhausted.");
+    public static final String dropwhile_doc =
+        "dropwhile(predicate, iterable) --> dropwhile object\n\n" +
+        "Drop items from the iterable while predicate(item) is true.\n" +
+        "Afterwards, return every element until the iterable is exhausted.";
 
     /**
      * Create an iterator that drops items from the iterable while <code>predicate(item)</code>

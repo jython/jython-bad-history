@@ -4,25 +4,22 @@ import org.python.core.ArgParser;
 import org.python.core.Py;
 import org.python.core.PyIterator;
 import org.python.core.PyObject;
-import org.python.core.PyString;
 import org.python.core.PyTuple;
 import org.python.core.PyType;
-import org.python.expose.ExposedGet;
 import org.python.expose.ExposedMethod;
 import org.python.expose.ExposedNew;
 import org.python.expose.ExposedType;
 
-@ExposedType(name = "itertools.combinations", base = PyObject.class)
+@ExposedType(name = "itertools.combinations", base = PyObject.class, doc = combinations.combinations_doc)
 public class combinations extends PyIterator {
 
     public static final PyType TYPE = PyType.fromClass(combinations.class);
     private PyIterator iter;
 
-    @ExposedGet
-    public static PyString __doc__ = new PyString(
+    public static final String combinations_doc =
         "combinations(iterable, r) --> combinations object\n\n" +
-            "Return successive r-length combinations of elements in the iterable.\n\n" +
-            "combinations(range(4), 3) --> (0,1,2), (0,1,3), (0,2,3), (1,2,3)");
+        "Return successive r-length combinations of elements in the iterable.\n\n" +
+        "combinations(range(4), 3) --> (0,1,2), (0,1,3), (0,2,3), (1,2,3)";
 
     public combinations() {
         super();

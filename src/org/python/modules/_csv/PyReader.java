@@ -1,7 +1,6 @@
 /* Copyright (c) Jython Developers */
 package org.python.modules._csv;
 
-import org.python.core.Py;
 import org.python.core.PyIterator;
 import org.python.core.PyList;
 import org.python.core.PyObject;
@@ -15,16 +14,16 @@ import org.python.expose.ExposedType;
  *
  * Analogous to CPython's _csv.c::ReaderObj struct.
  */
-@ExposedType(name = "_csv.reader")
+@ExposedType(name = "_csv.reader", doc = PyReader.reader_doc)
 public class PyReader extends PyIterator {
 
     public static final PyType TYPE = PyType.fromClass(PyReader.class);
 
-    public PyString __doc__ = Py.newString(
+    public static final String reader_doc =
         "CSV reader\n" +
         "\n" +
         "Reader objects are responsible for reading and parsing tabular data\n" +
-        "in CSV format.\n");
+        "in CSV format.\n";
 
     /** Parsing Dialect. */
     @ExposedGet

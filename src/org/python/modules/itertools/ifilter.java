@@ -4,15 +4,13 @@ package org.python.modules.itertools;
 import org.python.core.ArgParser;
 import org.python.core.PyIterator;
 import org.python.core.PyObject;
-import org.python.core.PyString;
 import org.python.core.PyType;
-import org.python.expose.ExposedGet;
 import org.python.expose.ExposedNew;
 import org.python.expose.ExposedMethod;
 import org.python.expose.ExposedType;
 
 
-@ExposedType(name = "itertools.ifilter", base = PyObject.class)
+@ExposedType(name = "itertools.ifilter", base = PyObject.class, doc = ifilter.ifilter_doc)
 public class ifilter extends PyIterator {
 
     public static final PyType TYPE = PyType.fromClass(ifilter.class);
@@ -31,11 +29,10 @@ public class ifilter extends PyIterator {
         ifilter___init__(predicate, iterable);
     }
 
-    @ExposedGet
-    public static PyString __doc__ = new PyString(
-            "ifilter(function or None, sequence) --> ifilter object\n\n"
-                    + "Return those items of sequence for which function(item) is true.\nIf function is None, "
-                    + "return the items that are true.");
+    public static final String ifilter_doc =
+        "ifilter(function or None, sequence) --> ifilter object\n\n" +
+        "Return those items of sequence for which function(item) is true.\n" +
+        "If function is None, return the items that are true.";
 
     /**
      * Creates an iterator that returns the items of the iterable for which

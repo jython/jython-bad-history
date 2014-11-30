@@ -5,26 +5,24 @@ import org.python.core.ArgParser;
 import org.python.core.Py;
 import org.python.core.PyIterator;
 import org.python.core.PyObject;
-import org.python.core.PyString;
 import org.python.core.PyTuple;
 import org.python.core.PyType;
-import org.python.expose.ExposedGet;
 import org.python.expose.ExposedMethod;
 import org.python.expose.ExposedNew;
 import org.python.expose.ExposedType;
 
-@ExposedType(name = "itertools.combinations_with_replacement", base = PyObject.class)
+@ExposedType(name = "itertools.combinations_with_replacement", base = PyObject.class,
+    doc = combinationsWithReplacement.combinations_with_replacement_doc)
 public class combinationsWithReplacement extends PyIterator {
 
     public static final PyType TYPE = PyType.fromClass(combinationsWithReplacement.class);
     private itertools.ItertoolsIterator iter;
 
-    @ExposedGet
-    public static PyString __doc__ = new PyString(
+    public static final String combinations_with_replacement_doc =
         "combinations_with_replacement(iterable, r) --> combinations_with_replacement object\n\n" +
-            "Return successive r-length combinations of elements in the iterable\n" +
-            "allowing individual elements to have successive repeats.\n" +
-            "combinations_with_replacement('ABC', 2) --> AA AB AC BB BC CC");
+        "Return successive r-length combinations of elements in the iterable\n" +
+        "allowing individual elements to have successive repeats.\n" +
+        "combinations_with_replacement('ABC', 2) --> AA AB AC BB BC CC";
 
     public combinationsWithReplacement() {
         super();
