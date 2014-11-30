@@ -6,28 +6,25 @@ import org.python.core.PyInteger;
 import org.python.core.PyIterator;
 import org.python.core.PyNone;
 import org.python.core.PyObject;
-import org.python.core.PyString;
 import org.python.core.PyType;
-import org.python.expose.ExposedGet;
 import org.python.expose.ExposedMethod;
 import org.python.expose.ExposedNew;
 import org.python.expose.ExposedType;
 
-@ExposedType(name = "itertools.islice", base = PyObject.class)
+@ExposedType(name = "itertools.islice", base = PyObject.class, doc = islice.islice_doc)
 public class islice extends PyIterator {
 
     public static final PyType TYPE = PyType.fromClass(islice.class);
     private itertools.ItertoolsIterator iter;
 
-    @ExposedGet
-    public static PyString __doc__ = new PyString(
+    public static final String islice_doc =
         "islice(iterable, [start,] stop [, step]) --> islice object\n\n" +
         "Return an iterator whose next() method returns selected values from an\n" +
         "iterable.  If start is specified, will skip all preceding elements;\n" +
         "otherwise, start defaults to zero.  Step defaults to one.  If\n" +
         "specified as another value, step determines how many values are \n" +
         "skipped between successive calls.  Works like a slice() on a list\n" +
-        "but returns an iterator.");
+        "but returns an iterator.";
 
     public islice() {
         super();

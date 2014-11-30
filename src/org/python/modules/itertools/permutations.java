@@ -5,24 +5,21 @@ import org.python.core.ArgParser;
 import org.python.core.Py;
 import org.python.core.PyIterator;
 import org.python.core.PyObject;
-import org.python.core.PyString;
 import org.python.core.PyTuple;
 import org.python.core.PyType;
-import org.python.expose.ExposedGet;
 import org.python.expose.ExposedMethod;
 import org.python.expose.ExposedNew;
 import org.python.expose.ExposedType;
 
-@ExposedType(name = "itertools.permutations", base = PyObject.class)
+@ExposedType(name = "itertools.permutations", base = PyObject.class, doc = permutations.permutations_doc)
 public class permutations extends PyIterator {
     public static final PyType TYPE = PyType.fromClass(permutations.class);
     private PyIterator iter;
 
-    @ExposedGet
-    public static PyString __doc__ = new PyString(
+    public static final String permutations_doc =
         "permutations(iterable[, r]) --> permutations object\n\n" +
-            "Return successive r-length permutations of elements in the iterable.\n\n" +
-            "permutations(range(3), 2) --> (0,1), (0,2), (1,0), (1,2), (2,0), (2,1)");
+        "Return successive r-length permutations of elements in the iterable.\n\n" +
+        "permutations(range(3), 2) --> (0,1), (0,2), (1,0), (1,2), (2,0), (2,1)";
 
     public permutations() {
         super();

@@ -4,14 +4,12 @@ package org.python.modules.itertools;
 import org.python.core.ArgParser;
 import org.python.core.PyIterator;
 import org.python.core.PyObject;
-import org.python.core.PyString;
 import org.python.core.PyType;
-import org.python.expose.ExposedGet;
 import org.python.expose.ExposedMethod;
 import org.python.expose.ExposedNew;
 import org.python.expose.ExposedType;
 
-@ExposedType(name = "itertools.takewhile", base = PyObject.class)
+@ExposedType(name = "itertools.takewhile", base = PyObject.class, doc = takewhile.takewhile_doc)
 public class takewhile extends PyIterator {
 
     public static final PyType TYPE = PyType.fromClass(takewhile.class);
@@ -30,11 +28,10 @@ public class takewhile extends PyIterator {
         takewhile___init__(predicate, iterable);
     }
 
-    @ExposedGet
-    public static PyString __doc__ = new PyString(
-        "takewhile(predicate, iterable) --> takewhile object\n\n"
-            + "Return successive entries from an iterable as long as the \n"
-            + "predicate evaluates to true for each entry.");
+    public static final String takewhile_doc =
+        "takewhile(predicate, iterable) --> takewhile object\n\n" +
+        "Return successive entries from an iterable as long as the\n" +
+        "predicate evaluates to true for each entry.";
 
     /**
      * Create an iterator that returns items from the iterable while <code>predicate(item)</code>
