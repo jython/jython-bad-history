@@ -528,7 +528,8 @@ def temp_cwd(name='tempcwd', quiet=False):
     the CWD, an error is raised.  If it's True, only a warning is raised
     and the original CWD is used.
     """
-    if have_unicode and isinstance(name, unicode):
+    if have_unicode and isinstance(name, unicode) and not is_jython:
+        # Jython supports unicode paths
         try:
             name = name.encode(sys.getfilesystemencoding() or 'ascii')
         except UnicodeEncodeError:
@@ -966,8 +967,27 @@ def captured_output(stream_name):
 def captured_stdout():
     return captured_output("stdout")
 
+def captured_stderr():
+    return captured_output("stderr")
+
 def captured_stdin():
     return captured_output("stdin")
+
+def gc_collect():
+    """Force as many objects as possible to be collected.
+
+    In non-CPython implementations of Python, this is needed because timely
+    deallocation is not guaranteed by the garbage collector.  (Even in CPython
+    this can be the case in case of reference cycles.)  This means that __del__
+    methods may be called later than expected and weakrefs may remain alive for
+    longer than expected.  This function tries its best to force all garbage
+    objects to disappear.
+    """
+    gc.collect()
+    if is_jython:
+        time.sleep(0.1)
+    gc.collect()
+    gc.collect()
 
 
 _header = '2P'
@@ -1424,3 +1444,28 @@ def strip_python_stderr(stderr):
     """
     stderr = re.sub(br"\[\d+ refs\]\r?\n?$", b"", stderr).strip()
     return stderr
+
+def retry(exceptions, tries=6, delay=3, backoff=1.2):
+    # modified from https://wiki.python.org/moin/PythonDecoratorLibrary#Retry
+    def deco_retry(f):
+
+        def wrapper(*args, **kwds):
+            mtries, mdelay = tries, delay
+            while mtries > 1:
+                try:
+                    return f(*args, **kwds)
+                except exceptions as e:
+                    print "Got %s, retrying in %.2f seconds..." % (str(e), mdelay)
+                    # FIXME resource cleanup continues to be an issue
+                    # in terms of tests we use from CPython. This only
+                    # represents a bandaid - useful as it might be -
+                    # and it should be revisited.
+                    gc_collect()
+                    time.sleep(mdelay)
+                    mtries -= 1
+                    mdelay *= backoff
+            return f(*args, **kwds)
+
+        return wrapper
+
+    return deco_retry

@@ -24,6 +24,7 @@ from java.io import IOException, InterruptedIOException
 from java.lang import Thread, IllegalStateException
 from java.net import InetAddress, InetSocketAddress
 from java.nio.channels import ClosedChannelException
+from java.security.cert import CertificateException
 from java.util import NoSuchElementException
 from java.util.concurrent import (
     ArrayBlockingQueue, CopyOnWriteArrayList, CountDownLatch, LinkedBlockingQueue,
@@ -274,6 +275,8 @@ def java_net_socketexception_handler(exc):
         return _add_exception_attrs(
             error(errno.EAFNOSUPPORT, 
                   'Address family not supported by protocol family: See http://wiki.python.org/jython/NewSocketModule#IPV6_address_support'))
+    if exc.message.startswith('Address already in use'):
+        return error(errno.EADDRINUSE, 'Address already in use')
     return _unmapped_exception(exc)
 
 
@@ -317,16 +320,23 @@ _exception_map = {
     java.nio.channels.UnsupportedAddressTypeException : None,
 
     SSLPeerUnverifiedException: lambda x: SSLError(SSL_ERROR_SSL, x.message),
-    SSLException: lambda x: SSLError(SSL_ERROR_SSL, x.message),
 }
 
 
 def _map_exception(java_exception):
-    mapped_exception = _exception_map.get(java_exception.__class__)
-    if mapped_exception:
-        py_exception = mapped_exception(java_exception)
+    if isinstance(java_exception, SSLException) or isinstance(java_exception, CertificateException):
+        cause = java_exception.cause
+        if cause:
+            msg = "%s (%s)" % (java_exception.message, cause)
+        else:
+            msg = java_exception.message
+        py_exception = SSLError(SSL_ERROR_SSL, msg)
     else:
-        py_exception = error(-1, 'Unmapped exception: %s' % java_exception)
+        mapped_exception = _exception_map.get(java_exception.__class__)
+        if mapped_exception:
+            py_exception = mapped_exception(java_exception)
+        else:
+            py_exception = error(-1, 'Unmapped exception: %s' % java_exception)
     py_exception.java_exception = java_exception
     return _add_exception_attrs(py_exception)
 
@@ -538,7 +548,8 @@ class poll(object):
                 result = self._handle_poll(partial(self.queue.poll, timeout_in_ns, TimeUnit.NANOSECONDS))
                 if result:
                     return result
-                timeout = timeout - (time.time() - started)
+                timeout -= time.time() - started
+                log.debug("Spurious wakeup, retrying with timeout=%s", timeout, extra={"sock": "*"})
             return []
 
 
@@ -580,7 +591,7 @@ class ChildSocketHandler(ChannelInitializer):
 
     def initChannel(self, child_channel):
         child = ChildSocket(self.parent_socket)
-        log.debug("Initializing child %s", extra={"sock": self.parent_socket})
+        log.debug("Initializing child %s", child, extra={"sock": self.parent_socket})
 
         child.proto = IPPROTO_TCP
         child._init_client_mode(child_channel)
@@ -615,6 +626,8 @@ class ChildSocketHandler(ChannelInitializer):
         # thread pool
         child_channel.closeFuture().addListener(unlatch_child)
 
+        if self.parent_socket.timeout is None:
+            child._ensure_post_connect()
         child._wait_on_latch()
         log.debug("Socket initChannel completed waiting on latch", extra={"sock": child})
 
@@ -732,7 +745,10 @@ class _realsocket(object):
         self.selectors.addIfAbsent(selector)
 
     def _unregister_selector(self, selector):
-        return self.selectors.remove(selector)
+        try:
+            return self.selectors.remove(selector)
+        except ValueError:
+            return None
 
     def _notify_selectors(self, exception=None, hangup=False):
         for selector in self.selectors:
@@ -751,7 +767,8 @@ class _realsocket(object):
         elif self.timeout:
             self._handle_timeout(future.await, reason)
             if not future.isSuccess():
-                log.exception("Got this failure %s during %s", future.cause(), reason, extra={"sock": self})
+                log.debug("Got this failure %s during %s", future.cause(), reason, extra={"sock": self})
+                print "Got this failure %s during %s (%s)" % (future.cause(), reason, self)
                 raise future.cause()
             return future
         else:
@@ -839,8 +856,8 @@ class _realsocket(object):
             log.debug("Connect to %s", addr, extra={"sock": self})
             self.channel = bootstrap.channel()
 
-        connect_future = self.channel.connect(addr)
-        self._handle_channel_future(connect_future, "connect")
+        self.connect_future = self.channel.connect(addr)
+        self._handle_channel_future(self.connect_future, "connect")
         self.bind_timestamp = time.time()
 
     def _post_connect(self):
@@ -868,12 +885,17 @@ class _realsocket(object):
             log.debug("Completed connection to %s", addr, extra={"sock": self})
 
     def connect_ex(self, addr):
-        self.connect(addr)
-        if self.timeout is None:
+        if not self.connected:
+            try:
+                self.connect(addr)
+            except error as e:
+                return e.errno
+        if not self.connect_future.isDone():
+            return errno.EINPROGRESS
+        elif self.connect_future.isSuccess():
             return errno.EISCONN
         else:
-            return errno.EINPROGRESS
-
+            return errno.ENOTCONN
 
     # SERVER METHODS
     # Calling listen means this is a server socket
@@ -898,10 +920,10 @@ class _realsocket(object):
         self.child_handler = ChildSocketHandler(self)
         b.childHandler(self.child_handler)
 
-        future = b.bind(self.bind_addr.getAddress(), self.bind_addr.getPort())
-        self._handle_channel_future(future, "listen")
+        self.bind_future = b.bind(self.bind_addr.getAddress(), self.bind_addr.getPort())
+        self._handle_channel_future(self.bind_future, "listen")
         self.bind_timestamp = time.time()
-        self.channel = future.channel()
+        self.channel = self.bind_future.channel()
         log.debug("Bound server socket to %s", self.bind_addr, extra={"sock": self})
 
     def accept(self):
@@ -1011,6 +1033,12 @@ class _realsocket(object):
                         break
                     log.debug("Closed child socket %s not yet accepted", child, extra={"sock": self})
                     child.close()
+            else:
+                msgs = []
+                self.incoming.drainTo(msgs)
+                for msg in msgs:
+                    if msg is not _PEER_CLOSED:
+                        msg.release()
 
             log.debug("Closed socket", extra={"sock": self})
 
@@ -1024,17 +1052,34 @@ class _realsocket(object):
                 pass  # already removed, can safely ignore (presumably)
         if how & SHUT_WR:
             self._can_write = False
-            
+
     def _readable(self):
         if self.socket_type == CLIENT_SOCKET or self.socket_type == DATAGRAM_SOCKET:
             log.debug("Incoming head=%s queue=%s", self.incoming_head, self.incoming, extra={"sock": self})
-            return (
+            return bool(
                 (self.incoming_head is not None and self.incoming_head.readableBytes()) or
                 self.incoming.peek())
         elif self.socket_type == SERVER_SOCKET:
             return bool(self.child_queue.peek())
         else:
             return False
+
+    def _pending(self):
+        # Used by ssl.py for an undocumented function used in tests
+        # and of course some user code. Note that with Netty,
+        # readableBytes() in incoming or incoming_head are guaranteed
+        # to be plaintext because of the way pipelines work.  However
+        # this is a terrible function to call because it's trying to
+        # do something synchronous in the async setting of sockets.
+        if self.socket_type == CLIENT_SOCKET or self.socket_type == DATAGRAM_SOCKET:
+            if self.incoming_head is not None:
+                pending = self.incoming_head.readableBytes()
+            else:
+                pending = 0
+            for msg in self.incoming:
+                pending += msg.readableBytes()
+            return pending
+        return 0
 
     def _writable(self):
         return self.channel and self.channel.isActive() and self.channel.isWritable()
@@ -1193,13 +1238,17 @@ class _realsocket(object):
         while True:
             local_addr = self.channel.localAddress()
             if local_addr:
-                break
+                if hasattr(self, "bind_future"):
+                    if self.bind_future.isDone():
+                        break
+                else:
+                    break
             if time.time() - self.bind_timestamp > 1:
                 # Presumably after a second something is completely wrong,
                 # so punt
                 raise error(errno.ENOTCONN, "Socket is not connected")
             log.debug("Poll for local address", extra={"sock": self})
-            time.sleep(0.1)  # completely arbitrary
+            time.sleep(0.01)  # completely arbitrary
         if local_addr.getAddress().isAnyLocalAddress():
             # Netty 4 will default to an IPv6 "any" address from a channel even if it was originally bound to an IPv4 "any" address
             # so, as a workaround, let's construct a new "any" address using the port information gathered above
@@ -1329,6 +1378,7 @@ class ChildSocket(_realsocket):
         self.active = AtomicBoolean()
         self.active_latch = CountDownLatch(1)
         self.accepted = False
+        self.timeout = parent_socket.timeout
 
     def _ensure_post_connect(self):
         do_post_connect = not self.active.getAndSet(True)

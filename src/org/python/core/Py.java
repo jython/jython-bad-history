@@ -23,11 +23,14 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Set;
 
+import com.google.common.base.CharMatcher;
+import jline.console.UserInterruptException;
 import jnr.constants.Constant;
 import jnr.constants.platform.Errno;
 import jnr.posix.POSIX;
 import jnr.posix.POSIXFactory;
 
+import jnr.posix.util.Platform;
 import org.python.antlr.base.mod;
 import org.python.core.adapter.ClassicPyObjectAdapter;
 import org.python.core.adapter.ExtensiblePyObjectAdapter;
@@ -143,6 +146,14 @@ public final class Py {
     
     public static PyException OSError(Constant errno, PyObject filename) {
         int value = errno.intValue();
+        // see https://github.com/jruby/jruby/commit/947c661e46683ea82f8016dde9d3fa597cd10e56
+        // for rationale to do this mapping, but in a nutshell jnr-constants is automatically
+        // generated from header files, so that's not the right place to do this mapping,
+        // but for Posix compatibility reasons both CPython andCRuby do this mapping;
+        // except CPython chooses EEXIST instead of CRuby's ENOENT
+        if (Platform.IS_WINDOWS && (value == 20047 || value == Errno.ESRCH.intValue())) {
+            value = Errno.EEXIST.intValue();
+        }
         // Pass to strerror because jnr-constants currently lacks Errno descriptions on
         // Windows, and strerror falls back to Linux's
         PyObject args = new PyTuple(Py.newInteger(value), PosixModule.strerror(value), filename);
@@ -171,9 +182,9 @@ public final class Py {
         return new PyException(Py.RuntimeError, message);
     }
     public static PyObject KeyboardInterrupt;
-    /*public static PyException KeyboardInterrupt(String message) {
-    return new PyException(Py.KeyboardInterrupt, message);
-    }*/
+    public static PyException KeyboardInterrupt(String message) {
+        return new PyException(Py.KeyboardInterrupt, message);
+    }
     public static PyObject FloatingPointError;
 
     public static PyException FloatingPointError(String message) {
@@ -526,6 +537,8 @@ public final class Py {
             return Py.RuntimeError("maximum recursion depth exceeded (Java StackOverflowError)");
         } else if (t instanceof OutOfMemoryError) {
             memory_error((OutOfMemoryError) t);
+        } else if (t instanceof UserInterruptException) {
+            return Py.KeyboardInterrupt("");
         }
         PyObject exc = PyJavaType.wrapJavaObject(t);
         PyException pyex = new PyException(exc.getType(), exc);
@@ -624,6 +637,25 @@ public final class Py {
 
     public static PyString newString(String s) {
         return new PyString(s);
+    }
+
+    // Use if s may contain Unicode characters,
+    // but we prefer to return a PyString
+    public static PyString newStringOrUnicode(String s) {
+        return newStringOrUnicode(Py.EmptyString, s);
+    }
+
+    // Use when returning a PyString or PyUnicode is based on what "kind" is,
+    // but always fallback to PyUnicode if s contains Unicode characters.
+    public static PyString newStringOrUnicode(PyObject kind, String s) {
+        if (kind instanceof PyUnicode) {
+            return Py.newUnicode(s);
+        }
+        if (CharMatcher.ASCII.matchesAllOf(s)) {
+            return Py.newString(s);
+        } else {
+            return Py.newUnicode(s);
+        }
     }
 
     public static PyStringMap newStringMap() {
@@ -1316,6 +1348,19 @@ public final class Py {
 
         if (globals == null || globals == Py.None) {
             globals = ts.frame.f_globals;
+        } else if (globals.__finditem__("__builtins__") == null) {
+            // Apply side effect of copying into globals,
+            // per documentation of eval and observed behavior of exec
+            try {
+                globals.__setitem__("__builtins__", Py.getSystemState().modules.__finditem__("__builtin__").__getattr__("__dict__"));
+            } catch (PyException e) {
+                // Quietly ignore if cannot set __builtins__ - Jython previously allowed a much wider range of
+                // mappable objects for the globals mapping than CPython, do not want to break existing code
+                // as we try to get better CPython compliance
+                if (!e.match(AttributeError)) {
+                    throw e;
+                }
+            }
         }
 
         PyBaseCode baseCode = null;
