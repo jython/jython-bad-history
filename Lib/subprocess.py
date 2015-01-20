@@ -1350,7 +1350,41 @@ class Popen(object):
             except (java.io.IOException,
                     java.lang.IllegalArgumentException), e:
                 raise OSError(e.getMessage() or e)
+            self.pid = self._get_pid()
             self._child_created = True
+
+
+        # Getting pid based on http://stackoverflow.com/questions/4750470
+
+        def _get_private_field(self, object, field_name):
+            try:
+                field = object.getClass().getDeclaredField(field_name)
+                field.setAccessible(True)
+            except (java.lang.NoSuchFieldException,
+                    java.lang.SecurityException):
+                return None
+            else:
+                return field
+
+        if os._name not in _win_oses:
+
+            def _get_pid(self, pid_field='pid'):
+                field = self._get_private_field(self._process, pid_field)
+                if field is None:
+                    return None
+                return field.getInt(self._process)
+
+        else:
+
+            import ctypes
+            _handle_to_pid = ctypes.cdll.kernel32.GetProcessId
+            _handle_to_pid.argtypes = (ctypes.c_long,)
+
+            def _get_pid(self, handle_field='handle'):
+                field = self._get_private_field(self._process, handle_field)
+                if field is None:
+                    return None
+                return self._handle_to_pid(field.getLong(self._process))
 
 
         def poll(self, _deadstate=None):
@@ -1822,6 +1856,29 @@ class Popen(object):
             """Kill the process with SIGKILL
             """
             self.send_signal(signal.SIGKILL)
+
+
+# we need some functionality from subprocess given brokenness for ProcessBuilder,
+# but need to avoid recursive imports
+
+def _os_system(command):
+    """system(command) -> exit_status
+
+    Execute the command (a string) in a subshell."""
+    args = _cmdline2listimpl(command)
+    args = _escape_args(args)
+    args = _shell_command + args
+    cwd = os.getcwd()
+    builder = java.lang.ProcessBuilder(args)
+    builder.directory(java.io.File(cwd))
+    builder.redirectInput(java.lang.ProcessBuilder.Redirect.INHERIT)
+    builder.redirectOutput(java.lang.ProcessBuilder.Redirect.INHERIT)
+    builder.redirectError(java.lang.ProcessBuilder.Redirect.INHERIT)
+    try:
+        return builder.start().waitFor()
+    except (java.io.IOException,
+            java.lang.IllegalArgumentException), e:
+        raise OSError(e.getMessage() or e)
 
 
 def _demo_posix():

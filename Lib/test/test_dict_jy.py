@@ -1,5 +1,5 @@
 from test import test_support
-import java
+from java.util import HashMap, Hashtable
 import unittest
 from collections import defaultdict
 import test_dict
@@ -86,6 +86,16 @@ class DictCmpTest(unittest.TestCase):
         self.assertEqual(derived_dict_with_custom_cmp(), '')
         self.assertEqual(yet_another_dict(), '')
 
+class DictMiscTest(unittest.TestCase):
+    def test_pop_key_error(self):
+        # tests http://bugs.jython.org/issue2247
+        with self.assertRaisesRegexp(KeyError, r"^1$"):
+            {}.pop(1)
+        with self.assertRaisesRegexp(KeyError, r"^\(\)$"):
+            {}.pop(())
+        with self.assertRaisesRegexp(KeyError, r"^frozenset\(\[\]\)$"):
+            {}.pop(frozenset())
+
 class DerivedDictTest(unittest.TestCase):
     "Tests for derived dict behaviour"
     def test_raising_custom_key_error(self):
@@ -114,7 +124,7 @@ class DerivedDictTest(unittest.TestCase):
 class JavaIntegrationTest(unittest.TestCase):
     "Tests for instantiating dicts from Java maps and hashtables"
     def test_hashmap(self):
-        x = java.util.HashMap()
+        x = HashMap()
         x.put('a', 1)
         x.put('b', 2)
         x.put('c', 3)
@@ -123,7 +133,7 @@ class JavaIntegrationTest(unittest.TestCase):
         self.assertEqual(set(y.items()), set([('a', 1), ('b', 2), ('c', 3), ((1,2), "xyz")]))
 
     def test_hashmap_builtin_pymethods(self):
-        x = java.util.HashMap()
+        x = HashMap()
         x['a'] = 1
         x[(1, 2)] = 'xyz'
         self.assertEqual({tup for tup in x.iteritems()}, {('a', 1), ((1, 2), 'xyz')})
@@ -132,18 +142,18 @@ class JavaIntegrationTest(unittest.TestCase):
 
     def test_hashtable_equal(self):
         for d in ({}, {1:2}):
-            x = java.util.Hashtable(d)
+            x = Hashtable(d)
             self.assertEqual(x, d)
             self.assertEqual(d, x)
-            self.assertEqual(x, java.util.HashMap(d))
+            self.assertEqual(x, HashMap(d))
 
     def test_hashtable_remove(self):
-        x = java.util.Hashtable({})
+        x = Hashtable({})
         with self.assertRaises(KeyError):
             del x[0]
 
     def test_hashtable(self):
-        x = java.util.Hashtable()
+        x = Hashtable()
         x.put('a', 1)
         x.put('b', 2)
         x.put('c', 3)
@@ -154,10 +164,10 @@ class JavaIntegrationTest(unittest.TestCase):
 
 class JavaDictTest(test_dict.DictTest):
 
-    _class = java.util.HashMap
+    _class = HashMap
 
     def test_copy_java_hashtable(self):
-        x = java.util.Hashtable()
+        x = Hashtable()
         xc = x.copy()
         self.assertEqual(type(x), type(xc))
 
@@ -179,9 +189,83 @@ class JavaDictTest(test_dict.DictTest):
         self.assertEqual(x.__delitem__(1), None)
         self.assertEqual(len(x), 0)
 
+    def assert_property(self, prop, a, b):
+        prop(self._make_dict(a), self._make_dict(b))
+        prop(a, self._make_dict(b))
+        prop(self._make_dict(a), b)
+
+    def assert_not_property(self, prop, a, b):
+        with self.assertRaises(AssertionError):
+            prop(self._make_dict(a), self._make_dict(b))
+        with self.assertRaises(AssertionError):
+            prop(a, self._make_dict(b))
+        with self.assertRaises(AssertionError):
+            prop(self._make_dict(a), b)
+
+    # NOTE: when comparing dictionaries below exclusively in Java
+    # space, keys like 1 and 1L are different objects. Only when they
+    # are brought into Python space by Py.java2py, as is needed when
+    # comparing a Python dict with a Java Map, do we see them become
+    # equal.
+
+    def test_le(self):
+        self.assert_property(self.assertLessEqual, {}, {})
+        self.assert_property(self.assertLessEqual, {1: 2}, {1: 2})
+        self.assert_not_property(self.assertLessEqual, {1: 2, 3: 4}, {1: 2})
+        self.assert_property(self.assertLessEqual, {}, {1: 2})
+        self.assertLessEqual(self._make_dict({1: 2}), {1L: 2L, 3L: 4L})
+        self.assertLessEqual({1L: 2L}, self._make_dict({1: 2, 3L: 4L}))
+
+    def test_lt(self):
+        self.assert_not_property(self.assertLess, {}, {})
+        self.assert_not_property(self.assertLess, {1: 2}, {1: 2})
+        self.assert_not_property(self.assertLessEqual, {1: 2, 3: 4}, {1: 2})
+        self.assert_property(self.assertLessEqual, {}, {1: 2})
+        self.assertLess(self._make_dict({1: 2}), {1L: 2L, 3L: 4L})
+        self.assertLess({1L: 2L}, self._make_dict({1: 2, 3L: 4L}))
+
+    def test_ge(self):
+        self.assert_property(self.assertGreaterEqual, {}, {})
+        self.assert_property(self.assertGreaterEqual, {1: 2}, {1: 2})
+        self.assert_not_property(self.assertLessEqual, {1: 2, 3: 4}, {1: 2})
+        self.assert_property(self.assertLessEqual, {}, {1: 2})
+        self.assertGreaterEqual(self._make_dict({1: 2, 3: 4}), {1L: 2L})
+        self.assertGreaterEqual({1L: 2L, 3L: 4L}, self._make_dict({1: 2}))
+
+    def test_gt(self):
+        self.assert_not_property(self.assertGreater, {}, {})
+        self.assert_not_property(self.assertGreater, {1: 2}, {1: 2})
+        self.assert_not_property(self.assertLessEqual, {1: 2, 3: 4}, {1: 2})
+        self.assert_property(self.assertLessEqual, {}, {1: 2})
+        self.assertGreater(self._make_dict({1: 2, 3: 4}), {1L: 2L})
+        self.assertGreater({1L: 2L, 3L: 4L}, self._make_dict({1: 2}))
+
+
+class PyStringMapTest(test_dict.DictTest):
+    # __dict__ for objects uses PyStringMap for historical reasons, so
+    # we have to test separately
+
+    def _class(self, d):
+        # PyStringMap pretends to be a regular dict, so doing
+        # type(C().__dict__)() will not be helpful - it creates a
+        # regular dict. So explicitly create new objects and return
+        # their __dict__
+        class C(object):
+            pass
+        newdict = C().__dict__
+        newdict.update(d)
+        return newdict
+
 
 def test_main():
-    test_support.run_unittest(DictInitTest, DictCmpTest, DerivedDictTest, JavaIntegrationTest, JavaDictTest)
+    test_support.run_unittest(
+        DictInitTest,
+        DictCmpTest,
+        DictMiscTest,
+        DerivedDictTest,
+        JavaIntegrationTest,
+        JavaDictTest,
+        PyStringMapTest)
 
 if __name__ == '__main__':
     test_main()

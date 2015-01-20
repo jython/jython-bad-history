@@ -28,12 +28,14 @@ public class Setup
 
     public static String[] builtinModules = {
         "_ast:org.python.antlr.ast.AstModule",
+        "_bytecodetools",
         "_codecs",
         "_collections:org.python.modules._collections.Collections",
         "_csv:org.python.modules._csv._csv",
         "_functools:org.python.modules._functools._functools",
         "_hashlib",
         "_io:org.python.modules._io._io",
+        "_json:org.python.modules._json._json",
         "_jythonlib:org.python.modules._jythonlib._jythonlib",
         "_marshal",
         "_py_compile",

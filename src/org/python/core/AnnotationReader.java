@@ -5,6 +5,7 @@
 package org.python.core;
 
 import java.io.IOException;
+import java.io.InputStream;
 
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassReader;
@@ -24,33 +25,34 @@ public class AnnotationReader extends ClassVisitor {
 
     private boolean nextVisitIsVersion = false;
     private boolean nextVisitIsMTime = false;
+    private boolean nextVisitIsFilename = false;
 
     private int version = -1;
     private long mtime = -1;
+    private String filename = null;
 
     /**
      * Reads the classfile bytecode in data and to extract the version.
      * @throws IOException - if the classfile is malformed.
      */
     public AnnotationReader(byte[] data) throws IOException {
-        super(Opcodes.ASM4);
+        super(Opcodes.ASM5);
         ClassReader r;
         try {
             r = new ClassReader(data);
         } catch (ArrayIndexOutOfBoundsException e) {
-            IOException ioe = new IOException("Malformed bytecode: not enough data");
-            ioe.initCause(e);// IOException didn't grow a constructor that could take a cause till
-                             // 1.6, so do it the old fashioned way
+            IOException ioe = new IOException("Malformed bytecode: not enough data", e);
             throw ioe;
         }
         r.accept(this, 0);
     }
-    
+
     @Override
     public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
         nextVisitIsVersion = desc.equals("Lorg/python/compiler/APIVersion;");
         nextVisitIsMTime = desc.equals("Lorg/python/compiler/MTime;");
-        return new AnnotationVisitor(Opcodes.ASM4) {
+        nextVisitIsFilename = desc.equals("Lorg/python/compiler/Filename;");
+        return new AnnotationVisitor(Opcodes.ASM5) {
 
         	public void visit(String name, Object value) {
         		if (nextVisitIsVersion) {
@@ -58,8 +60,11 @@ public class AnnotationReader extends ClassVisitor {
         			nextVisitIsVersion = false;
         		} else if (nextVisitIsMTime) {
         			mtime = (Long)value;
-        			nextVisitIsVersion = false;
-        		}
+        			nextVisitIsMTime = false;
+        		} else if (nextVisitIsFilename) {
+                    filename = (String)value;
+                    nextVisitIsFilename = false;
+                }
         	}
 		};
     }
@@ -70,5 +75,9 @@ public class AnnotationReader extends ClassVisitor {
 
     public long getMTime() {
         return mtime;
+    }
+
+    public String getFilename() {
+        return filename;
     }
 }
