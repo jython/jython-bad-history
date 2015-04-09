@@ -12,11 +12,14 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Channel;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.FileChannel;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
+import java.nio.file.NotLinkException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.DosFileAttributes;
 import java.security.SecureRandom;
@@ -87,7 +90,7 @@ public class PosixModule implements ClassDictInit {
     private static final int W_OK = 1 << 1;
     private static final int R_OK = 1 << 2;
 
-    /** Lazily initialzed singleton source for urandom. */
+    /** Lazily initialized singleton source for urandom. */
     private static class UrandomSource {
         static final SecureRandom INSTANCE = new SecureRandom();
     }
@@ -111,9 +114,15 @@ public class PosixModule implements ClassDictInit {
         // Successful termination
         dict.__setitem__("EX_OK", Py.Zero);
 
-        boolean nativePosix = posix.isNative();
-        dict.__setitem__("_native_posix", Py.newBoolean(nativePosix));
-        dict.__setitem__("_posix_impl", Py.java2py(posix));
+        // SecurityManager may restrict access to native implementation,
+        // so use Java-only implementation as necessary
+        boolean nativePosix = false;
+        try {
+            nativePosix = posix.isNative();
+            dict.__setitem__("_native_posix", Py.newBoolean(nativePosix));
+            dict.__setitem__("_posix_impl", Py.java2py(posix));
+        } catch (SecurityException ex) {}
+
         dict.__setitem__("environ", getEnviron());
         dict.__setitem__("error", Py.OSError);
         dict.__setitem__("stat_result", PyStatResult.TYPE);
@@ -262,17 +271,11 @@ public class PosixModule implements ClassDictInit {
         if ((mode & W_OK) != 0 && !file.canWrite()) {
             result = false;
         }
-        if ((mode & X_OK) != 0) {
-            // NOTE: always true without native jna-posix stat
-            try {
-                result = posix.stat(absolutePath(path).toString()).isExecutable();
-            } catch (PyException pye) {
-                if (!pye.match(Py.OSError)) {
-                    throw pye;
-                }
-                // ENOENT
-                result = false;
-            }
+        if ((mode & X_OK) != 0 && !file.canExecute()) {
+            // Previously Jython used JNR Posix, but this is unnecessary -
+            // File#canExecute uses the same code path
+            // http://bugs.java.com/bugdatabase/view_bug.do?bug_id=6379654
+            result = false;
         }
         return result;
     }
@@ -297,7 +300,16 @@ public class PosixModule implements ClassDictInit {
         "chmod(path, mode)\n\n" +
         "Change the access permissions of a file.");
     public static void chmod(PyObject path, int mode) {
-        if (posix.chmod(absolutePath(path).toString(), mode) < 0) {
+        if (os == OS.NT) {
+            try {
+                if (!absolutePath(path).toFile().setWritable((mode & FileStat.S_IWUSR) != 0)) {
+                    throw Py.OSError(Errno.EPERM, path);
+                }
+            } catch (SecurityException ex) {
+                throw Py.OSError(Errno.EACCES, path);
+            }
+
+        } else if (posix.chmod(absolutePath(path).toString(), mode) < 0) {
             throw errorFromErrno(path);
         }
     }
@@ -329,7 +341,7 @@ public class PosixModule implements ClassDictInit {
         int fd_high = getFD(fd_highObj).getIntFD(false);
         for (int i = fd_low; i < fd_high; i++) {
             try {
-                posix.close(i); // FIXME catch exceptions
+                posix.close(i);
             } catch (Exception e) {}
         }
     }
@@ -477,7 +489,7 @@ public class PosixModule implements ClassDictInit {
     public static PyString __doc__getgid = new PyString(
         "getgid() -> gid\n\n" +
         "Return the current process's group id.");
-    @Hide(OS.NT)
+    @Hide(value=OS.NT, posixImpl = PosixImpl.JAVA)
     public static int getgid() {
         return posix.getgid();
     }
@@ -485,7 +497,7 @@ public class PosixModule implements ClassDictInit {
     public static PyString __doc__getlogin = new PyString(
         "getlogin() -> string\n\n" +
         "Return the actual login name.");
-    @Hide(OS.NT)
+    @Hide(value=OS.NT, posixImpl = PosixImpl.JAVA)
     public static PyObject getlogin() {
         return new PyString(posix.getlogin());
     }
@@ -493,7 +505,7 @@ public class PosixModule implements ClassDictInit {
     public static PyString __doc__getppid = new PyString(
         "getppid() -> ppid\n\n" +
         "Return the parent's process id.");
-    @Hide(OS.NT)
+    @Hide(value=OS.NT, posixImpl = PosixImpl.JAVA)
     public static int getppid() {
         return posix.getppid();
     }
@@ -501,7 +513,7 @@ public class PosixModule implements ClassDictInit {
     public static PyString __doc__getuid = new PyString(
         "getuid() -> uid\n\n" +
         "Return the current process's user id.");
-    @Hide(OS.NT)
+    @Hide(value=OS.NT, posixImpl = PosixImpl.JAVA)
     public static int getuid() {
         return posix.getuid();
     }
@@ -509,6 +521,7 @@ public class PosixModule implements ClassDictInit {
     public static PyString __doc__getpid = new PyString(
         "getpid() -> pid\n\n" +
         "Return the current process id");
+
     @Hide(posixImpl = PosixImpl.JAVA)
     public static int getpid() {
         return posix.getpid();
@@ -517,7 +530,7 @@ public class PosixModule implements ClassDictInit {
     public static PyString __doc__getpgrp = new PyString(
         "getpgrp() -> pgrp\n\n" +
         "Return the current process group id.");
-    @Hide(OS.NT)
+    @Hide(value=OS.NT, posixImpl = PosixImpl.JAVA)
     public static int getpgrp() {
         return posix.getpgrp();
     }
@@ -528,6 +541,7 @@ public class PosixModule implements ClassDictInit {
         "isatty(fd) -> bool\n\n" +
         "Return True if the file descriptor 'fd' is an open file descriptor\n" +
         "connected to the slave end of a terminal.");
+    @Hide(posixImpl = PosixImpl.JAVA)
     public static boolean isatty(PyObject fdObj) {
         Object tojava = fdObj.__tojava__(IOBase.class);
         if (tojava != Py.NoConversion) {
@@ -561,7 +575,7 @@ public class PosixModule implements ClassDictInit {
     public static PyString __doc__kill = new PyString(
         "kill(pid, sig)\n\n" +
         "Kill a process with a signal.");
-    @Hide(OS.NT)
+    @Hide(value=OS.NT, posixImpl = PosixImpl.JAVA)
     public static void kill(int pid, int sig) {
         if (posix.kill(pid, sig) < 0) {
             throw errorFromErrno();
@@ -572,7 +586,7 @@ public class PosixModule implements ClassDictInit {
         "lchmod(path, mode)\n\n" +
         "Change the access permissions of a file. If path is a symlink, this\n" +
         "affects the link itself rather than the target.");
-    @Hide(OS.NT)
+    @Hide(value=OS.NT, posixImpl = PosixImpl.JAVA)
     public static void lchmod(PyObject path, int mode) {
         if (posix.lchmod(absolutePath(path).toString(), mode) < 0) {
             throw errorFromErrno(path);
@@ -583,7 +597,7 @@ public class PosixModule implements ClassDictInit {
         "lchown(path, uid, gid)\n\n" +
         "Change the owner and group id of path to the numeric uid and gid.\n" +
         "This function will not follow symbolic links.");
-    @Hide(OS.NT)
+    @Hide(value=OS.NT, posixImpl = PosixImpl.JAVA)
     public static void lchown(PyObject path, int uid, int gid) {
         if (posix.lchown(absolutePath(path).toString(), uid, gid) < 0) {
             throw errorFromErrno(path);
@@ -593,10 +607,20 @@ public class PosixModule implements ClassDictInit {
     public static PyString __doc__link = new PyString(
         "link(src, dst)\n\n" +
         "Create a hard link to a file.");
+
     @Hide(OS.NT)
     public static void link(PyObject src, PyObject dst) {
-        if (posix.link(absolutePath(src).toString(), absolutePath(dst).toString()) < 0) {
-            throw errorFromErrno();
+        try {
+            Files.createLink(Paths.get(asPath(dst)), Paths.get(asPath(src)));
+        } catch (FileAlreadyExistsException ex) {
+            throw Py.OSError(Errno.EEXIST);
+        } catch (NoSuchFileException ex) {
+            throw Py.OSError(Errno.ENOENT);
+        } catch (IOException ioe) {
+            System.err.println("Got this exception " + ioe);
+            throw Py.OSError(ioe);
+        } catch (SecurityException ex) {
+            throw Py.OSError(Errno.EACCES);
         }
     }
 
@@ -651,7 +675,23 @@ public class PosixModule implements ClassDictInit {
     }
 
     public static void mkdir(PyObject path, int mode) {
-        if (posix.mkdir(absolutePath(path).toString(), mode) < 0) {
+        if (os == OS.NT) {
+            try {
+                Path nioPath = absolutePath(path);
+                // Windows does not use any mode attributes in creating a directory;
+                // see the corresponding function in posixmodule.c, posix_mkdir;
+                Files.createDirectory(nioPath);
+            } catch (FileAlreadyExistsException ex) {
+                throw Py.OSError(Errno.EEXIST, path);
+            } catch (IOException ioe) {
+                throw Py.OSError(ioe);
+            } catch (SecurityException ex) {
+                throw Py.OSError(Errno.EACCES, path);
+            }
+        // Further work on mapping mode to PosixAttributes would have to be done
+        // for non Windows platforms. In addition, posix.mkdir would still be necessary
+        // for mode bits like stat.S_ISGID
+        } else if (posix.mkdir(absolutePath(path).toString(), mode) < 0) {
             throw errorFromErrno(path);
         }
     }
@@ -759,11 +799,17 @@ public class PosixModule implements ClassDictInit {
         "readlink(path) -> path\n\n" +
         "Return a string representing the path to which the symbolic link points.");
     @Hide(OS.NT)
-    public static String readlink(PyObject path) {
+    public static PyString readlink(PyObject path) {
         try {
-            return posix.readlink(absolutePath(path).toString());
+            return Py.newStringOrUnicode(path, Files.readSymbolicLink(absolutePath(path)).toString());
+        } catch (NotLinkException ex) {
+            throw Py.OSError(Errno.EINVAL, path);
+        } catch (NoSuchFileException ex) {
+            throw Py.OSError(Errno.ENOENT, path);
         } catch (IOException ioe) {
             throw Py.OSError(ioe);
+        } catch (SecurityException ex) {
+            throw Py.OSError(Errno.EACCES, path);
         }
     }
 
@@ -803,7 +849,7 @@ public class PosixModule implements ClassDictInit {
     public static PyString __doc__setpgrp = new PyString(
         "setpgrp()\n\n" +
         "Make this process a session leader.");
-    @Hide(OS.NT)
+    @Hide(value=OS.NT, posixImpl = PosixImpl.JAVA)
     public static void setpgrp() {
         if (posix.setpgrp(0, 0) < 0) {
             throw errorFromErrno();
@@ -813,7 +859,7 @@ public class PosixModule implements ClassDictInit {
     public static PyString __doc__setsid = new PyString(
         "setsid()\n\n" +
         "Call the system call setsid().");
-    @Hide(OS.NT)
+    @Hide(value=OS.NT, posixImpl = PosixImpl.JAVA)
     public static void setsid() {
         if (posix.setsid() < 0) {
             throw errorFromErrno();
@@ -840,10 +886,17 @@ public class PosixModule implements ClassDictInit {
     public static PyString __doc__symlink = new PyString(
         "symlink(src, dst)\n\n" +
         "Create a symbolic link pointing to src named dst.");
+
     @Hide(OS.NT)
     public static void symlink(PyObject src, PyObject dst) {
-        if (posix.symlink(asPath(src), absolutePath(dst).toString()) < 0) {
-            throw errorFromErrno();
+        try {
+            Files.createSymbolicLink(Paths.get(asPath(dst)), Paths.get(asPath(src)));
+        } catch (FileAlreadyExistsException ex) {
+            throw Py.OSError(Errno.EEXIST);
+        } catch (IOException ioe) {
+            throw Py.OSError(ioe);
+        } catch (SecurityException ex) {
+            throw Py.OSError(Errno.EACCES);
         }
     }
 
@@ -855,6 +908,7 @@ public class PosixModule implements ClassDictInit {
         "times() -> (utime, stime, cutime, cstime, elapsed_time)\n\n" +
         "Return a tuple of floating point numbers indicating process times.");
 
+    @Hide(posixImpl = PosixImpl.JAVA)
     public static PyTuple times() {
         Times times = posix.times();
         long CLK_TCK = Sysconf._SC_CLK_TCK.longValue();
@@ -885,10 +939,10 @@ public class PosixModule implements ClassDictInit {
                 throw Py.OSError(Errno.EISDIR, path);
             } else if (!Files.deleteIfExists(nioPath)) {
                 // Something went wrong, does stat raise an error?
-                posix.stat(nioPath.toString());
+                basicstat(path, nioPath);
                 // It exists, do we not have permissions?
                 if (!Files.isWritable(nioPath)) {
-                    throw Py.OSError(Errno.EPERM, path);
+                    throw Py.OSError(Errno.EACCES, path);
                 }
                 throw Py.OSError("unlink(): an unknown error occurred: " + nioPath.toString());
             }
@@ -945,7 +999,7 @@ public class PosixModule implements ClassDictInit {
     public static PyString __doc__wait = new PyString(
         "wait() -> (pid, status)\n\n" +
         "Wait for completion of a child process.");
-    @Hide(OS.NT)
+    @Hide(value=OS.NT, posixImpl = PosixImpl.JAVA)
     public static PyObject wait$() {
         int[] status = new int[1];
         int pid = posix.wait(status);
@@ -958,6 +1012,7 @@ public class PosixModule implements ClassDictInit {
     public static PyString __doc__waitpid = new PyString(
         "wait() -> (pid, status)\n\n" +
         "Wait for completion of a child process.");
+    @Hide(posixImpl = PosixImpl.JAVA)
     public static PyObject waitpid(int pid, int options) {
         int[] status = new int[1];
         pid = posix.waitpid(pid, status, options);
@@ -1137,6 +1192,8 @@ public class PosixModule implements ClassDictInit {
             throw Py.OSError(Errno.ENOENT, path);
         } catch (IOException ioe) {
             throw Py.OSError(Errno.EBADF, path);
+        } catch (SecurityException ex) {
+            throw Py.OSError(Errno.EACCES, path);
         }
     }
 
@@ -1170,6 +1227,8 @@ public class PosixModule implements ClassDictInit {
                 throw Py.OSError(Errno.ENOENT, path);
             } catch (IOException ioe) {
                 throw Py.OSError(Errno.EBADF, path);
+            } catch (SecurityException ex) {
+                throw Py.OSError(Errno.EACCES, path);
             }
         }
     }
@@ -1195,6 +1254,8 @@ public class PosixModule implements ClassDictInit {
                 throw Py.OSError(Errno.ENOENT, path);
             } catch (IOException ioe) {
                 throw Py.OSError(Errno.EBADF, path);
+            } catch (SecurityException ex) {
+                throw Py.OSError(Errno.EACCES, path);
             }
         }
     }
@@ -1253,6 +1314,8 @@ public class PosixModule implements ClassDictInit {
                 throw Py.OSError(Errno.ENOENT, path);
             } catch (IOException ioe) {
                 throw Py.OSError(Errno.EBADF, path);
+            } catch (SecurityException ex) {
+                throw Py.OSError(Errno.EACCES, path);
             }
         }
     }
@@ -1273,7 +1336,6 @@ public class PosixModule implements ClassDictInit {
                     stat = posix.fstat(fd.intFD);
                 } else {
                     stat = posix.fstat(fd.javaFD);
-                    ;
                 }
                 return PyStatResult.fromFileStat(stat);
             } catch (PyException ex) {

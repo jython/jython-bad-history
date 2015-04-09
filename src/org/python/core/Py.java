@@ -660,6 +660,15 @@ public final class Py {
         }
     }
 
+    public static PyString newStringUTF8(String s) {
+        if (CharMatcher.ASCII.matchesAllOf(s)) {
+            // ascii of course is a subset of UTF-8
+            return Py.newString(s);
+        } else {
+            return Py.newString(codecs.PyUnicode_EncodeUTF8(s, null));
+        }
+    }
+
     public static PyStringMap newStringMap() {
         // enable lazy bootstrapping (see issue #1671)
         if (!PyType.hasBuilder(PyStringMap.class)) {
@@ -999,12 +1008,11 @@ public final class Py {
             return;
         }
 
-        if (Options.importSite) {
-            // Ensure site-packages are available before attempting to import module.
-            // This step enables supporting modern Python apps when using proxies
-            // directly from Java (eg through clamp).
-            imp.load("site");
-        }
+        // Ensure site-packages are available before attempting to import module.
+        // This step enables supporting modern Python apps when using proxies
+        // directly from Java (eg through clamp).
+        importSiteIfSelected();
+
         PyObject mod = imp.importName(module.intern(), false);
         PyType pyc = (PyType)mod.__getattr__(pyclass.intern());
 
@@ -1185,7 +1193,11 @@ public final class Py {
                 stderr.println(getStackTrace((Throwable) javaError));
             }
         }
-        stderr.println(formatException(type, value));
+        try {
+            stderr.println(formatException(type, value));
+        } catch (Exception ex) {
+            stderr.println(formatException(type, Py.None));
+        }
     }
 
     /**
@@ -1526,9 +1538,42 @@ public final class Py {
             return true;
         }
         // Decide if System.in is interactive
-        POSIX posix = POSIXFactory.getPOSIX();
-        FileDescriptor in = FileDescriptor.in;
-        return posix.isatty(in);
+        try {
+            POSIX posix = POSIXFactory.getPOSIX();
+            FileDescriptor in = FileDescriptor.in;
+            return posix.isatty(in);
+        } catch (SecurityException ex) {
+            return false;
+        }
+    }
+
+    public static boolean importSiteIfSelected() {
+        if (Options.importSite) {
+            try {
+                // Ensure site-packages are available
+                imp.load("site");
+                return true;
+            } catch (PyException pye) {
+                if (pye.match(Py.ImportError)) {
+                    PySystemState sys = Py.getSystemState();
+                    throw Py.ImportError(String.format(""
+                                    + "Cannot import site module and its dependencies: %s\n"
+                                    + "Determine if the following attributes are correct:\n"
+                                    + "  * sys.path: %s\n"
+                                    + "    This attribute might be including the wrong directories, such as from CPython\n"
+                                    + "  * sys.prefix: %s\n"
+                                    + "    This attribute is set by the system property python.home, although it can\n"
+                                    + "    be often automatically determined by the location of the Jython jar file\n\n"
+                                    + "You can use the -S option or python.import.site=false to not import the site module",
+                            pye.value.__getattr__("args").__getitem__(0),
+                            sys.path,
+                            sys.prefix));
+                } else {
+                    throw pye;
+                }
+            }
+        }
+        return false;
     }
 
     /* A collection of functions for implementing the print statement */

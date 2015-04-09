@@ -22,6 +22,7 @@ public class FrameInstaller {
     private static final String INEX_DEMO_PROPERTY = "FrameInstaller.demo";
     private static final String INEX_DOC_PROPERTY = "FrameInstaller.doc";
     private static final String INEX_SRC_PROPERTY = "FrameInstaller.src";
+    private static final String INEX_ENSUREPIP_PROPERTY = "FrameInstaller.ensurepip";
     private static final String STANDALONE_PROPERTY = "FrameInstaller.standalone";
 
     private static Properties _properties = new Properties();
@@ -39,9 +40,7 @@ public class FrameInstaller {
         if (commandLine.hasDirectoryOption()) {
             setTargetDirectory(commandLine.getTargetDirectory().getAbsolutePath());
         }
-        if (commandLine.hasJavaHomeOption()) {
-            setJavaHomeHandler(commandLine.getJavaHomeHandler());
-        }
+        setJavaHomeHandler(commandLine.getJavaHomeHandler());
         initDefaultJava();
         Wizard wizard = new Wizard(jarInfo, autotest);
         wizard.addWindowListener(new WindowAdapter() {
@@ -97,28 +96,33 @@ public class FrameInstaller {
 
     protected static InstallationType getInstallationType() {
         InstallationType installationType = new InstallationType();
-        if (Boolean.valueOf(getProperty(STANDALONE_PROPERTY)).booleanValue()) {
+        if (Boolean.valueOf(getProperty(STANDALONE_PROPERTY))) {
             installationType.setStandalone();
         }
-        if (Boolean.valueOf(getProperty(INEX_MOD_PROPERTY)).booleanValue()) {
+        if (Boolean.valueOf(getProperty(INEX_MOD_PROPERTY))) {
             installationType.addLibraryModules();
         } else {
             installationType.removeLibraryModules();
         }
-        if (Boolean.valueOf(getProperty(INEX_DEMO_PROPERTY)).booleanValue()) {
+        if (Boolean.valueOf(getProperty(INEX_DEMO_PROPERTY))) {
             installationType.addDemosAndExamples();
         } else {
             installationType.removeDemosAndExamples();
         }
-        if (Boolean.valueOf(getProperty(INEX_DOC_PROPERTY)).booleanValue()) {
+        if (Boolean.valueOf(getProperty(INEX_DOC_PROPERTY))) {
             installationType.addDocumentation();
         } else {
             installationType.removeDocumentation();
         }
-        if (Boolean.valueOf(getProperty(INEX_SRC_PROPERTY)).booleanValue()) {
+        if (Boolean.valueOf(getProperty(INEX_SRC_PROPERTY))) {
             installationType.addSources();
         } else {
             installationType.removeSources();
+        }
+        if (Boolean.valueOf(getProperty(INEX_ENSUREPIP_PROPERTY))) {
+            installationType.addEnsurepip();
+        } else {
+            installationType.removeEnsurepip();
         }
         return installationType;
     }
@@ -129,6 +133,7 @@ public class FrameInstaller {
         setProperty(INEX_DEMO_PROPERTY, Boolean.toString(installationType.installDemosAndExamples()));
         setProperty(INEX_DOC_PROPERTY, Boolean.toString(installationType.installDocumentation()));
         setProperty(INEX_SRC_PROPERTY, Boolean.toString(installationType.installSources()));
+        setProperty(INEX_ENSUREPIP_PROPERTY, Boolean.toString(installationType.ensurepip()));
     }
 
     protected static JavaVersionInfo getJavaVersionInfo() {

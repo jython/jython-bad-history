@@ -1,14 +1,11 @@
-#!/usr/bin/env python2.7 -E
+#!/usr/bin/env python2.7
 # -*- coding: utf-8 -*-
 
-# bin/jython.py
-# Launch script for Jython, generally to be compiled by tools like py2exe.
-# However it is an alternative to the bin/jython bash script.
-#
-# Designed to be executed by CPython 2.7, although it may make sense for some
-# scenarios to be executed by Jython instead - inside a jar for example.
-#
-# FIXME consider how to use this to support standalone jython jar
+# Launch script for Jython. It may be wrapped as an executable with
+# tools like PyInstaller, creating jython.exe, or run directly. The
+# installer will make this the default launcher under the name
+# bin/jython if CPython 2.7 is available with the above shebang
+# invocation.
 
 import argparse
 import glob
@@ -24,7 +21,7 @@ from collections import OrderedDict
 is_windows = os.name == "nt" or (os.name == "java" and os._name == "nt")
 
 
-def make_parser():
+def make_parser(provided_args):
     parser = argparse.ArgumentParser(description="Jython", add_help=False)
     parser.add_argument("-D", dest="properties", action="append")
     parser.add_argument("-J", dest="java", action="append")
@@ -33,7 +30,7 @@ def make_parser():
     parser.add_argument("--help", "-h", action="store_true")
     parser.add_argument("--print", dest="print_requested", action="store_true")
     parser.add_argument("--profile", action="store_true")
-    args, remainder = parser.parse_known_args()
+    args, remainder = parser.parse_known_args(provided_args)
 
     items = args.java or []
     args.java = []
@@ -56,7 +53,12 @@ def make_parser():
         except StopIteration:
             break
         if arg == "-cp" or arg == "-classpath":
-            args.classpath = next(r)
+            try:
+                args.classpath = next(r)
+                if args.classpath.startswith("-"):
+                    parser.error("Invalid classpath for -classpath: %s" % repr(args.classpath)[1:])
+            except StopIteration:
+                parser.error("-classpath requires an argument")
         else:
             r2.append(arg)
     remainder = r2
@@ -70,7 +72,7 @@ def make_parser():
     args.properties = props
     args.encoding = args.properties.get("file.encoding", None)
 
-    return parser, args, remainder
+    return parser, args
 
 
 class JythonCommand(object):
@@ -208,7 +210,7 @@ setting {envvar_specifier}JYTHON_HOME.""".\
         return os.path.join(self.jython_home, "javalib", "profile.jar")
 
     def set_encoding(self):
-        if "JAVA_ENCODING" not in os.environ and self.uname == "darwin":
+        if "JAVA_ENCODING" not in os.environ and self.uname == "darwin" and "file.encoding" not in self.args.properties:
             self.args.properties["file.encoding"] = "UTF-8"
 
     def convert(self, arg):
@@ -233,25 +235,29 @@ setting {envvar_specifier}JYTHON_HOME.""".\
         args = [self.java_command]
         args.extend(self.java_opts)
         args.extend(self.args.java)
-        for k, v in self.args.properties.iteritems():
-            args.append("-D%s=%s" % (self.convert(k), self.convert(v)))
         if self.args.boot:
             args.append("-Xbootclasspath/a:%s" % self.convert_path(self.classpath))
             if self.args.classpath:
                 args.extend(["-classpath", self.convert_path(self.args.classpath)])
         else:
             args.extend(["-classpath", self.convert_path(self.classpath)])
-        args.append("-Dpython.home=%s" % self.convert_path(self.jython_home))
-        args.append("-Dpython.executable=%s" % self.convert_path(self.executable))
-        args.append("-Dpython.launcher.uname=%s" % self.uname)
+        if "python.home" not in self.args.properties:
+            args.append("-Dpython.home=%s" % self.convert_path(self.jython_home))
+        if "python.executable" not in self.args.properties:
+            args.append("-Dpython.executable=%s" % self.convert_path(self.executable))
+        if "python.launcher.uname" not in self.args.properties:
+            args.append("-Dpython.launcher.uname=%s" % self.uname)
         # determine if is-a-tty for the benefit of running on cygwin - mintty doesn't behave like
         # a standard windows tty and so JNR posix doesn't detect it properly
-        args.append("-Dpython.launcher.tty=%s" % str(os.isatty(sys.stdin.fileno())).lower())
-        if self.uname == "cygwin":
+        if "python.launcher.tty" not in self.args.properties:
+            args.append("-Dpython.launcher.tty=%s" % str(os.isatty(sys.stdin.fileno())).lower())
+        if self.uname == "cygwin" and "python.console" not in self.args.properties:
             args.append("-Dpython.console=org.python.core.PlainConsole")
         if self.args.profile:
             args.append("-XX:-UseSplitVerifier")
             args.append("-javaagent:%s" % self.convert_path(self.java_profile_agent))
+        for k, v in self.args.properties.iteritems():
+            args.append("-D%s=%s" % (self.convert(k), self.convert(v)))
         args.append("org.python.util.jython")
         if self.args.help:
             args.append("--help")
@@ -275,13 +281,41 @@ JYTHON_OPTS: default command line arguments
 """
 
 
+def split_launcher_args(args):
+    it = iter(args)
+    i = 1
+    next(it)
+    while True:
+        try:
+            arg = next(it)
+        except StopIteration:
+            break
+        if arg.startswith("-D") or arg.startswith("-J") or \
+           arg in ("--boot", "--jdb", "--help", "--print", "--profile"):
+            i += 1
+        elif arg in ("-cp", "-classpath"):
+            i += 1
+            try:
+                next(it)
+                i += 1
+            except StopIteration:
+                break  # will be picked up in argparse, where an error will be raised
+        elif arg == "--":
+            i += 1
+            break
+        else:
+            break
+    return args[:i], args[i:]
+
+
 def main():
     if sys.stdout.encoding:
         if sys.stdout.encoding.lower() == "cp65001":
             sys.exit("""Jython does not support code page 65001 (CP_UTF8).
 Please try another code page by setting it with the chcp command.""")
         sys.argv = [arg.decode(sys.stdout.encoding) for arg in sys.argv]
-    parser, args, jython_args = make_parser()
+    launcher_args, jython_args = split_launcher_args(sys.argv)
+    parser, args = make_parser(launcher_args)
     jython_command = JythonCommand(parser, args, jython_args)
     command = jython_command.command
 
