@@ -34,8 +34,15 @@ import org.python.core.Untraversable;
 @Untraversable
 class TimeFunctions extends PyBuiltinFunctionSet
 {
+    public static final PyObject module = Py.newString("time");
+
     public TimeFunctions(String name, int index, int argcount) {
         super(name, index, argcount);
+    }
+
+    @Override
+    public PyObject getModule() {
+        return module;
     }
 
     public PyObject __call__() {
@@ -449,12 +456,19 @@ public class Time implements ClassDictInit
     }
 
     public static void sleep(double secs) {
-        try {
-            java.lang.Thread.sleep((long)(secs * 1000));
-        }
-        catch (java.lang.InterruptedException e) {
-            throw new PyException(Py.KeyboardInterrupt, "interrupted sleep");
-        }
+	if (secs == 0) {
+	    // Conform to undocumented, or at least very underdocumented, but quite
+	    // reasonable behavior in CPython. See Alex Martelli's answer,
+	    // http://stackoverflow.com/a/790246/423006
+	    java.lang.Thread.yield();
+	} else {
+	    try {
+		java.lang.Thread.sleep((long)(secs * 1000));
+	    }
+	    catch (java.lang.InterruptedException e) {
+		throw new PyException(Py.KeyboardInterrupt, "interrupted sleep");
+	    }
+	}
     }
 
     // set by classDictInit()
@@ -664,7 +678,7 @@ public class Time implements ClassDictInit
             i++;
         }
         // FIXME: This have problems with localized data:
-        //        $ LANG=es_ES.UTF-8 jythont -c "import time; print time.strftime('%A')"
+        //        $ LANG=es_ES.UTF-8 jython -c "import time; print time.strftime('%A')"
         //        s?bado
         //
         //        On the other hand, returning unicode would break some doctests
@@ -674,7 +688,7 @@ public class Time implements ClassDictInit
         //        os.environ)
         //
         // TODO:  Check how CPython deals with this problem.
-        return Py.newStringOrUnicode(s);
+        return Py.newStringUTF8(s);
     }
 
 

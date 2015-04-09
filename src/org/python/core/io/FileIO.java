@@ -30,6 +30,14 @@ import org.python.modules.posix.PosixModule;
  */
 public class FileIO extends RawIOBase {
 
+    // would be nicer if we directly imported from os, but crazy to do so
+    // since in python code itself
+    private static class os {
+        public static final int SEEK_SET = 0;
+        public static final int SEEK_CUR = 1;
+        public static final int SEEK_END = 2;
+    }
+
     /** The underlying file channel */
     private FileChannel fileChannel;
 
@@ -204,7 +212,7 @@ public class FileIO extends RawIOBase {
      */
     private void initPosition() {
         if (appending) {
-            seek(0, 2);
+            seek(0, os.SEEK_END);
         } else if (writing && !reading) {
             try {
                 fileChannel.truncate(0);
@@ -306,11 +314,20 @@ public class FileIO extends RawIOBase {
         checkClosed();
         checkWritable();
         try {
-            return !emulateAppend ? fileChannel.write(buf) :
-                    fileChannel.write(buf, fileChannel.position());
+            return emulateAppend ? appendFromByteBuffer(buf)    // use this helper function to advance the file channel's position post-write
+                                    : fileChannel.write(buf);   // this does change the file channel's position
         } catch (IOException ioe) {
             throw Py.IOError(ioe);
         }
+    }
+
+    private int appendFromByteBuffer(ByteBuffer buf) throws IOException {
+        int written = fileChannel.write(buf, fileChannel.position());   // this does not change the file channel's position!
+        if (written > 0) {
+            // we need to manually update the file channel's position post-write
+            fileChannel.position(fileChannel.position() + written);
+        }
+        return written;
     }
 
     /**
@@ -344,7 +361,8 @@ public class FileIO extends RawIOBase {
             if (!buf.hasRemaining()) {
                 continue;
             }
-            if ((bufCount = fileChannel.write(buf, fileChannel.position())) == 0) {
+            bufCount = appendFromByteBuffer(buf);
+            if (bufCount == 0) {
                 break;
             }
             count += bufCount;
@@ -357,12 +375,12 @@ public class FileIO extends RawIOBase {
         checkClosed();
         try {
             switch (whence) {
-            case 0:
+            case os.SEEK_SET:
                 break;
-            case 1:
+            case os.SEEK_CUR:
                 pos += fileChannel.position();
                 break;
-            case 2:
+            case os.SEEK_END:
                 pos += fileChannel.size();
                 break;
             default:

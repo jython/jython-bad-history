@@ -84,15 +84,15 @@ oracle.jar=C:/workspace/HEAD/for_development/bisdevsrv28/jboss/server/infra/lib/
         <property name="PY_RELEASE_LEVEL_SNAPSHOT" value="170"/> <!-- 0xAA -->
 
         <!-- The current version info -->
-        <property name="jython.version" value="2.7b4+"/>
-        <property name="jython.version.noplus" value="2.7b4"/>
+        <property name="jython.version" value="2.7rc2+"/>
+        <property name="jython.version.noplus" value="2.7rc2"/>
         <property name="jython.major_version" value="2"/>
         <property name="jython.minor_version" value="7"/>
         <property name="jython.micro_version" value="0"/>
-        <property name="jython.release_level" value="${PY_RELEASE_LEVEL_BETA}"/>
+        <property name="jython.release_level" value="${PY_RELEASE_LEVEL_GAMMA}"/>
         <!-- Usually zero, only used for alpha, beta and candidate versions
              where it must be greater than zero. -->
-        <property name="jython.release_serial" value="4"/>
+        <property name="jython.release_serial" value="2"/>
         <property name="jython.java.version" value="1.7"/>
 
         <condition property="do.snapshot.build">
@@ -177,7 +177,7 @@ oracle.jar=C:/workspace/HEAD/for_development/bisdevsrv28/jboss/server/infra/lib/
             <pathelement path="${extlibs.dir}/jnr-netdb-1.1.4.jar"/>
             <pathelement path="${extlibs.dir}/jnr-posix-3.0.9.jar"/>
             <pathelement path="${extlibs.dir}/jnr-constants-0.8.6.jar"/>
-            <pathelement path="${extlibs.dir}/jline-2.12.jar"/>
+            <pathelement path="${extlibs.dir}/jline-2.12.1.jar"/>
             <pathelement path="${extlibs.dir}/netty-buffer-4.0.25.Final.jar"/>
             <pathelement path="${extlibs.dir}/netty-codec-4.0.25.Final.jar"/>
             <pathelement path="${extlibs.dir}/netty-common-4.0.25.Final.jar"/>
@@ -569,7 +569,7 @@ The readme text for the next release will be like:
             includesfile="${jython.base.dir}/CoreExposed.includes"/>
     </target>
 
-    <target name="jar-complete" depends="jar">
+    <target name="jar-complete" depends="jar, pycompile">
         <taskdef name="jarjar" classname="com.tonicsystems.jarjar.JarJarTask" classpath="extlibs/jarjar-1.4.jar"/>
         <jarjar destfile="${dist.dir}/${jython.deploy.jar}">
             <zipfileset src="${dist.dir}/${jython.dev.jar}"/>
@@ -628,7 +628,7 @@ The readme text for the next release will be like:
             <rule pattern="org.apache.xerces.**" result="org.python.apache.xerces.@1"/>
             <rule pattern="org.apache.wml.**" result="org.python.apache.wml.@1"/>
             <rule pattern="org.apache.html.**" result="org.python.apache.html.@1"/>
-            <zipfileset src="extlibs/jline-2.12.jar"/>
+            <zipfileset src="extlibs/jline-2.12.1.jar"/>
             <rule pattern="jline.**" result="org.python.jline.@1"/>
             <manifest>
                 <attribute name="Main-Class" value="org.python.util.jython" />
@@ -646,12 +646,12 @@ The readme text for the next release will be like:
         </jarjar>
     </target>
 
-<target name="jar-standalone" depends="jar-complete, copy-lib">
+    <target name="jar-standalone" depends="jar-complete">
         <taskdef name="jarjar" classname="com.tonicsystems.jarjar.JarJarTask" classpath="extlibs/jarjar-1.4.jar"/>
-        <jarjar destfile="${dist.dir}/${jython.standalone.jar}">
-            <zipfileset src="${dist.dir}/${jython.deploy.jar}"/>
-            <fileset dir="${dist.dir}" includes="Lib/**"/>
-            <manifest>
+        <jar destfile="${dist.dir}/${jython.standalone.jar}">
+	  <zipfileset src="${dist.dir}/${jython.deploy.jar}"/>
+	  <fileset dir="${dist.dir}" includes="Lib/**" excludes="Lib/test/**" />
+          <manifest>
                 <attribute name="Main-Class" value="org.python.util.jython" />
                 <attribute name="Built-By" value="${user.name}" />
                 <!-- info section. ATTN: no blanks, no '.' in the names -->
@@ -665,7 +665,7 @@ The readme text for the next release will be like:
                     <attribute name="debug" value="${debug}" />
                 </section>
             </manifest>
-        </jarjar>
+	</jar>
     </target>
 
     <target name="jar" depends="compile,expose">
@@ -1034,7 +1034,7 @@ The readme text for the next release will be like:
       </exec>
     </target>
     <target name="regrtest-windows" if="os.family.windows">
-      <exec executable="${dist.dir}/bin/jython.bat">
+      <exec executable="${dist.dir}/bin/jython.exe">
         <arg value="${dist.dir}/Lib/test/regrtest.py"/>
         <!-- Only run the tests that are expected to work on Jython -->
         <arg value="--expected"/>
