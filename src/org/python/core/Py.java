@@ -15,12 +15,16 @@ import java.io.Serializable;
 import java.io.StreamCorruptedException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.URL;
+import java.net.URLDecoder;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.google.common.base.CharMatcher;
@@ -29,8 +33,8 @@ import jnr.constants.Constant;
 import jnr.constants.platform.Errno;
 import jnr.posix.POSIX;
 import jnr.posix.POSIXFactory;
-
 import jnr.posix.util.Platform;
+
 import org.python.antlr.base.mod;
 import org.python.core.adapter.ClassicPyObjectAdapter;
 import org.python.core.adapter.ExtensiblePyObjectAdapter;
@@ -2301,6 +2305,351 @@ public final class Py {
         }
         return objs.toArray(Py.EmptyObjects);
     }
+
+    /**
+     * Infers the usual Jython executable name from the position of the
+     * jar-file returned by {@link #getJarFileName()} by replacing the
+     * file name with "bin/jython". This is intended as an easy fallback
+     * for cases where {@code sys.executable} is {@code None} due to
+     * direct launching via the java executable.<br>
+     * Note that this does not necessarily return the actual executable,
+     * but instead infers the place where it is usually expected to be.
+     * Use {@code sys.executable} to get the actual executable (may be
+     * {@code None}.
+     *
+     * In contrast to {@link #getJarFileName()} and
+     * {@link #getJarFileNameFromURL(java.net.URL)} this method returns
+     * the path using system-specific separator characters.
+     *
+     * @return usual Jython-executable as absolute path
+     */
+    public static String getDefaultExecutableName() {
+        return getDefaultBinDir()+File.separator+(
+                Platform.IS_WINDOWS ? "jython.exe" : "jython");
+    }
+
+    /**
+     * Infers the usual Jython bin-dir from the position of the jar-file
+     * returned by {@link #getJarFileName()} byr replacing the file name
+     * with "bin". This is intended as an easy fallback for cases where
+     * {@code sys.executable} is {@code null} due to direct launching via
+     * the java executable.<br>
+     * Note that this does not necessarily return the actual bin-directory,
+     * but instead infers the place where it is usually expected to be.
+     *
+     * In contrast to {@link #getJarFileName()} and
+     * {@link #getJarFileNameFromURL(java.net.URL)} this method returns
+     * the path using system-specific separator characters.
+     *
+     * @return usual Jython bin-dir as absolute path
+     */
+    public static String getDefaultBinDir() {
+        String jar = _getJarFileName();
+        if (File.separatorChar != '/') {
+            jar = jar.replace('/', File.separatorChar);
+        }
+        return jar.substring(0, jar.lastIndexOf(File.separatorChar)+1)+"bin";
+    }
+
+    /**
+     * Utility-method to obtain the name (including absolute path) of the currently used
+     * jython-jar-file. Usually this is jython.jar, but can also be jython-dev.jar or
+     * jython-standalone.jar or something custom.
+     *
+     * @return the full name of the jar file containing this class, <code>null</code>
+     *         if not available.
+     */
+    public static String getJarFileName() {
+        String jar = _getJarFileName();
+        if (File.separatorChar != '/') {
+            jar = jar.replace('/', File.separatorChar);
+        }
+        return jar;
+    }
+
+    /**
+     * Utility-method to obtain the name (including absolute path) of the currently used
+     * jython-jar-file. Usually this is jython.jar, but can also be jython-dev.jar or
+     * jython-standalone.jar or something custom.
+     * 
+     * Note that it does not use system-specific seperator-chars, but always '/'.
+     *
+     * @return the full name of the jar file containing this class, <code>null</code>
+     *         if not available.
+     */
+    public static String _getJarFileName() {
+        Class<Py> thisClass = Py.class;
+        String fullClassName = thisClass.getName();
+        String className = fullClassName.substring(fullClassName.lastIndexOf(".") + 1);
+        URL url = thisClass.getResource(className + ".class");
+        return getJarFileNameFromURL(url);
+    }
+
+    /**exclusively used by {@link #getJarFileNameFromURL(java.net.URL)}.*/
+    private static final String JAR_URL_PREFIX = "jar:file:";
+    /**exclusively used by {@link #getJarFileNameFromURL(java.net.URL)}.*/
+    private static final String JAR_SEPARATOR = "!";
+    /**exclusively used by {@link #getJarFileNameFromURL(java.net.URL)}.*/
+    private static final String VFSZIP_PREFIX = "vfszip:";
+    /**exclusively used by {@link #getJarFileNameFromURL(java.net.URL)}.*/
+    private static final String VFS_PREFIX = "vfs:";
+
+    /**
+     * Converts a url that points to a jar-file to the actual jar-file name.
+     * Note that it does not use system-specific seperator-chars, but always '/'.
+     */
+    public static String getJarFileNameFromURL(URL url) {
+        String jarFileName = null;
+        if (url != null) {
+            try {
+                // escape plus signs, since the URLDecoder would turn them into spaces
+                final String plus = "\\+";
+                final String escapedPlus = "__ppluss__";
+                String rawUrl = url.toString();
+                rawUrl = rawUrl.replaceAll(plus, escapedPlus);
+                String urlString = URLDecoder.decode(rawUrl, "UTF-8");
+                urlString = urlString.replaceAll(escapedPlus, plus);
+                int jarSeparatorIndex = urlString.lastIndexOf(JAR_SEPARATOR);
+                if (urlString.startsWith(JAR_URL_PREFIX) && jarSeparatorIndex > 0) {
+                    // jar:file:/install_dir/jython.jar!/org/python/core/PySystemState.class
+                    int start = JAR_URL_PREFIX.length();
+                    if (Platform.IS_WINDOWS) {
+                        start++;
+                    }
+                    jarFileName = urlString.substring(start, jarSeparatorIndex);
+                } else if (urlString.startsWith(VFSZIP_PREFIX)) {
+                    // vfszip:/some/path/jython.jar/org/python/core/PySystemState.class
+                    final String path = Py.class.getName().replace('.', '/');
+                    int jarIndex = urlString.indexOf(".jar/".concat(path));
+                    if (jarIndex > 0) {
+                        jarIndex += 4;
+                        int start = VFSZIP_PREFIX.length();
+                        if (Platform.IS_WINDOWS) {
+                            // vfszip:/C:/some/path/jython.jar/org/python/core/PySystemState.class
+                            start++;
+                        }
+                        jarFileName = urlString.substring(start, jarIndex);
+                    }
+                } else if (urlString.startsWith(VFS_PREFIX)) {
+                    // vfs:/some/path/jython.jar/org/python/core/PySystemState.class
+                    final String path = Py.class.getName().replace('.', '/');
+                    int jarIndex = urlString.indexOf(".jar/".concat(path));
+                    if (jarIndex > 0) {
+                        jarIndex += 4;
+                        int start = VFS_PREFIX.length();
+                        if (Platform.IS_WINDOWS) {
+                            // vfs:/C:/some/path/jython.jar/org/python/core/PySystemState.class
+                            start++;
+                        }
+                        jarFileName = urlString.substring(start, jarIndex);
+                    }
+                }
+            } catch (Exception e) {}
+        }
+        return jarFileName;
+    }
+
+//------------------------contructor-section---------------------------
+    static class py2JyClassCacheItem {
+        List<Class<?>> interfaces;
+        List<PyObject> pyClasses;
+
+        public py2JyClassCacheItem(Class<?> initClass, PyObject initPyClass) {
+            if (!initClass.isInterface()) throw
+                new IllegalArgumentException("cls must be an interface.");
+            interfaces = new ArrayList<>(1);
+            pyClasses = new ArrayList<>(1);
+            interfaces.add(initClass);
+            pyClasses.add(initPyClass);
+        }
+
+        public PyObject get(Class<?> cls) {
+            for (int i = 0; i < interfaces.size(); ++i) {
+                if (cls.isAssignableFrom(interfaces.get(i)))
+                    return pyClasses.get(i);
+            }
+            return null;
+        }
+
+        public void add(Class<?> cls, PyObject pyCls) {
+            if (!cls.isInterface()) throw
+                new IllegalArgumentException("cls must be an interface.");
+            interfaces.add(0, cls);
+            pyClasses.add(0, pyCls);
+            for (int i = interfaces.size()-1; i > 0; --i) {
+                if (interfaces.get(i).isAssignableFrom(cls)) {
+                    interfaces.remove(i);
+                    pyClasses.remove(i);
+                }
+            }
+        }
+    }
+
+    protected static Map<PyObject, py2JyClassCacheItem> py2JyClassCache = new HashMap<>();
+
+    protected static PyObject ensureInterface(PyObject cls, Class<?> interfce) {
+        PyObject pjc = PyType.fromClass(interfce);
+        if (Py.isSubClass(cls, pjc)) {
+            return cls;
+        }
+        PyObject[] bases = {cls, pjc};
+        return Py.makeClass(interfce.getName(), bases, new PyStringMap());
+    }
+
+    /**
+     * Returns a Python-class that extends {@code cls} and {@code interfce}.
+     * If {@code cls} already extends {@code interfce}, simply {@code cls}
+     * is returned. Otherwise a new class is created (if not yet cached).
+     * It caches such classes and only creates a new one if no appropriate
+     * class was cached yet.
+     *
+     * @return a Python-class that extends {@code cls} and {@code interfce}
+     */
+    public static PyObject javaPyClass(PyObject cls, Class<?> interfce) {
+        py2JyClassCacheItem cacheItem = py2JyClassCache.get(cls);
+        PyObject result;
+        if (cacheItem == null) {
+            result = ensureInterface(cls, interfce);
+            cacheItem = new py2JyClassCacheItem(interfce, result);
+            py2JyClassCache.put(cls, cacheItem);
+        } else {
+            result = cacheItem.get(interfce);
+            if (result == null) {
+                result = ensureInterface(cls, interfce);
+                cacheItem.add(interfce, result);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * This method is a compact helper to access Python-constructors from Java.
+     * It creates an instance of {@code cls} and retruns it in form of
+     * {@code jcls}, which must be an interface. This method even works if
+     * {@code cls} does not extend {@code jcls} in Python-code. In that case,
+     * it uses {@link #javaPyClass(PyObject, Class)} to create an appropriate
+     * class on the fly.<br>
+     * It automatically converts {@code args} to {@link org.python.core.PyObject}s.<br>
+     * For keyword-support use
+     * {@link #newJavaObject(PyObject, Class, String[], Object...)}.
+     * 
+     * {@see #newJavaObject(PyObject, Class, PyObject[], String[])}
+     * {@see #newJavaObject(PyObject, Class, String[], Object...)}
+     * {@see #newJavaObject(PyModule, Class, Object...)}
+     * {@see #newJavaObject(PyModule, Class, String[], Object...)}
+     *
+     * @param cls - the class to be instanciated
+     * @param jcls - the Java-type to be returned
+     * @param args are automatically converted to Jython-PyObjects
+     * @return an instance of cls in form of the interface jcls
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> T newJavaObject(PyObject cls, Class<T> jcls, Object... args) {
+        PyObject cls2 = javaPyClass(cls, jcls);
+        PyObject resultPy = cls2.__call__(Py.javas2pys(args));
+        return (T) resultPy.__tojava__(jcls);
+    }
+
+    /**
+     * This method is a compact helper to access Python-constructors from Java.
+     * It creates an instance of {@code cls} and retruns it in form of
+     * {@code jcls}, which must be an interface. This method even works if
+     * {@code cls} does not extend {@code jcls} in Python-code. In that case,
+     * it uses {@link #javaPyClass(PyObject, Class)} to create an appropriate
+     * class on the fly.<br>
+     * {@code keywordss} are applied to the last {@code args} in the list.
+     *
+     * {@see #newJavaObject(PyObject, Class, Object...)}
+     * {@see #newJavaObject(PyObject, Class, String[], Object...)}
+     * {@see #newJavaObject(PyModule, Class, Object...)}
+     * {@see #newJavaObject(PyModule, Class, String[], Object...)}
+     *
+     * @param cls - the class to be instanciated
+     * @param jcls - the Java-type to be returned
+     * @param keywords are applied to the last args
+     * @param args for the Python-class constructor
+     * @return an instance of cls in form of the interface jcls
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> T newJavaObject(PyObject cls, Class<T> jcls, PyObject[] args, String[] keywords) {
+        PyObject cls2 = javaPyClass(cls, jcls);
+        PyObject resultPy = cls2.__call__(args, keywords);
+        return (T) resultPy.__tojava__(jcls);
+    }
+
+    /**
+     * This method is a compact helper to access Python-constructors from Java.
+     * It creates an instance of {@code cls} and retruns it in form of
+     * {@code jcls}, which must be an interface. This method even works if
+     * {@code cls} does not extend {@code jcls} in Python-code. In that case,
+     * it uses {@link #javaPyClass(PyObject, Class)} to create an appropriate
+     * class on the fly.<br>
+     * It automatically converts {@code args} to {@link org.python.core.PyObject}s.<br>
+     * {@code keywordss} are applied to the last {@code args} in the list.
+     *
+     * {@see #newJavaObject(PyObject, Class, PyObject[], String[])}
+     * {@see #newJavaObject(PyObject, Class, Object...)}
+     * {@see #newJavaObject(PyModule, Class, Object...)}
+     * {@see #newJavaObject(PyModule, Class, String[], Object...)}
+     *
+     * @param cls - the class to be instanciated
+     * @param jcls - the Java-type to be returned
+     * @param keywords are applied to the last args
+     * @param args are automatically converted to Jython-PyObjects
+     * @return an instance of cls in form of the interface jcls
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> T newJavaObject(PyObject cls, Class<T> jcls, String[] keywords, Object... args) {
+        PyObject cls2 = javaPyClass(cls, jcls);
+        PyObject resultPy = cls2.__call__(Py.javas2pys(args), keywords);
+        return (T) resultPy.__tojava__(jcls);
+    }
+
+    /**
+     * Works like {@link #newJavaObject(PyObject, Class, Object...)}, but looks
+     * up the Python-class in the module-dict using the interface-name, i.e.
+     * {@code jcls.getSimpleName()}.<br>
+     * For keywords-support use {@link #newJavaObject(PyModule, Class, String[], Object...)}.
+     *
+     * {@see #newJavaObject(PyModule, Class, String[], Object...)}
+     * {@see #newJavaObject(PyObject, Class, PyObject[], String[])}
+     * {@see #newJavaObject(PyObject, Class, Object...)}
+     * {@see #newJavaObject(PyObject, Class, String[], Object...)}
+     *
+     * @param module the module containing the desired class
+     * @param jcls Java-type of the desired clas, must have the same name
+     * @param args constructor-arguments
+     * @return a new instance of the desired class
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> T newJavaObject(PyModule module, Class<T> jcls, Object... args) {
+        PyObject cls = module.__getattr__(jcls.getSimpleName().intern());
+        return newJavaObject(cls, jcls, args);
+    }
+
+    /**
+     * Works like {@link #newJavaObject(PyObject, Class, String[], Object...)}, but looks
+     * up the Python-class in the module-dict using the interface-name, i.e.
+     * {@code jcls.getSimpleName()}.<br>
+     * {@code keywordss} are applied to the last {@code args} in the list.
+     *
+     * {@see #newJavaObject(PyModule, Class, Object...)}
+     * {@see #newJavaObject(PyObject, Class, PyObject[], String[])}
+     * {@see #newJavaObject(PyObject, Class, Object...)}
+     * {@see #newJavaObject(PyObject, Class, String[], Object...)}
+     *
+     * @param module the module containing the desired class
+     * @param jcls Java-type of the desired class, must have the same name
+     * @param keywords are applied to the last {@code args} in the list
+     * @param args constructor-arguments
+     * @return a new instance of the desired class
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> T newJavaObject(PyModule module, Class<T> jcls, String[] keywords, Object... args) {
+        PyObject cls = module.__getattr__(jcls.getSimpleName().intern());
+        return newJavaObject(cls, jcls, keywords, args);
+    }
+//----------------end of constructor-section------------------
 }
 
 class FixedFileWrapper extends StdoutWrapper {
@@ -2407,7 +2756,7 @@ class JavaCode extends PyCode implements Traverseproc {
 }
 
 /**
- * A function object wrapper for a java method which comply with the
+ * A function object wrapper for a java method that complies with the
  * PyArgsKeywordsCall standard.
  */
 @Untraversable
