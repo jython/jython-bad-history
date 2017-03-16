@@ -4,10 +4,16 @@ For more details, please see https://hg.python.org/jython
 
 Jython 2.7.1rc1
   Bugs fixed
+    - [ 2318 ] test_zipimport_jy failure on Windows
     - [ 2571 ] Error handling in test_codecencodings_tw fails on Java 8
+    - [ 2568 ] test_threading intermittent failure
+    - [ 2559 ] test_marshal fails
+    - [ 2564 ] test_socket_jy fails on Linux
     - [ 2524 ] datetime <-> time conversion incorrect in non UTC times
     - [ 2504 ] datetime.date.__tojava__ returns incorrect dates in non-UTC timezones with
                negative offset (Jython 2.7.0)
+    - [ 2500 ] Loading default cacerts on client socket when specifying a default java truststore
+               unnecessarily searches for more cacerts in the same dir
     - [ 2561 ] win32_ver raises exception (breaks test_platform on windows)
     - [ 2521 ] Windows installation (all) fails on Windows 10
     - [ 2557 ] ongoing pain with platform detection via os.name and sys.platform
