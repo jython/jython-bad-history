@@ -1,0 +1,4 @@
+base_class: ReferenceType
+want_dict: true
+ctr: ReferenceBackend gref, PyObject callback
+incl: object

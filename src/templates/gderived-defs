@@ -1,0 +1,169 @@
+# copyright 2004-2005 Samuele Pedroni
+define: (CompilationUnit)derived_class
+  /* Generated file, do not modify.  See jython/src/templates/gderived.py. */
+  package org.python.core;
+
+  import java.io.Serializable;
+  import org.python.core.finalization.FinalizeTrigger;
+  import org.python.core.finalization.FinalizablePyObjectDerived;
+
+  public class `concat`(`base,Derived) extends `base implements Slotted, FinalizablePyObjectDerived, TraverseprocDerived {
+
+    public PyObject getSlot(int index) {
+        return slots[index];
+    }
+
+    public void setSlot(int index, PyObject value) {
+        slots[index] = value;
+    }
+
+    private PyObject[] slots;
+
+    public void __del_derived__() {
+        PyType self_type = getType();
+        PyObject impl = self_type.lookup("__del__");
+        if (impl != null) {
+            impl.__get__(this, self_type).__call__();
+        }
+    }
+
+    public void __ensure_finalizer__() {
+        FinalizeTrigger.ensureFinalizer(this);
+    }
+
+    /* TraverseprocDerived implementation */
+    public int traverseDerived(Visitproc visit, Object arg) {
+        int retVal;
+        for (int i = 0; i < slots.length; ++i) {
+            if (slots[i] != null) {
+                retVal = visit.visit(slots[i], arg);
+                if (retVal != 0) {
+                    return retVal;
+                }
+            }
+        }
+        retVal = visit.visit(objtype, arg);
+        return retVal != 0 ? retVal : traverseDictIfAny(visit, arg);
+    }
+    /* end of TraverseprocDerived implementation */
+
+     `decls;
+  }
+define: (ClassBodyDeclarations)pair
+  `trailer;
+  `last;
+define: (ClassBodyDeclarations)binary
+  public PyObject `binary(PyObject other) {
+    PyType self_type = getType();
+    PyObject impl = self_type.lookup(`strfy`(`binary));
+    if (impl != null) {
+      PyObject res = impl.__get__(this,self_type).__call__(other);
+      if (res == Py.NotImplemented)
+          return null;
+      return res;
+    }
+    return super.`binary(other);
+  }
+define: (ClassBodyDeclarations)ibinary
+  public PyObject `binary(PyObject other) {
+    PyType self_type = getType();
+    PyObject impl = self_type.lookup(`strfy`(`binary));
+    if (impl != null) {
+      PyObject res = impl.__get__(this,self_type).__call__(other);
+      if (res == Py.NotImplemented)
+          return null;
+      return res;
+    }
+    return super.`binary(other);
+  }
+define: (ClassBodyDeclarations)unary
+  public PyObject `unary() {
+    PyType self_type = getType();
+    PyObject impl = self_type.lookup(`strfy`(`unary));
+    if (impl != null)
+      return impl.__get__(this,self_type).__call__();
+    return super.`unary();
+  }
+define: (ClassBodyDeclarations)typed_unary
+  public `rettype `unary() {
+    PyType self_type = getType();
+    PyObject impl = self_type.lookup(`strfy`(`unary));
+    if (impl != null) {
+      PyObject res = impl.__get__(this,self_type).__call__();
+      if (res instanceof `rettype)
+        return (`rettype)res;
+      throw Py.TypeError(`strfy`(`unary) + " returned non-" + `strfy`(`rettype_name) + " (type "
+                         + res.getType().fastGetName() + ")");
+    }
+    return super.`unary();
+  }
+define: (ClassBodyDeclarations)userdict
+  private PyObject dict;
+
+  public PyObject fastGetDict() {
+    return dict;
+  }
+
+  public PyObject getDict() {
+    return dict;
+  }
+
+  public void setDict(PyObject newDict) {
+    if (newDict instanceof AbstractDict) {
+      dict = newDict;
+      if (dict.__finditem__(PyString.fromInterned("__del__")) != null &&
+        !JyAttribute.hasAttr(this, JyAttribute.FINALIZE_TRIGGER_ATTR)) {
+        FinalizeTrigger.ensureFinalizer(this);
+      }
+    }
+    else {
+      throw Py.TypeError("__dict__ must be set to a Dictionary " + newDict.getClass().getName());
+    }
+  }
+
+  public void delDict() {
+    // deleting an object's instance dict makes it grow a new one
+    dict = new PyStringMap();
+  }
+
+define: (ClassBodyDeclarations)ctr
+  public `concat`(`base,Derived)(PyType subtype,`extraargs) {
+    super(subtype,`extra);
+    slots = new PyObject[subtype.getNumSlots()];
+    if (subtype.needsFinalizer()) {
+      FinalizeTrigger.ensureFinalizer(this);
+    }
+  }
+
+  public int traverseDictIfAny(Visitproc visit, Object arg) {
+    return 0;
+  }
+
+define: (ClassBodyDeclarations)ctr_userdict
+  public `concat`(`base,Derived)(PyType subtype,`extraargs) {
+    super(subtype,`extra);
+    slots = new PyObject[subtype.getNumSlots()];
+    dict = subtype.instDict();
+    if (subtype.needsFinalizer()) {
+      FinalizeTrigger.ensureFinalizer(this);
+    }
+  }
+
+  public int traverseDictIfAny(Visitproc visit, Object arg) {
+    return visit.visit(dict, arg);
+  }
+
+define: (ClassBodyDeclarations)toString
+  public String toString() {
+    PyType self_type = getType();
+    PyObject impl = self_type.lookup("__repr__");
+    if (impl != null) {
+      PyObject res = impl.__get__(this,self_type).__call__();
+      if (!(res instanceof PyString))
+        throw Py.TypeError("__repr__ returned non-string (type "
+                           + res.getType().fastGetName() + ")");
+      return ((PyString)res).toString();
+    }
+    return super.toString();
+  }
+  
