@@ -1,7 +1,8 @@
 # https://docs.travis-ci.com/user/languages/java/
 # https://docs.travis-ci.com/user/reference/osx/
+# https://docs.travis-ci.com/user/reference/windows/
 os: linux
-dist: xenial
+dist: focal
 language: java
 
 addons:
@@ -17,24 +18,43 @@ addons:
 services: xvfb
 
 jdk:
-  - openjdk8
-  - openjdk11
   # - openjdk12
-  - openjdk13
   # - openjdk14
   
 jobs:
   include:
-    - os: osx
-      osx_image: xcode9.3  # Last supporting Java 8
-      jdk: oraclejdk8
-    - os: osx
+    #- name: "openjdk8 on Linux"
+    #  jdk: openjdk8
+    #- name: "openjdk11 on Linux"
+    #  jdk: openjdk11
+    #- name: "openjdk13 on Linux"
+    #  jdk: openjdk13
+    #- name: "openjdk8 on macOS"
+    #  os: osx
+    #  osx_image: xcode9.3  # Last supporting Java 8
+    #  jdk: oraclejdk8
+    - name: "openjdk13 on macOS"
+      os: osx
       osx_image: xcode11.5
       jdk: openjdk13
-    - os: windows
+    - name: "openjdk13 on Windows"
+      os: windows
       language: shell  # Travis CI Windows does not yet support language: java
-      before_install: choco install adoptopenjdk13 ant
-    - language: python  # lint Python code for syntax errors and undefined names
+      env: PATH=/c/ProgramData/chocolatey/bin:$PATH
+      before_install:
+        - echo $PATH || true
+        - ant -version || true
+        - choco install adoptopenjdk13 ant
+        - refreshenv || true
+        - ant -version || true
+        - cat C:\ProgramData\chocolatey\logs\chocolatey.log
+    - name: "Lint Python 2 code for syntax errors and undefined names"
+      language: python  # lint Python code for syntax errors and undefined names
+      python: 2.7
+      install: pip install flake8
+      script: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+    - name: "Lint Python 3 code for syntax errors and undefined names"
+      language: python  # lint Python code for syntax errors and undefined names
       install: pip install flake8
       script: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
   allow_failures:
