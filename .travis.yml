@@ -32,6 +32,7 @@ jobs:
       osx_image: xcode11.5
       jdk: openjdk13
     - os: windows
+      language: shell  # Travis CI Windows does not yet support language: java
       before_install: choco install adoptopenjdk13 ant
     - language: python  # lint Python code for syntax errors and undefined names
       install: pip install flake8
