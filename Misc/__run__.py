@@ -1,5 +1,5 @@
-# Copyright © Corporation for National Research Initiatives
-import sys, os, java, jarray
+# Copyright Â© Corporation for National Research Initiatives
+import sys, os, java, jarray, zipfile
 
 # The global `zipfile' is magically inserted by jpython -jar.  IMO this is
 # somewhat bogus.  See org/python/util/jpython.java for alternatives
