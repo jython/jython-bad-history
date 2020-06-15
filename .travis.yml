@@ -45,13 +45,9 @@ jobs:
         - JAVA_HOME="/c/Program Files/AdoptOpenJDK/jdk-13.0.2.8-hotspot"
         - ANT_HOME="/c/Users/travis/build/jython/jython/apache-ant-1.10.8"
       before_install:
-        - pwd
-        - echo $PATH || true
-        - ant -version || true
         - choco install adoptopenjdk13
-        - ls "/c/Program Files/AdoptOpenJDK/jdk-13.0.2.8-hotspot/bin"
         - java -version
-        - javac -version
+        - choco install ant || true
         - curl https://downloads.apache.org/ant/binaries/apache-ant-1.10.8-bin.zip -o apache-ant.zip
         - unzip apache-ant.zip
         - rm apache-ant.zip
