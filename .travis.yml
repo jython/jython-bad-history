@@ -41,18 +41,15 @@ jobs:
       os: windows
       language: shell  # Travis CI Windows does not yet support language: java
       env:
-        - PATH="/c/Program Files/AdoptOpenJDK/jdk-13.0.2.8-hotspot/bin:/c/ProgramData/chocolatey/bin:$PATH"
+        - PATH="/c/Program Files/AdoptOpenJDK/jdk-13.0.2.8-hotspot/bin:/c/Users/travis/build/jython/jython/apache-ant-1.10.8/bin:$PATH"
         - JAVA_HOME="/c/Program Files/AdoptOpenJDK/jdk-13.0.2.8-hotspot/bin:$JAVA_HOME"
-        - ANT_FILENAME="apache-ant-1.10.8-bin.zip"
-        - ANT_HOME="apache-ant-1.10.8
+        - ANT_HOME="/c/Users/travis/build/jython/jython/apache-ant-1.10.8/bin"
       before_install:
         - pwd
         - echo $PATH || true
         - ant -version || true
-        - powershell choco install adoptopenjdk13
-        - ls "/c/ProgramFiles/AdoptOpenJDK/jdk-13.0.2.8-hotspot/bin" || true
+        - choco install adoptopenjdk13
         - ls "/c/Program Files/AdoptOpenJDK/jdk-13.0.2.8-hotspot/bin"
-        - powershell refreshenv || true
         - java -version
         - javac -version
         - curl https://downloads.apache.org/ant/binaries/apache-ant-1.10.8-bin.zip -o apache-ant.zip
