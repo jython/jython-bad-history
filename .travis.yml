@@ -44,21 +44,24 @@ jobs:
         - PATH="/c/Program Files/AdoptOpenJDK/jdk-13.0.2.8-hotspot/bin:/c/ProgramData/chocolatey/bin:$PATH"
         - JAVA_HOME="/c/Program Files/AdoptOpenJDK/jdk-13.0.2.8-hotspot/bin:$JAVA_HOME"
         - ANT_FILENAME="apache-ant-1.10.8-bin.zip"
-        - ANT_HOME=$(pwd)
+        - ANT_HOME="apache-ant-1.10.8
       before_install:
+        - pwd
         - echo $PATH || true
         - ant -version || true
         - powershell choco install adoptopenjdk13
         - ls "/c/ProgramFiles/AdoptOpenJDK/jdk-13.0.2.8-hotspot/bin" || true
         - ls "/c/Program Files/AdoptOpenJDK/jdk-13.0.2.8-hotspot/bin"
         - powershell refreshenv || true
-        - java -version || true
-        - javac -version || true
+        - java -version
+        - javac -version
         - curl https://downloads.apache.org/ant/binaries/apache-ant-1.10.8-bin.zip -o apache-ant.zip
         - unzip apache-ant.zip
         - rm apache-ant.zip
-        - ls
-        - ./bin/ant -version || true
+        - pwd ; ls
+        - ls apache-ant-1.10.8 || true
+        - ls apache-ant-1.10.8/bin || true
+        - apache-ant-1.10.8/bin/ant -version || true
         - ant -version || true
         # - powershell choco install ant
         # - powershell refreshenv || true
