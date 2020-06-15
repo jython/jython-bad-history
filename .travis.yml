@@ -54,7 +54,7 @@ jobs:
         - powershell refreshenv || true
         - java -version || true
         - javac -version || true
-        - curl -H https://downloads.apache.org/ant/binaries/apache-ant-1.10.8-bin.zip -o apache-ant.zip
+        - curl https://downloads.apache.org/ant/binaries/apache-ant-1.10.8-bin.zip -o apache-ant.zip
         - unzip apache-ant.zip
         - rm apache-ant.zip
         - ls
