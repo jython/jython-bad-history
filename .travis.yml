@@ -43,6 +43,7 @@ jobs:
       env:
         - PATH="/c/Program Files/AdoptOpenJDK/jdk-13.0.2.8-hotspot/bin:/c/ProgramData/chocolatey/bin:$PATH"
         - JAVA_HOME="/c/Program Files/AdoptOpenJDK/jdk-13.0.2.8-hotspot/bin:$JAVA_HOME"
+        - ANT_FILENAME="apache-ant-1.10.8-bin.zip"
         - ANT_HOME=$(pwd)
       before_install:
         - echo $PATH || true
@@ -53,7 +54,9 @@ jobs:
         - powershell refreshenv || true
         - java -version || true
         - javac -version || true
-        - curl -H https://downloads.apache.org/ant/binaries/apache-ant-1.10.8-bin.zip | gunzip
+        - curl -H https://downloads.apache.org/ant/binaries/$ANT_FILENAME
+        - unzip $ANT_FILENAME
+        - rm $ANT_FILENAME
         - ls
         - ./bin/ant -version || true
         - ant -version || true
