@@ -43,13 +43,12 @@ jobs:
       #env: PATH="/c/Program Files/AdoptOpenJDK/jdk-13.0.2.8-hotspot/bin:/c/ProgramData/chocolatey/bin:$PATH"
       before_install:
         - powershell |
-            ant -version
-            choco install adoptopenjdk13
-            refreshenv
-            javac -version
-            choco install ant
-            refreshenv
-            ant -version
+            choco install adoptopenjdk13 ;
+            refreshenv ;
+            javac -version ;
+            choco install ant ;
+            refreshenv ;
+            ant -version ;
         #- echo $PATH || true
         #- ant -version || true
         #- powershell choco install adoptopenjdk13
