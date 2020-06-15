@@ -42,7 +42,7 @@ jobs:
       language: shell  # Travis CI Windows does not yet support language: java
       env:
         - PATH="/c/Program Files/AdoptOpenJDK/jdk-13.0.2.8-hotspot/bin:/c/Users/travis/build/jython/jython/apache-ant-1.10.8/bin:$PATH"
-        - JAVA_HOME="/c/Program Files/AdoptOpenJDK/jdk-13.0.2.8-hotspot/bin:$JAVA_HOME"
+        - JAVA_HOME="/c/Program Files/AdoptOpenJDK/jdk-13.0.2.8-hotspot/bin/java"
         - ANT_HOME="/c/Users/travis/build/jython/jython/apache-ant-1.10.8/bin"
       before_install:
         - pwd
