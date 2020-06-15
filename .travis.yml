@@ -40,17 +40,17 @@ jobs:
     - name: "openjdk13 on Windows"
       os: windows
       language: shell  # Travis CI Windows does not yet support language: java
-      env: PATH="/c/Program Files/AdoptOpenJDK/jdk-13.0.2.8-hotspot:/c/ProgramData/chocolatey/bin:$PATH"
+      env: PATH="/c/Program Files/AdoptOpenJDK/jdk-13.0.2.8-hotspot/bin:/c/ProgramData/chocolatey/bin:$PATH"
       before_install:
         - echo $PATH || true
         - ant -version || true
-        - choco install adoptopenjdk13
+        - powershell choco install adoptopenjdk13
         - ls "/c/Program Files/AdoptOpenJDK/jdk-13.0.2.8-hotspot"
-        - refreshenv || true
+        - powershell refreshenv || true
         - java -version || true
         - javac -version || true
-        - choco install ant
-        - refreshenv || true
+        - powershell choco install ant
+        - powershell refreshenv || true
         - ant -version || true
         - cat C:\ProgramData\chocolatey\logs\chocolatey.log
     #- name: "Lint Python 2 code for syntax errors and undefined names"
