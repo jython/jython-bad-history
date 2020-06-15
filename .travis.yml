@@ -24,6 +24,7 @@ jdk:
 jobs:
   include:
     - name: "openjdk8 on Linux"
+      dist: xenial
       jdk: openjdk8
     - name: "openjdk11 on Linux"
       jdk: openjdk11
