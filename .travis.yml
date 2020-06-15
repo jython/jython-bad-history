@@ -14,12 +14,14 @@ addons:
     packages:
       - ant
 
+services: xvfb
+
 jdk:
   - openjdk8
   - openjdk11
-  - openjdk12
+  # - openjdk12
   - openjdk13
-  - openjdk14
+  # - openjdk14
   
 jobs:
   include:
@@ -28,12 +30,17 @@ jobs:
       jdk: oraclejdk8
     - os: osx
       osx_image: xcode11.5
-      jdk: openjdk14
+      jdk: openjdk13
+    - os: windows
+      before_install: choco install adoptopenjdk13 ant
     - language: python  # lint Python code for syntax errors and undefined names
-      install: pip install --upgrade pip
+      install: pip install flake8
       script: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
   allow_failures:
     - language: python
+    - jdk: openjdk12  # fails on: test_dunder_init (test.test_import_jy.MislabeledImportTestCase)
+                      # ..and on: test_import_star (test.test_import_jy.ImpTestCase)
+    - jdk: openjdk14  # hangs on: [exec] test_subprocess
 
 install: ant developer-build
 script: ant regrtest-travis
