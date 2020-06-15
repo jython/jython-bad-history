@@ -40,26 +40,19 @@ jobs:
     - name: "openjdk13 on Windows"
       os: windows
       language: shell  # Travis CI Windows does not yet support language: java
-      #env: PATH="/c/Program Files/AdoptOpenJDK/jdk-13.0.2.8-hotspot/bin:/c/ProgramData/chocolatey/bin:$PATH"
+      #env: PATH="/c/ProgramFiles/AdoptOpenJDK/jdk-13.0.2.8-hotspot/bin:/c/ProgramData/chocolatey/bin:$PATH"
       before_install:
-        - powershell |
-            choco install adoptopenjdk13 ;
-            refreshenv ;
-            javac -version ;
-            choco install ant ;
-            refreshenv ;
-            ant -version ;
-        #- echo $PATH || true
-        #- ant -version || true
-        #- powershell choco install adoptopenjdk13
-        #- ls "/c/Program Files/AdoptOpenJDK/jdk-13.0.2.8-hotspot"
-        #- powershell refreshenv || true
-        #- java -version || true
-        #- javac -version || true
-        #- powershell choco install ant
-        #- powershell refreshenv || true
-        #- ant -version || true
-        #- cat C:\ProgramData\chocolatey\logs\chocolatey.log
+        - echo $PATH || true
+        - ant -version || true
+        - powershell choco install adoptopenjdk13
+        - ls "/c/Program Files/AdoptOpenJDK/jdk-13.0.2.8-hotspot/bin"
+        - powershell refreshenv || true
+        - java -version || true
+        - javac -version || true
+        - powershell choco install ant
+        - powershell refreshenv || true
+        - ant -version || true
+        - cat C:\ProgramData\chocolatey\logs\chocolatey.log
     #- name: "Lint Python 2 code for syntax errors and undefined names"
     #  language: python  # lint Python code for syntax errors and undefined names
     #  python: 2.7
