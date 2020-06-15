@@ -43,7 +43,7 @@ jobs:
       env:
         - PATH="/c/Program Files/AdoptOpenJDK/jdk-13.0.2.8-hotspot/bin:/c/Users/travis/build/jython/jython/apache-ant-1.10.8/bin:$PATH"
         - JAVA_HOME="/c/Program Files/AdoptOpenJDK/jdk-13.0.2.8-hotspot"
-        - ANT_HOME="/c/Users/travis/build/jython/jython/apache-ant-1.10.8/bin"
+        - ANT_HOME="/c/Users/travis/build/jython/jython/apache-ant-1.10.8"
       before_install:
         - pwd
         - echo $PATH || true
