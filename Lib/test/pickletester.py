@@ -648,7 +648,8 @@ class AbstractPickleTests(unittest.TestCase):
                 s = self.dumps(t, proto)
                 u = self.loads(s)
                 # self.assertEqual(t, u)  # tolerate times being off by 1 second.
-                self.assertTrue(isclose(t[key], value) for key, value in u.items())
+                self.assertTrue(all(isclose(t[key], value)
+                                    for key, value in u.items()))
             if hasattr(os, "statvfs"):
                 t = os.statvfs(os.curdir)
                 s = self.dumps(t, proto)
