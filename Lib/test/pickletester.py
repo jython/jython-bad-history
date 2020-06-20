@@ -636,7 +636,6 @@ class AbstractPickleTests(unittest.TestCase):
     def test_structseq(self):
         import time
         import os
-        from math import isclose
 
         t = time.localtime()
         for proto in protocols:
@@ -647,9 +646,12 @@ class AbstractPickleTests(unittest.TestCase):
                 t = os.stat(os.curdir)
                 s = self.dumps(t, proto)
                 u = self.loads(s)
-                # self.assertEqual(t, u)  # tolerate times being off by 1 second.
-                self.assertTrue(all(isclose(t[key], value)
-                                    for key, value in u.items()))
+                try:  # tolerate times being off by 1 second.
+                    from math import isclose  # added in Python 3.5
+                    self.assertTrue(all(isclose(t[key], value)
+                                        for key, value in u.items()))
+                except ImportError:
+                    self.assertEqual(t, u)
             if hasattr(os, "statvfs"):
                 t = os.statvfs(os.curdir)
                 s = self.dumps(t, proto)
