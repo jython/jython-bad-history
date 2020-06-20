@@ -1,5 +1,5 @@
 # Copyright © Corporation for National Research Initiatives
-import sys, os, java, jarray, zipfile
+import sys, os, java, jarray
 
 # The global `zipfile' is magically inserted by jpython -jar.  IMO this is
 # somewhat bogus.  See org/python/util/jpython.java for alternatives
@@ -15,7 +15,7 @@ def fixname(s):
     return apply(os.path.join, tuple(result))
 
 
-entries = zipfile.entries()
+entries = zipfile.entries()   # noqa: F821
 
 outdir = sys.prefix #os.path.join(sys.prefix, 'Lib')
 
@@ -33,7 +33,7 @@ while entries.hasMoreElements():
     if entry.isDirectory():
 	continue
 
-    infile = zipfile.getInputStream(entry)
+    infile = zipfile.getInputStream(entry)  # noqa: F821
 
     name = fixname(entry.getName())
 
