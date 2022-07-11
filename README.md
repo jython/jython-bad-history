@@ -1,3 +1,9 @@
+**Important Note**: This repository was migrated from Mercurial at the beginning of June 2020.
+It suffered some corruption at that time (see issue #50) for which the fix involves a fresh migration.
+The code here is correct, but forks from this repository will be invalidated by the repair process.
+
+- - - - -
+
 # Jython: Python for the Java Platform
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.python/jython-standalone/badge.svg)](https://search.maven.org/artifact/org.python/jython-standalone/)
 [![Javadocs](https://www.javadoc.io/badge/org.python/jython-standalone.svg)](https://www.javadoc.io/doc/org.python/jython-standalone)
